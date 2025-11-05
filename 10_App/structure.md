@@ -19,6 +19,7 @@
     - directory enumeration
         - can we do this smart? only looking for login pages which should be close to top level
         - could use papers on this (I saw something using ML to enumerate more efficiently)
+    - should also use crawling
     - needs way to detect (potential) login pages
         - probably just look for "input[type=password]" for now
 
