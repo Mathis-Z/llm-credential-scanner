@@ -1,4 +1,4 @@
-# Meeting Notes from {{date}}
+# Meeting Notes from 10.11.2025
 
 ## Discussion Points
 - code architecture
