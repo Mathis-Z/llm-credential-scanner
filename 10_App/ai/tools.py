@@ -59,7 +59,6 @@ async def run_tool(session, tool_name, tool_input):
     print(tool_input)
 
     result = await session.call_tool(tool_name, tool_input)
-    print(f"Raw tool result: {result}")
     return result
 
 
@@ -72,7 +71,8 @@ async def run_tools(session, response):
 
             # Run the tool
             tool_result = await run_tool(session, tool_name, tool_input)
-            print(f"Tool '{tool_name}' output:\n", tool_result)
+            text = "" if tool_result is None else str(tool_result)
+            print(f"Tool '{tool_name}' output:\n {text[:25]}{'...' if len(text) > 25 else ''}")
 
             # Convert the result to a dict if it has a .dict() method
             if hasattr(tool_result, "dict"):
