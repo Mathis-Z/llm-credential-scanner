@@ -15,12 +15,15 @@ class NetScanner(threading.Thread):
     def __init__(self, subnets: str):
         super().__init__()
         self.subnets = subnets
+        # TODO: implement abort mechanism
 
     def run(self):
+        pub.sendMessage('netscanner.started')
         endpoints = []
         for subnet in self.subnets:
             endpoints.extend(self.scan_subnet(subnet))
-        pub.sendMessage('netscanner_done')
+        pub.sendMessage('netscanner.done')
+        logging.info("NetScanner done")
         return endpoints
 
     def scan_subnet(self, subnet: str):
@@ -38,7 +41,7 @@ class NetScanner(threading.Thread):
 
                 if self.test_http_endpoint(host, port):
                     logging.info("Detected HTTP endpoint: %s:%s", host, port)
-                    pub.sendMessage('netscanner_endpoint_detected', host=host, port=port_info['portid'])
+                    pub.sendMessage('netscanner.endpoint.detected', host=host, port=port_info['portid'])
                     endpoints.append((host, port))
 
         logging.debug("Discovered endpoints: %s", endpoints)

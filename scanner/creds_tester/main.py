@@ -13,8 +13,9 @@ class CredsTester(threading.Thread):
         self.webenum_done = False
         self.workers = []
         self.webdriver_semaphore = threading.Semaphore(max_webdrivers)
-        pub.subscribe(self.on_webenum_done, 'webenum_done')
+        pub.subscribe(self.on_webenum_done, 'webenum.done')
         pub.subscribe(self.on_login_panel_found, 'webenum_login_panel_found')
+        pub.subscribe(self.on_webenum_done, 'abort')
 
     def run(self):
         while not self.webenum_done:
@@ -22,6 +23,7 @@ class CredsTester(threading.Thread):
 
         for worker in self.workers:
             worker.join()
+        logging.info("CredsTester done.")
 
     def on_webenum_done(self):
         self.webenum_done = True
@@ -39,18 +41,17 @@ class CredsTester(threading.Thread):
 
 
 class CredsTesterWorker(threading.Thread):
-    def __init__(self, url, creds, webdriver_seamaphore=None):
+    def __init__(self, url, creds, webdriver_semaphore=None):
         super().__init__()
-        self.webenum_done = False
         self.url = url
         self.creds = creds
-        self.webdriver_semaphore = webdriver_seamaphore
+        self.webdriver_semaphore = webdriver_semaphore
 
     def run(self):
         for user, password in self.creds:
             if self.test_creds(user, password):
                 logging.info("Successful login on %s with %s:%s", self.url, user, password)
-                pub.sendMessage('creds_tester_successful_login', url=self.url, username=user, password=password)
+                pub.sendMessage('creds_tester.successful_login', url=self.url, username=user, password=password)
                 return
 
     def find_username_input(self, driver):

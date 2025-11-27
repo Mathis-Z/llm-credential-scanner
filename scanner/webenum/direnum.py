@@ -5,6 +5,7 @@ import queue
 import logging
 from pubsub import pub
 from bs4 import BeautifulSoup
+import time
 
 
 class DirectoryEnumerator(threading.Thread):
@@ -15,11 +16,18 @@ class DirectoryEnumerator(threading.Thread):
         self.workers = [DirectoryEnumWorker(self.url_queue, callback) for _ in range(workers)]
         self.wordlist_feeds = []
         self.add_base_url(base_url)
+        pub.subscribe(self.on_abort, 'abort')
 
     def add_base_url(self, base_url: str, wordlist_path: str = 'wordlist.txt'):
         feed = WordlistFeed(base_url, wordlist_path, self.url_queue)
         feed.start()
         self.wordlist_feeds.append(feed)
+    
+    def on_abort(self):
+        print("DirectoryEnumerator received abort signal")
+        print(dir(self.url_queue))
+        if hasattr(self.url_queue, 'shutdown'):
+            self.url_queue.shutdown(immediate=True)
 
     def run(self):
         for worker in self.workers:
@@ -27,10 +35,15 @@ class DirectoryEnumerator(threading.Thread):
 
         for feed in self.wordlist_feeds:
             feed.join()
-        self.url_queue.shutdown()
+
+        if not self.url_queue.empty():
+            self.url_queue.shutdown(immediate=True)
 
         for worker in self.workers:
             worker.join()
+
+        logging.info("DirectoryEnumerator done")
+
 
 class WordlistFeed(threading.Thread):
     """Feeds URLs to the queue based on a wordlist file."""
@@ -52,15 +65,20 @@ class WordlistFeed(threading.Thread):
             logging.error("Wordlist file not found: %s", wordlist_abs_path)
             raise e
 
-        self.url_queue.put(self.base_url)    # query root
+        try:
+            self.url_queue.put(self.base_url)    # query root
 
-        lines = wordlist_file.readlines()
-        for idx, line in enumerate(lines):
-            dir_name = line.strip()
-            url = f"{self.base_url.rstrip('/')}/{dir_name.lstrip('/')}"
-            self.url_queue.put(url)
-            if (idx) % 20000 == 0:
-                logging.debug("Wordlist feed for %s is %.2f%% done", self.base_url, idx / len(lines) * 100)
+            lines = wordlist_file.readlines()
+            last_log_time = 0
+            for idx, line in enumerate(lines):
+                dir_name = line.strip()
+                url = f"{self.base_url.rstrip('/')}/{dir_name.lstrip('/')}"
+                self.url_queue.put(url)
+                if time.time() - last_log_time > 3:
+                    last_log_time = time.time()
+                    logging.debug("Wordlist feed for %s is %.2f%% done", self.base_url, idx / len(lines) * 100)
+        except queue.ShutDown:
+            return
 
 
 class DirectoryEnumWorker(threading.Thread):

@@ -1,0 +1,11 @@
+#cloud-config
+package_update: true
+
+runcmd:
+  - curl -fsSL https://get.docker.com | sh
+  - sudo apt-get install -y python3-pip python3-pytest nmap libgtk-3-0 xvfb libasound2t64
+  - cd /opt
+  - wget -O firefox.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US"
+  - tar -xf firefox.tar.bz2
+  - sudo ln -sf /opt/firefox/firefox /usr/local/bin/firefox
+  - sudo -u ubuntu python3 -m pip install -r /scanner/requirements.txt --break-system-packages

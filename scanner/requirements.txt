@@ -1,0 +1,11 @@
+python3-nmap==1.9.1
+requests==2.32.5
+beautifulsoup4==4.14.2
+click==8.3.0
+Pypubsub==4.0.3
+selenium==4.38.0
+<<<<<<< Updated upstream:10_App/requirements.txt
+=======
+docker==7.1.0
+pytest==9.0.1
+>>>>>>> Stashed changes:scanner/requirements.txt

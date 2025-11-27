@@ -1,5 +1,6 @@
 import threading
 from pubsub import pub
+import logging
 from .direnum import DirectoryEnumerator
 
 
@@ -8,15 +9,18 @@ class WebEnumerator(threading.Thread):
         super().__init__()
         self.dir_enumerator = None
         self.netscan_done = False
-        pub.subscribe(self.on_endpoint_detected, 'netscanner_endpoint_detected')
-        pub.subscribe(self.on_netscan_done, 'netscanner_done')
+        pub.subscribe(self.on_endpoint_detected, 'netscanner.endpoint.detected')
+        pub.subscribe(self.on_netscan_done, 'netscanner.done')
+        pub.subscribe(self.on_netscan_done, 'abort')
 
     def run(self):
         while not self.netscan_done:
-            threading.Event().wait(1)
+            threading.Event().wait(5)
 
-        self.dir_enumerator.join()
-        pub.sendMessage('webenum_done')
+        if self.dir_enumerator is not None:
+            self.dir_enumerator.join()
+        pub.sendMessage('webenum.done')
+        logging.info("WebEnumerator done.")
 
     def on_endpoint_detected(self, host, port):
         base_url = f"http://{host}:{port}"
