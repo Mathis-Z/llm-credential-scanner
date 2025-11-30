@@ -1,4 +1,6 @@
 import subprocess
+import logging
+
 
 class StartupScript:
     """
@@ -27,6 +29,7 @@ class StartupScript:
             print(line.strip())
             if self.wait_string in line:
                 break
+        logging.info("Startup script %s has started successfully.", self.script)
         return self.process
 
     def __exit__(self, exc_type, exc_value, traceback):

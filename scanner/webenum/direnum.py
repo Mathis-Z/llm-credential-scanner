@@ -6,6 +6,7 @@ import logging
 from pubsub import pub
 from bs4 import BeautifulSoup
 import time
+import requests
 
 
 class DirectoryEnumerator(threading.Thread):
@@ -24,10 +25,7 @@ class DirectoryEnumerator(threading.Thread):
         self.wordlist_feeds.append(feed)
     
     def on_abort(self):
-        print("DirectoryEnumerator received abort signal")
-        print(dir(self.url_queue))
-        if hasattr(self.url_queue, 'shutdown'):
-            self.url_queue.shutdown(immediate=True)
+        self.url_queue.shutdown(immediate=True)
 
     def run(self):
         for worker in self.workers:
@@ -98,14 +96,15 @@ class DirectoryEnumWorker(threading.Thread):
                 break
 
             try:
-                response = request.urlopen(url, timeout=5)
+                response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
             except:
                 continue
 
-            if response.status < 200 or response.status >= 300:
+            if response.status_code < 200 or response.status_code >= 300:
                 continue
 
-            soup = BeautifulSoup(response.read().decode('utf-8'), 'html.parser')
+            url = response.url  # handle redirects
+            soup = BeautifulSoup(response.text, 'html.parser')
             if soup.select("input[type=password]"):
                 self.callback(url)
                 found_dirs.append(url)

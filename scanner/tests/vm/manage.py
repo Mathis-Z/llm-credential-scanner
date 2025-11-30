@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import subprocess
-import os
-import click
 from pathlib import Path
 
+CPUS = 4
+MEMORY = "8G"
+DISK = "30G"
 
 class TestVM:
     def __init__(self, remove_existing=False):
@@ -29,18 +30,21 @@ class TestVM:
 
             subprocess.run(["multipass", "launch",
                             "--name", self.name,
-                            "--cloud-init", "tests/vm/vm-config.yml",
+                            "--cloud-init", "tests/vm/vm-config.yaml",
                             "--disk",
-                            "10G",
+                            DISK,
                             "--memory",
-                            "4G",
+                            MEMORY,
                             "--cpus",
-                            "2",
+                            CPUS,
                             "--mount",
                             "./:/scanner",
                             "25.04"],
                             check=True,
                             cwd=src_path)
+
+            # For some reason this does not want to run during cloud-init, so we do it here
+            self.run_cmd("sudo -u ubuntu python3 -m pip install --user -r /scanner/requirements.txt --break-system-packages")
 
     def get_ip(self):
         result = subprocess.run(["/bin/sh", "-c", f"multipass info {self.name} | grep IPv4"], capture_output=True, text=True, check=True)
@@ -59,20 +63,3 @@ class TestVM:
 
     def stop(self):
         subprocess.run(["multipass", "stop", self.name], check=False)
-
-
-@click.command()
-@click.argument("app_name", default="4ga_boards")
-@click.option("--detach", "-d", is_flag=True, default=False)
-@click.option("--clean", "-c", is_flag=True, default=False)
-def run_app(app_name, detach=False, clean=False):
-    vm = TestVM(remove_existing=clean)
-
-    p = vm.popen(f"sudo /apps/{app_name}.sh")
-    if not detach:
-        p.wait()
-    return p
-
-
-if __name__ == '__main__':
-    run_app() # pylint: disable=no-value-for-parameter

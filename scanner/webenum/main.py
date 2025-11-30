@@ -22,8 +22,10 @@ class WebEnumerator(threading.Thread):
         pub.sendMessage('webenum.done')
         logging.info("WebEnumerator done.")
 
-    def on_endpoint_detected(self, host, port):
-        base_url = f"http://{host}:{port}"
+    def on_endpoint_detected(self, host: str, port: int, https: bool):
+        protcol = "https" if https else "http"
+        base_url = f"{protcol}://{host}:{port}"
+
         if self.dir_enumerator is None:
             self.dir_enumerator = DirectoryEnumerator(base_url, workers=5)
             self.dir_enumerator.start()

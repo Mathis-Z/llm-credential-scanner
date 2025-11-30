@@ -49,10 +49,13 @@ class CredsTesterWorker(threading.Thread):
 
     def run(self):
         for user, password in self.creds:
-            if self.test_creds(user, password):
-                logging.info("Successful login on %s with %s:%s", self.url, user, password)
-                pub.sendMessage('creds_tester.successful_login', url=self.url, username=user, password=password)
-                return
+            try:
+                if self.test_creds(user, password):
+                    logging.info("Successful login on %s with %s:%s", self.url, user, password)
+                    pub.sendMessage('creds_tester.successful_login', url=self.url, username=user, password=password)
+                    return
+            except Exception as e:
+                logging.error("Error testing credentials on %s with %s:%s - %s", self.url, user, password, str(e))
 
     def find_username_input(self, driver):
         return driver.find_element(
@@ -65,7 +68,7 @@ class CredsTesterWorker(threading.Thread):
             By.XPATH,
             "//input[translate(@placeholder, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')='password']"
         )
-    
+
     def find_login_button(self, driver):
         return driver.find_element(
             By.XPATH,

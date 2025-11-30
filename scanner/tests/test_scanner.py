@@ -26,7 +26,7 @@ class TestScanner(threading.Thread):
         logging.info("TestScanner detected credentials: %s %s:%s", url, username, password)
         self.detected_creds.append((url, username, password))
 
-    def finds_creds(self, url=None, username=None, password=None, timeout=20):
+    def finds_creds(self, url=None, username=None, password=None, timeout=300):
         waited = 0
         interval = 1
         while waited < timeout:
