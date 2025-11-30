@@ -46,6 +46,7 @@ class WebEnumWorker(threading.Thread):
         super().__init__()
         self.base_url = base_url
         self.url_queue = queue.Queue()
+        self.url_queue.put(self.base_url)   # start with the root
 
         pub.subscribe(self._on_abort, 'abort')
 
@@ -80,16 +81,16 @@ class WebEnumWorker(threading.Thread):
             except queue.ShutDown:
                 break
 
-            try:
-                response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
-            except:
+            response = self.query_url(url)
+            if response is None:
                 continue
 
-            if response.status_code < 200 or response.status_code >= 300:
-                continue
+            # handle redirects
+            url = response.url 
 
-            url = response.url  # handle redirects
-            self.add_links_to_queue(response) # handle BFS crawling
+            # handle BFS crawling
+            for url in self.parse_links(response):
+                self.url_queue.put(url)
 
             if self.detect_login_panel(response):
                 logging.info("Found directory with password input: %s", url)
@@ -102,6 +103,18 @@ class WebEnumWorker(threading.Thread):
 
         logging.info("WebEnumWorker finished testing %d paths on %s", urls_tested, self.base_url)
 
+
+    def query_url(self, url) -> None|requests.Response:
+        try:
+            response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
+        except:
+            return None
+
+        if response.status_code < 200 or response.status_code >= 300:
+            return None
+        return response
+
+
     def detect_login_panel(self, response: requests.Response) -> bool:
         """Detects if the HTTP response contains a login panel."""
         try:
@@ -111,8 +124,10 @@ class WebEnumWorker(threading.Thread):
             logging.error("Error parsing HTML from %s: %s", response.url, str(e))
             return False
 
-    def add_links_to_queue(self, response: requests.Response):
-        """Extracts links from the HTTP response and adds them to the URL queue."""
+
+    def parse_links(self, response: requests.Response) -> list[str]:
+        """Extracts links from the HTTP response."""
+        urls = []
 
         try:
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -120,6 +135,8 @@ class WebEnumWorker(threading.Thread):
                 href = link['href']
 
                 if href.startswith('/'):
-                    self.url_queue.put(f"{response.url}{href}")
+                    urls.append(f"{response.url}{href}")
         except Exception as e:
             logging.error("Error parsing HTML from %s: %s", response.url, str(e))
+
+        return urls
