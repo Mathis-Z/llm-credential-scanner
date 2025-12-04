@@ -69,6 +69,8 @@ async def run_tools(session, response):
             tool_name = item.name
             tool_input = item.arguments
 
+            logging.info("Preparing to run tool '%s' with input: %s", tool_name, tool_input)
+
             # Run the tool
             tool_result = await run_tool(session, tool_name, tool_input)
 

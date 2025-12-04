@@ -28,7 +28,7 @@ async def answer_with_tools(question: str):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
             tools = await session.list_tools()
-            # print("Available MCP tools:", [t.name for t in tools.tools])
+            logging.info("Available MCP tools: %s", ', '.join([t.name for t in tools.tools]))
 
             formated_tools = build_formated_tools(tools)
 
