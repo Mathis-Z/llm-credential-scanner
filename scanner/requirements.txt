@@ -6,3 +6,7 @@ Pypubsub==4.0.3
 selenium==4.38.0
 docker==7.1.0
 pytest==9.0.1
+python-dotenv==1.2.1
+openai==2.8.1
+mcp==1.23.1
+ddgs==9.9.2

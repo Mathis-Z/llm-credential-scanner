@@ -16,7 +16,9 @@ python3 -m venv .venv && source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-3. Run main script and specify subnets/IPs to be scanned
+3. Create `scanner/.env` file with `OPENROUTER_API_KEY=<your-api-key>`
+
+4. Run main script and specify subnets/IPs to be scanned
 
 ```bash
 python3 main.py 123.123.123.123/24
