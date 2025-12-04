@@ -1,4 +1,6 @@
 import json
+import logging
+
 
 def build_formated_tools(tools_obj):
     formated = []
@@ -50,14 +52,12 @@ async def run_tool(session, tool_name, tool_input):
 
     # Ensure tool_input is a dict
     if isinstance(tool_input, str):
-        import json
         try:
             tool_input = json.loads(tool_input)
         except json.JSONDecodeError:
             tool_input = {"input": tool_input}  # fallback if it's plain text
 
-    # print(tool_input)
-
+    logging.info("Running tool '%s' with input: %s", tool_name, tool_input)
     result = await session.call_tool(tool_name, tool_input)
     return result
 
@@ -71,8 +71,6 @@ async def run_tools(session, response):
 
             # Run the tool
             tool_result = await run_tool(session, tool_name, tool_input)
-            text = "" if tool_result is None else str(tool_result)
-            # print(f"Tool '{tool_name}' output:\n {text[:25]}{'...' if len(text) > 25 else ''}")
 
             # Convert the result to a dict if it has a .dict() method
             if hasattr(tool_result, "dict"):
