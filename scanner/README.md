@@ -16,7 +16,7 @@ python3 -m venv .venv && source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-3. Create `scanner/.env` file with `OPENROUTER_API_KEY=<your-api-key>`
+3. (Create `scanner/.env` file with `OPENROUTER_API_KEY=<your-api-key>`)
 
 4. Run main script and specify subnets/IPs to be scanned
 
@@ -25,3 +25,7 @@ python3 main.py 123.123.123.123/24
 ```
 
 You can use `python3 main.py --help` to get a list of available options.
+
+# Notes
+
+When running Ollama, you should probably increase the context window by setting `export OLLAMA_CONTEXT_LENGTH=16000` before running `ollama serve`
