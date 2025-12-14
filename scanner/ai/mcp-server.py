@@ -7,43 +7,70 @@ from ddgs import DDGS
 
 mcp = FastMCP("web_tools_server", json_response=True)
 
-@mcp.tool()
+@mcp.tool(
+    name="get_date",
+    description="Return the current date and time",
+    meta={"tags": ["credential_search"]}
+)
 def get_date():
-    """
-    Returns the current date and time.
-    """
     return {"date": datetime.now().isoformat()}
 
-@mcp.tool()
+@mcp.tool(
+    name="search_web",
+    description="Perform a web search",
+    meta={"tags": ["credential_search"]}
+)
 def search_web(query: str):
-    """
-    Perform a web search using DuckDuckGo library
-    """
     with DDGS() as ddgs:
-        results = ddgs.text(query, max_results=5)
-        return {"results": results}
+        return {"results": ddgs.text(query, max_results=5)}
 
-@mcp.tool()
+@mcp.tool(
+    name="fetch_url",
+    description="Fetch URL content",
+    meta={"tags": ["credential_search"]}
+)
 def fetch_url(url: str):
-    """
-    Fetch URL content using requests
-    """
     try:
-        response = requests.get(url, timeout=10)
-        return {"status": response.status_code, "content": response.text[:5000]}
+        r = requests.get(url, timeout=10)
+        return {"status": r.status_code, "content": r.text[:5000]}
     except Exception as e:
         return {"error": str(e)}
 
-@mcp.tool()
+@mcp.tool(
+    name="submit_credentials",
+    description="Submit credentials",
+    meta={"tags": ["credential_search"]}
+)
 def submit_credentials(input: dict):
-    """
-    Dummy function to simulate credential submission
-    """
     username = input.get("username")
     password = input.get("password")
-
     logging.info("LLM submitted credentials %s:%s", username, password)
     return {"message": f"Credentials for {username} submitted successfully."}
+
+@mcp.tool(
+    name="get_login_html",
+    description="Get HTML content of the login page",
+    meta={"tags": ["credential_testing"]}
+)
+def get_login_html():
+    return "work in progress"
+
+@mcp.tool(
+    name="insert_text_into_field",
+    description="Insert text into a field specified by a CSS selector",
+    meta={"tags": ["credential_testing"]}
+)
+def insert_text_into_field(selector: str, text: str):
+    return "work in progress"
+
+@mcp.tool(
+    name="click_button",
+    description="Click a button specified by a CSS selector",
+    meta={"tags": ["credential_testing"]}
+)
+def click_button(selector: str):
+    return "work in progress"
+
 
 # Run with streamable HTTP transport (e.g. used with agents)
 if __name__ == "__main__":

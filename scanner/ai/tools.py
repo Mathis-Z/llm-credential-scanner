@@ -2,7 +2,7 @@ import json
 import logging
 
 
-def build_formated_tools(tools_obj):
+def build_formated_tools(tools):
     formated = []
 
     def _get(obj, key, default=None):
@@ -10,7 +10,7 @@ def build_formated_tools(tools_obj):
             return obj.get(key, default)
         return getattr(obj, key, default)
 
-    for t in getattr(tools_obj, "tools", tools_obj):
+    for t in tools:
         name = _get(t, "name")
         description = _get(t, "description", "") or ""
         schema = _get(t, "input_schema") or _get(t, "schema") or _get(t, "parameters")
@@ -44,7 +44,7 @@ def build_formated_tools(tools_obj):
 
     return formated
 
-async def run_tool(session, tool_name, tool_input):
+async def run_tool(session, tool_name, tool_input, context: str = None):
     tools = await session.list_tools()
     tool = next((t for t in tools.tools if t.name == tool_name), None)
     if not tool:
@@ -54,15 +54,21 @@ async def run_tool(session, tool_name, tool_input):
     if isinstance(tool_input, str):
         try:
             tool_input = json.loads(tool_input)
+            # Add context if available
+            if context:
+                tool_input['context'] = context
         except json.JSONDecodeError:
             tool_input = {"input": tool_input}  # fallback if it's plain text
+            # Add context if available
+            if context:
+                tool_input['context'] = context
 
     logging.info("Running tool '%s' with input: %s", tool_name, tool_input)
     result = await session.call_tool(tool_name, tool_input)
     return result
 
 
-async def run_tools(session, response):
+async def run_tools(session, response, context: str = None):
     input_list = []
     for item in response.output:
         if item.type == "function_call":
