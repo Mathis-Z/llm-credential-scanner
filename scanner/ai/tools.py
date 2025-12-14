@@ -108,6 +108,7 @@ async def run_tools(session, response):
 
             input_list.append({
                 "type": "function_call_output",
+                "name": tool_name,
                 "call_id": item.call_id,
                 "output": json.dumps({
                     f"{tool_name}": serializable_result
