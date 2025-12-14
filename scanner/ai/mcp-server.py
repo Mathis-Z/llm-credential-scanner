@@ -3,6 +3,12 @@ import logging
 import requests
 from mcp.server.fastmcp import FastMCP
 from ddgs import DDGS
+from typing import TypedDict
+
+
+class CredentialsInput(TypedDict):
+    username: str
+    password: str
 
 
 mcp = FastMCP("web_tools_server", json_response=True)
@@ -38,12 +44,13 @@ def fetch_url(url: str):
 
 @mcp.tool(
     name="submit_credentials",
-    description="Submit credentials",
+    description="Submit credentials (username & password)",
     meta={"tags": ["credential_search"]}
 )
-def submit_credentials(input: dict):
-    username = input.get("username")
-    password = input.get("password")
+def submit_credentials(input: CredentialsInput):
+    username = input["username"]
+    password = input["password"]
+
     logging.info("LLM submitted credentials %s:%s", username, password)
     return {"message": f"Credentials for {username} submitted successfully."}
 
