@@ -1,8 +1,8 @@
-import ollama
 import logging
-from ddgs import DDGS
 from datetime import datetime
-from fetch_url import fetch_url
+import ollama
+from ddgs import DDGS
+from scanner.ai.mcp.fetch_url import fetch_url
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s][%(levelname)s] %(message)s')
 

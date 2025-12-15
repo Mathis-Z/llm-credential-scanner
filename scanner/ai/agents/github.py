@@ -1,21 +1,16 @@
 import asyncio
 import logging
 import os
-import click
-from dotenv import load_dotenv
-from openai import OpenAI
 from types import SimpleNamespace
 import json
 
+import click
+from dotenv import load_dotenv
+from openai import OpenAI
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-from tools import (
-    build_formated_tools,
-    run_tools,
-    extract_text,
-    get_tools_by_tag,
-)
+from scanner.ai.mcp.tools import run_tools, get_tools_by_tag
 
 load_dotenv()
 

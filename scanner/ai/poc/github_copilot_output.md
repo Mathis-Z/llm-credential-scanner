@@ -1,4 +1,4 @@
-python .\github_agent.py
+python .\agent.py
 Enter your question: what are the default credentials for the mailcow admin panel?
 [2025-12-14 22:34:24,913][INFO] HTTP Request: POST http://127.0.0.1:8000/mcp "HTTP/1.1 200 OK"
 [2025-12-14 22:34:24,913][INFO] Received session ID: 505a9b64c535470eb3d1c880baeea54f
