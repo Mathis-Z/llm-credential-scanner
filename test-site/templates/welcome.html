@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Welcome</title>
+    <style>
+      body { font-family: system-ui, Arial, sans-serif; background: #f6f7fb; margin: 0; }
+      .container { max-width: 640px; margin: 10vh auto; background: white; padding: 24px; border-radius: 10px; border: 1px solid #e6e7ee; }
+      h1 { font-size: 22px; margin: 0 0 10px; }
+      .muted { color: #555; }
+      .banner { margin-top: 14px; padding: 12px; border-radius: 8px; border: 1px solid #cfe3cf; background: #effaf0; }
+      button { margin-top: 16px; padding: 10px 12px; border: 0; border-radius: 8px; background: #555; color: white; font-weight: 600; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1 id="welcome-title">Welcome{{ (", " + username) if username else "" }}!</h1>
+      <div class="banner" id="welcome-banner">You are logged in.</div>
+      <p class="muted">This is a simple test site for automated login checks.</p>
+
+      <form method="post" action="/logout">
+        <button id="logout-btn" type="submit">Logout</button>
+      </form>
+    </main>
+  </body>
+</html>
