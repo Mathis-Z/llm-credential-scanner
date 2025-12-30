@@ -43,8 +43,6 @@ class NetScanner(threading.Thread):
                 if self.test_http_service(host, port):
                     https = self.test_https_service(host, port)
 
-                    if port != 8080:
-                        continue  # Temporary: only scan this port for debugging
                     logger.info("Detected HTTP service at %s:%s (HTTPS: %s)", host, port, https)
                     # TODO: resuming from stored DB
                     Service.get_or_create(host=host, port=port, https=https)
@@ -55,7 +53,7 @@ class NetScanner(threading.Thread):
         """Test if an HTTP service is running on the given host:port service."""
 
         try:
-            response = requests.get(f"http://{host}:{port}/", timeout=5, allow_redirects=False, verify=False)
+            requests.get(f"http://{host}:{port}/", timeout=5, allow_redirects=False, verify=False)
             return True
         except Exception as e:
             logger.debug("Failed to connect to %s:%s - %s", host, port, str(e))
