@@ -6,6 +6,7 @@ from pubsub import pub
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
+logger = logging.getLogger('scanner.creds_tester')
 
 class CredsTester(threading.Thread):
     def __init__(self, max_webdrivers=3):
@@ -23,7 +24,7 @@ class CredsTester(threading.Thread):
 
         for worker in self.workers:
             worker.join()
-        logging.info("CredsTester done.")
+        logger.info("CredsTester done.")
 
     def on_webenum_done(self):
         self.webenum_done = True
@@ -51,11 +52,11 @@ class CredsTesterWorker(threading.Thread):
         for user, password in self.creds:
             try:
                 if self.test_creds(user, password):
-                    logging.info("Successful login on %s with %s:%s", self.url, user, password)
+                    logger.info("Successful login on %s with %s:%s", self.url, user, password)
                     pub.sendMessage('creds_tester.successful_login', url=self.url, username=user, password=password)
                     return
             except Exception as e:
-                logging.error("Error testing credentials on %s with %s:%s - %s", self.url, user, password, str(e))
+                logger.error("Error testing credentials on %s with %s:%s - %s", self.url, user, password, str(e))
 
     def find_username_input(self, driver):
         return driver.find_element(

@@ -1,52 +1,69 @@
+"""
+Web enum module.
+Waits for services detected by netscan module and enumerates them using
+directory enum (wordlist.txt) and basic crawling. Creates Endpoint records
+for all urls returning a non-error status code.
+"""
+
+import re
 import threading
 import logging
 import time
 import os
 import queue
+import warnings
+import urllib.parse
 from pubsub import pub
 import requests
-from bs4 import BeautifulSoup
+import simhash
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+
+from scanner.db.models import Endpoint, Service
 
 # relative to this file
 WORDLIST_RELATIVE_PATH = 'wordlist.txt'
 
+logger = logging.getLogger('scanner.webenum')
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
 class WebEnumerator(threading.Thread):
+    """WebEnumerator module. Spawns a worker thread for each discovered web service."""
     def __init__(self):
         super().__init__()
         self.workers = []
-        self.netscan_done = False
-        pub.subscribe(self._on_endpoint_detected, 'netscanner.endpoint.detected')
+        self.netscan_done = threading.Event()
+        pub.subscribe(self._on_service_created, 'Service.created')
         pub.subscribe(self._on_netscan_done, 'netscanner.done')
         pub.subscribe(self._on_netscan_done, 'abort')
 
     def run(self):
-        while not self.netscan_done:
-            threading.Event().wait(1)
+        self.netscan_done.wait()
 
         for worker in self.workers:
             worker.join()
 
         pub.sendMessage('webenum.done')
-        logging.info("WebEnumerator done.")
+        logger.info("WebEnumerator done.")
 
-    def _on_endpoint_detected(self, host: str, port: int, https: bool):
-        protcol = "https" if https else "http"
-        base_url = f"{protcol}://{host}:{port}"
-
-        new_worker = WebEnumWorker(base_url)
+    def _on_service_created(self, record: Service):
+        new_worker = WebEnumWorker(record)
         new_worker.start()
         self.workers.append(new_worker)
 
     def _on_netscan_done(self):
-        self.netscan_done = True
+        self.netscan_done.set()
 
 
 class WebEnumWorker(threading.Thread):
-    def __init__(self, base_url: str):
+    """Worker thread that enumerates directories and detects login panels on a given web service."""
+    def __init__(self, service: Service):
         super().__init__()
-        self.base_url = base_url
-        self.url_queue = queue.Queue()
-        self.url_queue.put(self.base_url)   # start with the root
+        service.enum_in_progress = True
+        service.save()
+        self.service = service
+        self.not_found_simhash = self.get_404_simhash() # for soft 404 detection
+        self.path_queue = queue.Queue()
+        self.path_queue.put('/')   # start with the root
 
         pub.subscribe(self._on_abort, 'abort')
 
@@ -56,7 +73,7 @@ class WebEnumWorker(threading.Thread):
         self.load_wordlist(wordlist_abs_path)
 
     def _on_abort(self):
-        self.url_queue.shutdown(immediate=True)
+        self.path_queue.shutdown(immediate=True)
 
     def load_wordlist(self, wordlist_path: str):
         """Loads the wordlist from the specified path and populates the URL queue."""
@@ -65,46 +82,65 @@ class WebEnumWorker(threading.Thread):
                 for line in f:
                     word = line.strip()
                     if word:
-                        full_url = f"{self.base_url}/{word}"
-                        self.url_queue.put(full_url)
+                        self.path_queue.put(word)
 
         except FileNotFoundError:
-            logging.error("Wordlist file not found: %s", wordlist_path)
+            logger.error("Wordlist file not found: %s", wordlist_path)
 
     def run(self) -> list[str]:
-        urls_tested = 0
+        paths_tested = 0
         last_log_time = 0
 
         while True:
             try:
-                url = self.url_queue.get()
-            except queue.ShutDown:
+                path = self.path_queue.get_nowait()
+                if not path.startswith('/'):
+                    path = '/' + path
+            except (queue.ShutDown, queue.Empty):
                 break
 
-            response = self.query_url(url)
-            if response is None:
+            endpoint_url = f"{self.service.url()}{path}"
+            response = self.query_url(endpoint_url)
+
+            paths_tested += 1
+            if time.time() - last_log_time > 5:
+                logger.debug("WebEnumWorker tested %d paths on %s", paths_tested, self.service.url())
+                last_log_time = time.time()
+
+            if response is None or self.is_404_response(response):
                 continue
 
             # handle redirects
-            url = response.url 
+            # TODO: this is duplicated with allow_redirects=True in query_url
+            path = urllib.parse.urlparse(response.url).path
+            path = re.sub(r'/+', '/', path)  # normalize multiple slashes
+
+            if Endpoint.select().where((Endpoint.service == self.service) & (Endpoint.path == path)).count() != 0:
+                continue # skip already known endpoints
 
             # handle BFS crawling
-            for url in self.parse_links(response):
-                self.url_queue.put(url)
+            for link in self.parse_links(response):
+                if self.service.url() in link:
+                    p = urllib.parse.urlparse(link).path
+                    self.path_queue.put(p)
 
-            if self.detect_login_panel(response):
-                logging.info("Found directory with password input: %s", url)
-                pub.sendMessage('webenum_login_panel_found', url=url)
+            is_login = self.detect_password_input(response)
+            if is_login:
+                logger.info("Found directory with password input: %s", endpoint_url)
 
-            urls_tested += 1
-            if time.time() - last_log_time > 5:
-                logging.debug("WebEnumWorker tested %d paths on %s", urls_tested, self.base_url)
-                last_log_time = time.time()
+            Endpoint.create(
+                service=self.service,
+                path=path,
+                is_login=is_login,
+                page_source=response.content.decode()
+            )
 
-        logging.info("WebEnumWorker finished testing %d paths on %s", urls_tested, self.base_url)
-
+        logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())
+        self.service.enum_in_progress = False
+        self.service.save()
 
     def query_url(self, url) -> None|requests.Response:
+        """Query a URL and return the response if status code is 2xx, else None. Follows redirects."""
         try:
             response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
         except:
@@ -114,20 +150,20 @@ class WebEnumWorker(threading.Thread):
             return None
         return response
 
-
-    def detect_login_panel(self, response: requests.Response) -> bool:
-        """Detects if the HTTP response contains a login panel."""
+    def detect_password_input(self, response: requests.Response) -> bool:
+        """Detects if the HTTP response contains a password input."""
+        # TODO: what about JS-generated forms?
         try:
             soup = BeautifulSoup(response.text, 'html.parser')
             return bool(soup.select("input[type=password]"))
         except Exception as e:
-            logging.error("Error parsing HTML from %s: %s", response.url, str(e))
+            logger.error("Error parsing HTML from %s: %s", response.url, str(e))
             return False
 
-
     def parse_links(self, response: requests.Response) -> list[str]:
-        """Extracts links from the HTTP response."""
+        """Extracts links from the HTTP response for crawling."""
         urls = []
+        netloc = urllib.parse.urlparse(response.url).netloc
 
         try:
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -135,8 +171,26 @@ class WebEnumWorker(threading.Thread):
                 href = link['href']
 
                 if href.startswith('/'):
-                    urls.append(f"{response.url}{href}")
+                    urls.append(f"{netloc}{href}")
         except Exception as e:
-            logging.error("Error parsing HTML from %s: %s", response.url, str(e))
+            logger.error("Error parsing HTML from %s: %s", response.url, str(e))
 
         return urls
+
+    def get_404_simhash(self) -> simhash.Simhash:
+        """Fetches a non-existent page to compute its simhash for soft 404 detection."""
+        url = f"{self.service.url()}/nonexistent_{int(time.time())}"
+        try:
+            response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
+        except:
+            return None
+        return simhash.Simhash(response.text)
+
+    def is_404_response(self, response: requests.Response) -> bool:
+        """Determines if the response is a 404 based on simhash comparison."""
+        if response.status_code == 404:
+            return True
+
+        response_simhash = simhash.Simhash(response.text)
+        distance = self.not_found_simhash.distance(response_simhash)
+        return distance < 5

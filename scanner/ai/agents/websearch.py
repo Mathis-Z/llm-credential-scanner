@@ -3,7 +3,7 @@ import logging
 import click
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
-from scanner.ai.tools import search_web, submit_credentials, fetch_url
+from scanner.ai.tools import search_web, submit_credentials, fetch_url_summary
 from scanner.ai.llm import get_chat_model
 
 
@@ -16,7 +16,7 @@ def main(log_level="INFO"):
     )
 
     llm = get_chat_model(reasoning=True)
-    agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url])
+    agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url_summary])
 
     app = "mailcow"
 

@@ -7,9 +7,10 @@ from markdownify import markdownify
 
 from scanner.ai.llm import get_chat_model
 
+logger = logging.getLogger("scanner.ai.tools")
 
 @tool(description="Fetch a URL, returning its summarized content.")
-def fetch_url(url: str) -> str:
+def fetch_url_summary(url: str) -> str:
     """
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
     and condenses it for useful content extraction.
@@ -17,6 +18,13 @@ def fetch_url(url: str) -> str:
     raw = _fetch_url(url)
     return summarize_text_with_map_reduce(raw)
 
+@tool(description="Fetch a URL, returning its raw content.")
+def fetch_url(url: str) -> str:
+    """
+    Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
+    and returns the raw content.
+    """
+    return _fetch_url(url)
 
 def _fetch_url(url: str) -> str:
     """
@@ -64,14 +72,13 @@ def summarize_text_with_map_reduce(
         chunk_overlap=300,
     )
     chunks = splitter.split_text(text)
-    logging.info("Summarizing text of length %i, divided into %i chunks", len(text), len(chunks))
-    logging.debug("Chunks: %s", chunks)
+    logger.info("Summarizing text of length %i, divided into %i chunks", len(text), len(chunks))
+    logger.debug("Chunks: %s", chunks)
 
     summarised_chunks = [summarize_content_block(chunk, map_prompt, max_chunk_summary_tokens) for chunk in chunks]
     final_summary = reduce_summaries(summarised_chunks, reduce_prompt, max_final_tokens)
 
     return final_summary
-
 
 def summarize_content_block(content: str, prompt: str, max_tokens: int = 500) -> str:
     llm = get_chat_model(reasoning=False)

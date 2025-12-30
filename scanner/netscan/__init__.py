@@ -1,1 +1,1 @@
-from .main import NetScanner
+from .main import NetScanner, Service
