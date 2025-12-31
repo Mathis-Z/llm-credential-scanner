@@ -82,14 +82,16 @@ def get_chat_model(reasoning: bool|None = None) -> WrappedChatOllama|WrappedChat
     """
     Returns a ChatOpenAI or ChatOllama instance based on the USE_LOCAL_LLM setting.
     """
+    model_name = settings.reasoning_llm_name if reasoning else settings.nonreasoning_llm_name
+
     if settings.use_local_llm:
-        return WrappedChatOllama(model=settings.llm_name, reasoning=reasoning)
+        return WrappedChatOllama(model=model_name, reasoning=reasoning)
     else:
         if reasoning:
             logger.warning("Warning: reasoning parameter is ignored for remote LLMs because its not supported.")
 
         return WrappedChatOpenAI(
-            model_name=settings.llm_name,
+            model_name=model_name,
             base_url=settings.openai_base_url,
             openai_api_key=settings.openai_api_key,
         )

@@ -30,9 +30,7 @@ class Service(BaseModel):
 
     @property
     def credentials(self):
-        if self._credentials is None:
-            return None
-        return json.loads(self._credentials) + DEFAULT_CREDS
+        return json.loads(self._credentials) if self._credentials else None
 
     @credentials.setter
     def credentials(self, new_value):
@@ -78,7 +76,8 @@ class Endpoint(BaseModel):
 
     @property
     def tested_credentials(self):
-        return json.loads(self._tested_credentials)
+        # must convert to tuple to make them hashable
+        return [tuple(cred_pair) for cred_pair in json.loads(self._tested_credentials)]
 
     @tested_credentials.setter
     def tested_credentials(self, new_value):
@@ -90,7 +89,7 @@ class Endpoint(BaseModel):
     def untested_credentials(self):
         """The list of credentials that still need to be tested on this login"""
         if self.is_login:
-            return list(set(self.service.credentials) - set(self.tested_credentials))
+            return list(set(self.service.credentials or DEFAULT_CREDS) - set(self.tested_credentials))
         else:
             return []
 

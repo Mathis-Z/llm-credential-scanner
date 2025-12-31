@@ -57,6 +57,7 @@ class KeywordExtractor(Thread):
         """
         llm = get_chat_model(reasoning=False)
         prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
+        logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
         response = llm.invoke_with_backoff([("human", prompt)], abort_signal=self.termination_event).content
         if response is None: # aborted
             return
