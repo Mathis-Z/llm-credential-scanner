@@ -6,13 +6,10 @@ Pypubsub==4.0.3
 pytest==9.0.1
 python-dotenv==1.2.1
 openai==2.8.1
-mcp==1.23.1
 ddgs==9.9.2
-ollama==0.6.1
 selenium==4.38.0
 setuptools==80.9.0
 seleniumbase==4.44.20
-langchain-community==0.4.1
 langchain==1.1.2
 langchain_ollama==1.0.1
 langchain_openai==1.1.3
