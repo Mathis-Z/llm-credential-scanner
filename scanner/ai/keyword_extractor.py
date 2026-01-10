@@ -32,11 +32,16 @@ class KeywordExtractor(Thread):
         super().__init__()
         self.termination_event = Event()
         self.queues: dict[Any, queue.Queue] = {} # one queue per service for balancing
+        self.new_queues = [] # cannot modify dict while iterating, store new queues here
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self._on_endpoint_created, 'Endpoint.created')
 
     def run(self):
         while not self.termination_event.is_set():
+            # add any new queues
+            for service_pk, q in self.new_queues:
+                self.queues[service_pk] = q
+
             for service, q in self.queues.items():
                 try:
                     endpoint = q.get_nowait()
@@ -74,6 +79,10 @@ class KeywordExtractor(Thread):
             q.shutdown(immediate=True)
 
     def _on_endpoint_created(self, record: Endpoint):
-        q = self.queues.get(record.service.pk, queue.Queue())
-        self.queues[record.service.pk] = q
-        q.put(record)
+        q = self.queues.get(record.service.pk)
+        if q is not None:
+            q.put(record)
+        else:
+            q = queue.Queue()
+            q.put(record)
+            self.new_queues.append((record.service.pk, q))
