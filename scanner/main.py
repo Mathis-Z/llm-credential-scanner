@@ -39,7 +39,7 @@ logger = logging.getLogger("scanner.main")
 
 @click.command()
 @click.argument("subnets")
-@click.option("--ports", "-p", default="-", help="Comma-separated list of ports to scan; forwarded to nmap (default: all ports)")
+@click.option("--ports", "-p", default=None, help="Comma-separated list of ports to scan; forwarded to nmap")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--max-webdrivers", default=1, help="Maximum number of concurrent WebDriver instances for credential testing")
 def run(subnets, ports, log_level="INFO", max_webdrivers=1):

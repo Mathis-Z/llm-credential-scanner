@@ -61,9 +61,10 @@ class KeywordExtractor(Thread):
         Updates the endpoint with the extracted keywords.
         """
         llm = get_chat_model(reasoning=False)
+        llm.abort_event = self.termination_event
         prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
         logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
-        response = llm.invoke_with_backoff([("human", prompt)], abort_signal=self.termination_event).content
+        response = llm.invoke([("human", prompt)]).content
         if response is None: # aborted
             return
         lines = [line.strip() for line in response.split('\n')]
