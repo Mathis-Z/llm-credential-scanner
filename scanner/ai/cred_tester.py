@@ -14,6 +14,7 @@ from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
 from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import make_credential_testing_tools
 from scanner.db.models import Endpoint
+from bs4 import BeautifulSoup
 
 
 PROMPT_TEMPLATE = """
@@ -71,8 +72,12 @@ class CredTester(Thread):
         driver = webdriver.Firefox(options=options)
         driver.get(endpoint.url())
 
+        # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        for script in soup.find_all("script"):
+            script.decompose()
         # store page info to compare with after tool calls
-        before_page_source = driver.page_source
+        before_page_source = str(soup)
         before_path = urllib.parse.urlparse(driver.current_url).path
 
         full_prompt = PROMPT_TEMPLATE % (endpoint.url(), username, password, before_page_source)
@@ -100,7 +105,11 @@ class CredTester(Thread):
                     else:
                         logger.debug("AI: %s", latest_message.content)
         finally:
-            after_page_source = driver.page_source
+            # to compare with before_page_source need to remove script tags again
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            for script in soup.find_all("script"):
+                script.decompose()
+            after_page_source = str(soup)
             after_path = urllib.parse.urlparse(driver.current_url).path
             driver.quit()
 

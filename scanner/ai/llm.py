@@ -7,7 +7,6 @@ from typing import Any
 import logging
 import openai
 from pydantic import PrivateAttr
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.language_models.base import LanguageModelInput
@@ -19,19 +18,10 @@ settings = Settings()
 
 logger = logging.getLogger('scanner.llm')
 
-BACKOFF_MINIMUM = 30
-BACKOFF_DURATION = BACKOFF_MINIMUM
-RATE_LIMITED_UNTIL = 0
 API_SERIALIZATION_LOCK = threading.Lock() # prevent concurrent invoke() calls
 
 class WrappedInvokeMixin:
     """Mixin to wrap the invoke method with custom error handling for rate limiting."""
-    _abort_event: threading.Event = PrivateAttr()
-
-    def __init__(self, *args, **kwargs):
-        abort_event = kwargs.pop("abort_event", None)
-        super().__init__(*args, **kwargs)
-        self._abort_event = abort_event or threading.Event()
 
     def invoke(
         self,
@@ -42,41 +32,15 @@ class WrappedInvokeMixin:
         **kwargs: Any,
     ) -> AIMessage:
         """
-        Invoke the LLM with exponential backoff on rate limit errors.
-        abort_event can be set to abort the operation.
+        Invoke the LLM and handle rate limiting by serializing calls.
         """
 
-        global API_SERIALIZATION_LOCK, RATE_LIMITED_UNTIL, BACKOFF_DURATION, BACKOFF_MINIMUM
         with API_SERIALIZATION_LOCK:
-            # wait if rate limited
-            time_to_wait = max(0, RATE_LIMITED_UNTIL - time.time())
-            abortable_sleep(time_to_wait, self._abort_event)
-
-            if self._abort_event.is_set():
-                raise RuntimeError("Abort event set")
             try:
-                result = super().invoke(input, config=config, stop=stop, **kwargs)
-                BACKOFF_DURATION = BACKOFF_MINIMUM # reset on success
-                return result
+                return super().invoke(input, config=config, stop=stop, **kwargs)
             except openai.RateLimitError:
-                RATE_LIMITED_UNTIL = time.time() + BACKOFF_DURATION
-                logger.warning("LLM rate limit exceeded. Waiting %.1f seconds before retrying.", BACKOFF_DURATION)
-                BACKOFF_DURATION *= 2
+                logger.warning("LLM rate limit exceeded.")
                 raise # need to re-raise because langchain expects this
-
-
-def abortable_sleep(
-    total_seconds: float,
-    abort_event: threading.Event,
-    check_interval: float = 0.5,
-):
-    elapsed = 0.0
-    while elapsed < total_seconds:
-        if abort_event.is_set():
-            return
-        sleep_time = min(check_interval, total_seconds - elapsed)
-        time.sleep(sleep_time)
-        elapsed += sleep_time
 
 
 class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
