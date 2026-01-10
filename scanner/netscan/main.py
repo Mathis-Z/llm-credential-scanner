@@ -15,23 +15,25 @@ from scanner.db.models import Service
 logger = logging.getLogger('scanner.netscan')
 
 class NetScanner(threading.Thread):
-    def __init__(self, subnets: list[str]):
+    def __init__(self, subnets_or_ips: list[str], ports: str = '-'):
         super().__init__()
-        self.subnets = subnets
+        self.subnets_or_ips = subnets_or_ips
+        self.ports = ports
         # TODO: implement abort mechanism
 
     def run(self):
         pub.sendMessage('netscanner.started')
-        for subnet in self.subnets:
-            self.scan_subnet(subnet)
+        for subnet_or_ip in self.subnets_or_ips:
+            self.scan_subnet(subnet_or_ip, self.ports)
         pub.sendMessage('netscanner.done')
         logger.info("NetScanner done")
 
-    def scan_subnet(self, subnet: str):
+    def scan_subnet(self, subnet_or_ip: str, ports: str):
         """Scan the given subnet and return a list of detected HTTP services as (host,port,https) tuples."""
+        ports_argument = f'-p{ports}'
 
         nmap = nmap3.NmapHostDiscovery()
-        result = nmap.nmap_portscan_only(subnet)
+        result = nmap.nmap_portscan_only(subnet_or_ip, args=ports_argument)
 
         for host, data in result.items():
             if host in ['runtime', 'stats', 'task_results'] or data['state']['state'] != 'up':
@@ -39,6 +41,7 @@ class NetScanner(threading.Thread):
 
             for port_info in data.get('ports', []):
                 port = int(port_info['portid'])
+                logger.debug("Testing %s:%s", host, port)
 
                 if self.test_http_service(host, port):
                     https = self.test_https_service(host, port)
