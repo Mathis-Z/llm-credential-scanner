@@ -4,7 +4,7 @@ to find potential default credentials.
 """
 
 import time
-from threading import Thread
+from threading import Thread, Event
 import logging
 from pubsub import pub
 from langchain.agents import create_agent
@@ -38,11 +38,11 @@ logger = logging.getLogger('scanner.cred_searcher')
 class CredSearcher(Thread):
     def __init__(self):
         super().__init__()
-        self.terminate = False
+        self.termination_event = Event()
         pub.subscribe(self._on_abort, 'abort')
 
     def run(self):
-        while not self.terminate:
+        while not self.termination_event.is_set():
             # Only select services for which *all* endpoints have non-NULL keywords.
             # i.e. there must be at least one endpoint with keywords, and zero endpoints with NULL keywords.
             # LLM-generated tbh
@@ -86,7 +86,7 @@ class CredSearcher(Thread):
         logger.info("CredSearcher exited")
 
     def _on_abort(self):
-        self.terminate = True
+        self.termination_event.set()
 
     def search_service(self, service: Service):
         """Search default credentials for a service using its keywords"""

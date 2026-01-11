@@ -6,7 +6,6 @@ import threading
 from typing import Any
 import logging
 import openai
-from pydantic import PrivateAttr
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.language_models.base import LanguageModelInput
@@ -34,13 +33,27 @@ class WrappedInvokeMixin:
         """
         Invoke the LLM and handle rate limiting by serializing calls.
         """
-
         with API_SERIALIZATION_LOCK:
-            try:
-                return super().invoke(input, config=config, stop=stop, **kwargs)
-            except openai.RateLimitError:
-                logger.warning("LLM rate limit exceeded.")
-                raise # need to re-raise because langchain expects this
+            result = None
+            backoff_seconds = 60 # as per github docs, we should wait at least 60s before retrying after rate limit
+
+            while result is None:
+                try:
+                    result = super().invoke(input, config=config, stop=stop, **kwargs)
+                except openai.RateLimitError as e:
+                    retry_after_header = e.response.headers.get("Retry-After")
+                    ratelimit_reset_header = e.response.headers.get("X-Ratelimit-Reset")
+                    if retry_after_header is not None:
+                        backoff_seconds = int(retry_after_header)
+                    elif ratelimit_reset_header is not None:
+                        backoff_seconds = max(int(ratelimit_reset_header) - time.time(), backoff_seconds)
+
+                    logger.debug("Rate limit error details: %s, headers: %s", e, e.response.headers)
+
+                    logger.warning("LLM rate limit exceeded. Trying again after %s seconds...", backoff_seconds)
+                    time.sleep(backoff_seconds)
+                    backoff_seconds = min(backoff_seconds * 2, 600) # exponential backoff up to 10 minutes
+            return result
 
 
 class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
