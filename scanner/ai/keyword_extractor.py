@@ -8,10 +8,12 @@ from typing import Any
 import logging
 import queue
 import time
+from peewee import fn, Case
 from pubsub import pub
 from markdownify import markdownify
 from scanner.ai.llm import get_chat_model
-from scanner.db.models import Endpoint
+from scanner.db.models import Endpoint, Service
+from scanner.db import DBConnectionMixin
 
 PROMPT_TEMPLATE = """
 You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
@@ -23,7 +25,7 @@ Your first line of output must contain the number of identified keywords/links a
 
 logger = logging.getLogger('scanner.keyword_extractor')
 
-class KeywordExtractor(Thread):
+class KeywordExtractor(DBConnectionMixin, Thread):
     """
     KeywordExtractor module. Uses LLM to extract websearch-relevant keywords from endpoint page sources.
     Runs until abort message is received.
@@ -31,28 +33,56 @@ class KeywordExtractor(Thread):
     def __init__(self):
         super().__init__()
         self.termination_event = Event()
-        self.queues: dict[Any, queue.Queue] = {} # one queue per service for balancing
-        self.new_queues = [] # cannot modify dict while iterating, store new queues here
+        self.webenum_done_event = Event()
         pub.subscribe(self._on_abort, 'abort')
-        pub.subscribe(self._on_endpoint_created, 'Endpoint.created')
+        pub.subscribe(self.webenum_done_event.set, 'webenum.done')
 
     def run(self):
         while not self.termination_event.is_set():
-            # add any new queues
-            for service_pk, q in self.new_queues:
-                self.queues[service_pk] = q
+            unfinished_services = (
+                Service
+                .select()
+                .where(
+                    (~Service.enum_in_progress)
+                    & Service._credentials.is_null()
+                    & Service.pk.in_(
+                        Endpoint
+                        .select(Endpoint.service_id)
+                        .group_by(Endpoint.service_id)
+                        .having(
+                            fn.COUNT(
+                                Case(
+                                    None,
+                                    ((Endpoint._keywords.is_null(), 1),),
+                                    None
+                                )
+                            ) > 0
+                        )
+                    )
+                )
+            )
 
-            for service, q in self.queues.items():
-                try:
-                    endpoint = q.get_nowait()
-                    if endpoint:
-                        self.extract_keywords(endpoint)
-                except queue.Empty:
-                    continue
-                except queue.ShutDown:
-                    self.queues.pop(service)
-            time.sleep(0.5)
+            if len(unfinished_services) == 0 and self.webenum_done_event.is_set():
+                break
+
+            for service in unfinished_services:
+                if self.termination_event.is_set():
+                    break
+                self.extract_keywords_for_service(service)
+
+            time.sleep(2)
+
+        pub.sendMessage('keyword_extractor.done')
         logger.info("KeywordExtractor exited")
+
+    def extract_keywords_for_service(self, service: Service):
+        """
+        Extract keywords for all endpoints of the given service that do not yet have keywords.
+        """
+        for endpoint in service.endpoints:
+            if self.termination_event.is_set():
+                return
+            self.extract_keywords(endpoint)
 
     def extract_keywords(self, endpoint: Endpoint):
         """
@@ -75,14 +105,3 @@ class KeywordExtractor(Thread):
 
     def _on_abort(self):
         self.termination_event.set()
-        for q in self.queues.values():
-            q.shutdown(immediate=True)
-
-    def _on_endpoint_created(self, record: Endpoint):
-        q = self.queues.get(record.service.pk)
-        if q is not None:
-            q.put(record)
-        else:
-            q = queue.Queue()
-            q.put(record)
-            self.new_queues.append((record.service.pk, q))

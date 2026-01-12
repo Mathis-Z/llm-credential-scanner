@@ -12,10 +12,11 @@ from pubsub import pub
 import requests
 
 from scanner.db.models import Service
+from scanner.db import DBConnectionMixin
 
 logger = logging.getLogger('scanner.netscan')
 
-class NetScanner(threading.Thread):
+class NetScanner(DBConnectionMixin, threading.Thread):
     def __init__(self, subnets_or_ips: list[str], ports: str|None = None):
         super().__init__()
         self.subnets_or_ips = subnets_or_ips

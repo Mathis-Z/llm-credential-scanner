@@ -14,6 +14,7 @@ from peewee import fn, Case
 from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import search_web, fetch_url
 from scanner.db.models import Service, Endpoint
+from scanner.db import DBConnectionMixin
 
 
 PROMPT_TEMPLATE = """
@@ -35,11 +36,13 @@ Submit the credentials using the submit_credentials tool once you find them.
 
 logger = logging.getLogger('scanner.cred_searcher')
 
-class CredSearcher(Thread):
+class CredSearcher(DBConnectionMixin, Thread):
     def __init__(self):
         super().__init__()
         self.termination_event = Event()
+        self.keyword_extractor_done_event = Event()
         pub.subscribe(self._on_abort, 'abort')
+        pub.subscribe(self.keyword_extractor_done_event.set, 'keyword_extractor.done')
 
     def run(self):
         while not self.termination_event.is_set():
@@ -79,10 +82,15 @@ class CredSearcher(Thread):
                 )
             )
 
+            if len(ready_services) == 0 and self.keyword_extractor_done_event.is_set():
+                break
+
             for service in ready_services:
                 self.search_service(service)
 
             time.sleep(2)
+
+        pub.sendMessage('cred_searcher.done')
         logger.info("CredSearcher exited")
 
     def _on_abort(self):
