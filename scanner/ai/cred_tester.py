@@ -3,6 +3,7 @@ CredSearcher module. Takes keywords from the KeywordExtractor module and perform
 to find potential default credentials.
 """
 
+import time
 import urllib.parse
 from threading import Thread, Event
 import logging
@@ -14,6 +15,8 @@ from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
 from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import make_credential_testing_tools
 from scanner.db.models import Endpoint
+from scanner.db import DBConnectionMixin
+from bs4 import BeautifulSoup
 
 
 PROMPT_TEMPLATE = """
@@ -27,7 +30,8 @@ Follow these steps to test the credentials:
 2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
 3. Submit the form using the click_button tool. Then terminate without further output.
 
-You may use tools multiple times. Do not give up quickly.
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
 The login page has the following HTML content:
 <<<PAGE CONTENT>>>
 %s
@@ -36,11 +40,13 @@ The login page has the following HTML content:
 
 logger = logging.getLogger('scanner.cred_tester')
 
-class CredTester(Thread):
+class CredTester(DBConnectionMixin, Thread):
     def __init__(self):
         super().__init__()
         self.termination_event = Event()
+        self.cred_searcher_done_event = Event()
         pub.subscribe(self._on_abort, 'abort')
+        pub.subscribe(self.cred_searcher_done_event.set, 'cred_searcher.done')
 
     def run(self):
         while not self.termination_event.is_set():
@@ -48,12 +54,18 @@ class CredTester(Thread):
                 Endpoint.select()
                 .where((Endpoint.is_login == True) & (Endpoint.working_credentials == ''))
             )
+            panels_with_untested_creds = [panel for panel in unresolved_login_panels if len(panel.untested_credentials()) > 0]
 
-            for login_panel in unresolved_login_panels:
+            if len(panels_with_untested_creds) == 0 and self.cred_searcher_done_event.is_set():
+                break
+
+            for login_panel in panels_with_untested_creds:
                 for (username, password) in login_panel.untested_credentials():
                     self.test_credentials(login_panel, username, password)
 
             self.termination_event.wait(3)
+
+        pub.sendMessage('cred_tester.done')
         logger.info("CredTester exited")
 
     def _on_abort(self):
@@ -71,8 +83,12 @@ class CredTester(Thread):
         driver = webdriver.Firefox(options=options)
         driver.get(endpoint.url())
 
+        # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        for script in soup.find_all("script"):
+            script.decompose()
         # store page info to compare with after tool calls
-        before_page_source = driver.page_source
+        before_page_source = str(soup)
         before_path = urllib.parse.urlparse(driver.current_url).path
 
         full_prompt = PROMPT_TEMPLATE % (endpoint.url(), username, password, before_page_source)
@@ -100,13 +116,24 @@ class CredTester(Thread):
                     else:
                         logger.debug("AI: %s", latest_message.content)
         finally:
-            after_page_source = driver.page_source
+            time.sleep(3) # wait for potential redirects
+            # to compare with before_page_source need to remove script tags again
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            for script in soup.find_all("script"):
+                script.decompose()
+            after_page_source = str(soup)
             after_path = urllib.parse.urlparse(driver.current_url).path
             driver.quit()
 
         login_successful = (
             (before_path != after_path) or
-            (simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source)) > 10)
+            (simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source)) > 8)
+        )
+        logger.debug("Login %s: before_path=%s after_path=%s simhash_distance=%s",
+                     "successful" if login_successful else "failed",
+                     before_path,
+                     after_path,
+                     simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source))
         )
 
         creds_str = f"{username}:{password}"

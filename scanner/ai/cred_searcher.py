@@ -4,7 +4,7 @@ to find potential default credentials.
 """
 
 import time
-from threading import Thread
+from threading import Thread, Event
 import logging
 from pubsub import pub
 from langchain.agents import create_agent
@@ -14,6 +14,7 @@ from peewee import fn, Case
 from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import search_web, fetch_url
 from scanner.db.models import Service, Endpoint
+from scanner.db import DBConnectionMixin
 
 
 PROMPT_TEMPLATE = """
@@ -35,14 +36,16 @@ Submit the credentials using the submit_credentials tool once you find them.
 
 logger = logging.getLogger('scanner.cred_searcher')
 
-class CredSearcher(Thread):
+class CredSearcher(DBConnectionMixin, Thread):
     def __init__(self):
         super().__init__()
-        self.terminate = False
+        self.termination_event = Event()
+        self.keyword_extractor_done_event = Event()
         pub.subscribe(self._on_abort, 'abort')
+        pub.subscribe(self.keyword_extractor_done_event.set, 'keyword_extractor.done')
 
     def run(self):
-        while not self.terminate:
+        while not self.termination_event.is_set():
             # Only select services for which *all* endpoints have non-NULL keywords.
             # i.e. there must be at least one endpoint with keywords, and zero endpoints with NULL keywords.
             # LLM-generated tbh
@@ -79,14 +82,19 @@ class CredSearcher(Thread):
                 )
             )
 
+            if len(ready_services) == 0 and self.keyword_extractor_done_event.is_set():
+                break
+
             for service in ready_services:
                 self.search_service(service)
 
             time.sleep(2)
+
+        pub.sendMessage('cred_searcher.done')
         logger.info("CredSearcher exited")
 
     def _on_abort(self):
-        self.terminate = True
+        self.termination_event.set()
 
     def search_service(self, service: Service):
         """Search default credentials for a service using its keywords"""

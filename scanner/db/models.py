@@ -30,7 +30,8 @@ class Service(BaseModel):
 
     @property
     def credentials(self):
-        return json.loads(self._credentials) if self._credentials else None
+        # must convert to tuple to make them hashable
+        return [tuple(cred_pair) for cred_pair in json.loads(self._credentials)] if self._credentials else None
 
     @credentials.setter
     def credentials(self, new_value):

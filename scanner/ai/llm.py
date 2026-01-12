@@ -6,7 +6,6 @@ import threading
 from typing import Any
 import logging
 import openai
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.language_models.base import LanguageModelInput
@@ -18,8 +17,11 @@ settings = Settings()
 
 logger = logging.getLogger('scanner.llm')
 
-class WrappedInvokeMixin(BaseChatModel):
+API_SERIALIZATION_LOCK = threading.Lock() # prevent concurrent invoke() calls
+
+class WrappedInvokeMixin:
     """Mixin to wrap the invoke method with custom error handling for rate limiting."""
+
     def invoke(
         self,
         input: LanguageModelInput,
@@ -28,53 +30,59 @@ class WrappedInvokeMixin(BaseChatModel):
         stop: list[str] | None = None,
         **kwargs: Any,
     ) -> AIMessage:
-        try:
-            return super().invoke(input, config=config, stop=stop, **kwargs)
-        except openai.RateLimitError:
-            logger.warning("LLM rate limit exceeded")
-            raise # must re-raise here because langchain asserts this never returns None
+        """
+        Invoke the LLM and handle rate limiting by serializing calls.
+        """
+        with API_SERIALIZATION_LOCK:
+            result = None
+            backoff_seconds = 60 # as per github docs, we should wait at least 60s before retrying after rate limit
 
-    def invoke_with_backoff(
+            while result is None:
+                try:
+                    # disable parallel tool calls to avoid issues with wrong order
+                    kwargs['parallel_tool_calls'] = False
+                    result = super().invoke(input, config=config, stop=stop, **kwargs)
+                except openai.RateLimitError as e:
+                    retry_after_header = e.response.headers.get("retry-after", e.response.headers.get("x-ratelimit-timeremaining"))
+                    ratelimit_reset_header = e.response.headers.get("x-ratelimit-reset")
+                    if retry_after_header is not None:
+                        backoff_seconds = int(retry_after_header)
+                    elif ratelimit_reset_header is not None:
+                        backoff_seconds = max(int(ratelimit_reset_header) - time.time(), backoff_seconds)
+                    if backoff_seconds > time.time():
+                        backoff_seconds = int(backoff_seconds - time.time()) # convert to seconds from epoch to relative seconds
+
+                    logger.debug("Rate limit error details: %s, headers: %s", e, e.response.headers)
+
+                    logger.warning("LLM rate limit exceeded. Trying again after %s seconds...", backoff_seconds)
+                    time.sleep(backoff_seconds)
+                    backoff_seconds = min(backoff_seconds * 2, 600) # exponential backoff up to 10 minutes
+            return result
+
+    def bind_tools(
         self,
-        input: LanguageModelInput,
-        config: RunnableConfig | None = None,
+        tools,
         *,
-        stop: list[str] | None = None,
-        abort_signal: threading.Event = threading.Event(),
+        tool_choice: dict | str | bool | None = None,
+        strict: bool | None = None,
+        parallel_tool_calls: bool | None = None,
+        response_format = None,
         **kwargs: Any,
-    ) -> AIMessage:
-        """
-        Invoke the LLM with exponential backoff on rate limit errors.
-        abort_signal can be set to abort the operation.
-        """
-        backoff_seconds = 1.0
-        while not abort_signal.is_set():
-            try:
-                return super().invoke(input, config=config, stop=stop, **kwargs)
-            except openai.RateLimitError as e:
-                logger.warning("LLM rate limit exceeded. Waiting %.1f seconds before retrying. Error msg: %s", backoff_seconds, e.message)
-                abortable_sleep(backoff_seconds, abort_signal)
-                backoff_seconds = min(backoff_seconds * 2, 120.0)
+    ):
+        kwargs.pop("parallel_tool_calls", None)  # remove if present
+        return super().bind_tools(
+            tools,
+            tool_choice=tool_choice,
+            strict=strict,
+            parallel_tool_calls=False,  # disable parallel tool calls to avoid issues with wrong order
+            response_format=response_format,
+            **kwargs,
+        )
 
-
-def abortable_sleep(
-    total_seconds: float,
-    abort_event: threading.Event,
-    check_interval: float = 0.5,
-):
-    elapsed = 0.0
-    while elapsed < total_seconds:
-        if abort_event.is_set():
-            return
-        sleep_time = min(check_interval, total_seconds - elapsed)
-        time.sleep(sleep_time)
-        elapsed += sleep_time
-
-
-class WrappedChatOllama(ChatOllama, WrappedInvokeMixin):
+class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
     """ChatOllama with WrappedInvokeMixin to handle rate limiting."""
 
-class WrappedChatOpenAI(ChatOpenAI, WrappedInvokeMixin):
+class WrappedChatOpenAI(WrappedInvokeMixin, ChatOpenAI):
     """ChatOpenAI with WrappedInvokeMixin to handle rate limiting."""
 
 
