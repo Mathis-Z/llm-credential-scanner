@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: joplin
+      POSTGRES_USER: joplin
+      POSTGRES_PASSWORD: joplin
+    volumes:
+      - joplin-db:/var/lib/postgresql/data
+
+  joplin:
+    image: joplin/server:latest
+    ports:
+      - "22300:22300"
+    environment:
+      DB_CLIENT: pg
+      POSTGRES_PASSWORD: joplin
+      POSTGRES_DATABASE: joplin
+      POSTGRES_USER: joplin
+      POSTGRES_HOST: db
+    depends_on:
+      - db
+
+volumes:
+  joplin-db:

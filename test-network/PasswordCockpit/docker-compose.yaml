@@ -1,0 +1,65 @@
+version: "3.5"
+services:
+    passwordcockpit:
+        image: passwordcockpit/passwordcockpit:1.4.0
+        container_name: passwordcockpit
+        ports:
+            # Use with PASSWORDCOCKPIT_SSL: disable
+            - "8080:8080"
+            # Use with PASSWORDCOCKPIT_SSL: enable
+            #- "4343:4343"
+        volumes:
+            - ./volumes/upload:/var/www/html/upload
+            # Overwrite self-signed SSL certificate file
+            #- ./volumes/ssl_certificate/passwordcockpit.crt:/etc/ssl/certs/passwordcockpit.crt:ro
+            #- ./volumes/ssl_certificate/passwordcockpit.key:/etc/ssl/certs/passwordcockpit.key:ro
+            # User and group same as host when use APACHE_RUN_USER and APACHE_RUN_GROUP
+            #- /etc/group:/etc/group:ro
+            #- /etc/passwd:/etc/passwd:ro
+            #- /etc/shadow:/etc/shadow:ro
+        environment:
+            PASSWORDCOCKPIT_DATABASE_USERNAME: passwordcockpit_db_usr
+            PASSWORDCOCKPIT_DATABASE_PASSWORD: password
+            PASSWORDCOCKPIT_DATABASE_HOSTNAME: mariadb
+            PASSWORDCOCKPIT_DATABASE_DATABASE: passwordcockpit
+            PASSWORDCOCKPIT_BLOCK_CIPHER_KEY: supersecretkey
+            PASSWORDCOCKPIT_AUTHENTICATION_SECRET_KEY: authenticationsecretkey
+            # Use with PASSWORDCOCKPIT_SSL: disable
+            PASSWORDCOCKPIT_BASEHOST: http://localhost:8080
+            # Use with PASSWORDCOCKPIT_SSL: enable
+            #PASSWORDCOCKPIT_BASEHOST: https://localhost:4343
+            PASSWORDCOCKPIT_AUTHENTICATION_TYPE: password
+            PASSWORDCOCKPIT_SWAGGER: enable
+            PASSWORDCOCKPIT_SSL: enable
+            #PASSWORDCOCKPIT_ADMIN_PASSWORD: Password123!
+            #APACHE_RUN_USER: 1000
+            #APACHE_RUN_GROUP: 1000
+            #PASSWORDCOCKPIT_LDAP_USER_ATTR_UNIQUE_IDENTIFIER: ''
+            #PASSWORDCOCKPIT_LDAP_USER_ATTR_NAME: ''
+            #PASSWORDCOCKPIT_LDAP_USER_ATTR_SURNAME: ''
+            #PASSWORDCOCKPIT_LDAP_USER_ATTR_MAIL: ''
+            #PASSWORDCOCKPIT_LDAP_USER_ATTR_PHONE: ''
+            #PASSWORDCOCKPIT_LDAP_HOST: ''
+            #PASSWORDCOCKPIT_LDAP_PORT: 389
+            #PASSWORDCOCKPIT_LDAP_USERNAME: ''
+            #PASSWORDCOCKPIT_LDAP_PASSWORD: ''
+            #PASSWORDCOCKPIT_LDAP_BASEDN: ''
+            #PASSWORDCOCKPIT_LDAP_ACCOUNTFILTERFORMAT: ''
+            #PASSWORDCOCKPIT_LDAP_BINDREQUIRESDN: 'true'
+            PASSWORDCOCKPIT_UPLOAD_ACCEPTED_MIMETYPES: 'pdf,zip'
+            #PASSWORDCOCKPIT_DEBUG: true
+        depends_on:
+            - mariadb
+    mariadb:
+        image: mariadb:10
+        #container_name: mariadb
+        ports:
+            - '3306:3306'
+        volumes:
+            - ./volumes/mariadb:/var/lib/mysql
+        environment:
+            - MARIADB_ROOT_PASSWORD=root_password
+            - MARIADB_USER=passwordcockpit_db_usr
+            - MARIADB_PASSWORD=password
+            - MARIADB_DATABASE=passwordcockpit
+        command: --character-set-server=utf8 --collation-server=utf8_unicode_ci

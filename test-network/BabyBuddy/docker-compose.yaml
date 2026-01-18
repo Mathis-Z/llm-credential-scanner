@@ -1,0 +1,10 @@
+version: "3.8"
+services:
+  babybuddy:
+    image: lscr.io/linuxserver/babybuddy:latest
+    container_name: babybuddy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./babybuddy-config:/config
+    restart: unless-stopped

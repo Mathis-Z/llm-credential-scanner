@@ -1,0 +1,16 @@
+---
+version: "2.1"
+services:
+  pyload:
+    image: lscr.io/linuxserver/pyload
+    container_name: pyload
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - ./config:/config
+      - ./downloads:/downloads
+    ports:
+      - 8000:8000
+    restart: unless-stopped

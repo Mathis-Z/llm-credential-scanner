@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  rainloop:
+    image: wernerfred/docker-rainloop:latest
+    container_name: docker-rainloop
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      - /opt/docker-rainloop/data:/rainloop/data

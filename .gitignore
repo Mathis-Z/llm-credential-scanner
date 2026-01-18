@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Include Zabbix environment file
+!test-network/Zabbix/.env

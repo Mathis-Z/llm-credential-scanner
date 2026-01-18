@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  clipcascade:
+    image: sathvikrao/clipcascade:latest
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./cc_users:/database
