@@ -1,0 +1,3397 @@
+[2026-01-12 12:11:39,443][scanner.main][DEBUG] Starting scanner
+[2026-01-12 12:11:39,444][scanner.netscan][DEBUG] Scanning host 127.0.0.1
+[2026-01-12 12:11:39,447][scanner.main][INFO] All modules started.
+[2026-01-12 12:11:39,472][scanner.netscan][DEBUG] Testing 127.0.0.1:80
+[2026-01-12 12:11:39,483][scanner.netscan][DEBUG] Failed to connect to 127.0.0.1:80 - HTTPSConnectionPool(host='127.0.0.1', port=80): Max retries exceeded with url: / (Caused by SSLError(SSLError(1, '[SSL] record layer failure (_ssl.c:1032)')))
+[2026-01-12 12:11:39,483][scanner.netscan][INFO] Detected HTTP service at 127.0.0.1:80 (HTTPS: False)
+[2026-01-12 12:11:39,506][scanner.netscan][DEBUG] Discovered HTTP(S) services on 127.0.0.1: ['http://127.0.0.1:80']
+[2026-01-12 12:11:39,507][scanner.netscan][INFO] NetScanner done
+[2026-01-12 12:11:39,542][scanner.webenum][DEBUG] WebEnumWorker tested 1 paths on http://127.0.0.1:80
+[2026-01-12 12:11:39,580][scanner.webenum][INFO] Found directory with password input: http://127.0.0.1:80/
+[2026-01-12 12:11:42,449][scanner.cred_tester][DEBUG] Testing credentials admin:admin on http://127.0.0.1:80/
+[2026-01-12 12:11:44,509][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:11:44,510][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "admin"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/3c8c8b3a1c6b3ce2aa532d167f918f5d056abec5.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="6a2746361a93be673e606c98f3d021c2e3cd26655bceb6bf874d4ccf6728dc2a"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> User Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<legend>127.0.0.1nnn - mail UI</legend><hr/>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Email address" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="mt-2 text-muted" style="font-size: 0.9rem;">
+<a href="/reset-password">&gt; Forgot Password?</a>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="6a2746361a93be673e606c98f3d021c2e3cd26655bceb6bf874d4ccf6728dc2a"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100 mt-2" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/admin">Log in as admin</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:11:44,550][scanner.webenum][DEBUG] WebEnumWorker tested 375 paths on http://127.0.0.1:80
+[2026-01-12 12:11:46,076][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:11:46,076][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'admin'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:11:46,078][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:11:46,081][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:11:46,601][scanner.webenum][INFO] Found directory with password input: http://127.0.0.1:80/admin
+[2026-01-12 12:11:48,080][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:11:48,225][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:11:48,225][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:11:49,561][scanner.webenum][DEBUG] WebEnumWorker tested 771 paths on http://127.0.0.1:80
+[2026-01-12 12:11:49,980][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:11:49,980][scanner.cred_tester][DEBUG] AI: The tools have been used successfully to test the default credentials on the web application. The login attempt with username "admin" and password "admin" has been submitted. No further actions are required.
+[2026-01-12 12:11:53,705][scanner.cred_tester][DEBUG] Login failed: before_path=/ after_path=/ simhash_distance=4
+[2026-01-12 12:11:53,705][scanner.cred_tester][INFO] Credentials admin:admin do not work on http://127.0.0.1:80/
+[2026-01-12 12:11:54,568][scanner.webenum][DEBUG] WebEnumWorker tested 1168 paths on http://127.0.0.1:80
+[2026-01-12 12:11:56,709][scanner.cred_tester][DEBUG] Testing credentials admin:admin on http://127.0.0.1:80/admin/
+[2026-01-12 12:11:58,645][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:11:58,645][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/admin/".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "admin"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/630ee90d9270fbbf46a945d183c3d406da74ab20.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="d8fdd640e7f45b0428fe7e8174cc81ab507bd0e29a6ff05554d49c05d180c78b"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> Administrator Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Username" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="d8fdd640e7f45b0428fe7e8174cc81ab507bd0e29a6ff05554d49c05d180c78b"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/">Log in as user</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:11:59,577][scanner.webenum][DEBUG] WebEnumWorker tested 1539 paths on http://127.0.0.1:80
+[2026-01-12 12:12:01,082][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:01,082][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'admin'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:12:01,084][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:12:01,086][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:12:03,087][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:12:03,256][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:03,256][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:12:04,580][scanner.webenum][DEBUG] WebEnumWorker tested 1935 paths on http://127.0.0.1:80
+[2026-01-12 12:12:04,930][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:04,930][scanner.cred_tester][DEBUG] AI: The credentials have been submitted. No further actions are required.
+[2026-01-12 12:12:07,924][scanner.webenum][INFO] Found directory with password input: http://127.0.0.1:80/index
+[2026-01-12 12:12:08,100][scanner.webenum][INFO] Found directory with password input: http://127.0.0.1:80/index.php
+[2026-01-12 12:12:08,719][scanner.cred_tester][DEBUG] Login failed: before_path=/admin/ after_path=/admin/ simhash_distance=1
+[2026-01-12 12:12:08,719][scanner.cred_tester][INFO] Credentials admin:admin do not work on http://127.0.0.1:80/admin/
+[2026-01-12 12:12:09,589][scanner.webenum][DEBUG] WebEnumWorker tested 2323 paths on http://127.0.0.1:80
+[2026-01-12 12:12:11,724][scanner.cred_tester][DEBUG] Testing credentials admin:admin on http://127.0.0.1:80/index
+[2026-01-12 12:12:13,678][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:13,678][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/index".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "admin"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/34260ff0091bc6bb69163f8958b6959e8b27c2a8.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="54612f1c6ab9506f4b81859de99194091731a7f666389f95b77a0e349cfb2f60"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> User Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<legend>127.0.0.1nnn - mail UI</legend><hr/>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Email address" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="mt-2 text-muted" style="font-size: 0.9rem;">
+<a href="/reset-password">&gt; Forgot Password?</a>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="54612f1c6ab9506f4b81859de99194091731a7f666389f95b77a0e349cfb2f60"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100 mt-2" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/admin">Log in as admin</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:12:14,602][scanner.webenum][DEBUG] WebEnumWorker tested 2694 paths on http://127.0.0.1:80
+[2026-01-12 12:12:15,970][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:15,970][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'admin'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:12:15,971][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:12:15,973][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:12:17,972][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:12:18,140][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:18,140][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:12:19,611][scanner.webenum][DEBUG] WebEnumWorker tested 3089 paths on http://127.0.0.1:80
+[2026-01-12 12:12:19,881][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:19,881][scanner.cred_tester][DEBUG] AI: The default credentials "admin" for both username and password have been tested on the login form at "http://127.0.0.1:80/index". The form was successfully submitted. No further action is required.
+[2026-01-12 12:12:23,521][scanner.cred_tester][DEBUG] Login failed: before_path=/index after_path=/index simhash_distance=1
+[2026-01-12 12:12:23,521][scanner.cred_tester][INFO] Credentials admin:admin do not work on http://127.0.0.1:80/index
+[2026-01-12 12:12:23,524][scanner.cred_tester][DEBUG] Testing credentials admin:admin on http://127.0.0.1:80/index.php
+[2026-01-12 12:12:24,620][scanner.webenum][DEBUG] WebEnumWorker tested 3489 paths on http://127.0.0.1:80
+[2026-01-12 12:12:25,488][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:25,489][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/index.php".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "admin"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/34260ff0091bc6bb69163f8958b6959e8b27c2a8.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="171e5877f603692f9ee5a34016cd5fe0dfbf5cb0bfdb495b561bb5e56d9f5b31"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> User Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<legend>127.0.0.1nnn - mail UI</legend><hr/>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Email address" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="mt-2 text-muted" style="font-size: 0.9rem;">
+<a href="/reset-password">&gt; Forgot Password?</a>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="171e5877f603692f9ee5a34016cd5fe0dfbf5cb0bfdb495b561bb5e56d9f5b31"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100 mt-2" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/admin">Log in as admin</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:12:27,278][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:27,278][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'admin'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:12:27,281][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:12:27,284][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:12:29,283][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:12:29,426][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:29,426][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:12:29,631][scanner.webenum][DEBUG] WebEnumWorker tested 3864 paths on http://127.0.0.1:80
+[2026-01-12 12:12:30,941][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:30,941][scanner.cred_tester][DEBUG] AI: The default credentials (admin/admin) were tested on the login form at http://127.0.0.1:80/index.php. The form fields were populated and submitted successfully. No further action is required.
+[2026-01-12 12:12:34,640][scanner.webenum][DEBUG] WebEnumWorker tested 4261 paths on http://127.0.0.1:80
+[2026-01-12 12:12:34,701][scanner.cred_tester][DEBUG] Login failed: before_path=/index.php after_path=/index.php simhash_distance=5
+[2026-01-12 12:12:34,701][scanner.cred_tester][INFO] Credentials admin:admin do not work on http://127.0.0.1:80/index.php
+[2026-01-12 12:12:39,649][scanner.webenum][DEBUG] WebEnumWorker tested 4663 paths on http://127.0.0.1:80
+[2026-01-12 12:12:40,729][scanner.webenum][INFO] WebEnumWorker finished testing 4751 paths on http://127.0.0.1:80
+[2026-01-12 12:12:40,732][scanner.webenum][INFO] WebEnumerator done.
+[2026-01-12 12:12:41,513][scanner.keyword_extractor][DEBUG] Extracting keywords for http://127.0.0.1:80/: 
+
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+<<<BEGIN CONTENT>>>
+127.0.0.1nnn - mail UI
+
+
+
+User Login
+
+* [Български (Bulgarian)](?lang=bg-bg)
+* [Čeština (Czech)](?lang=cs-cz)
+* [Dansk (Danish)](?lang=da-dk)
+* [Deutsch (German)](?lang=de-de)
+* [English](?lang=en-gb)
+* [Español (Spanish)](?lang=es-es)
+* [Suomi (Finish)](?lang=fi-fi)
+* [Français (French)](?lang=fr-fr)
+* [Ελληνικά (Greek)](?lang=gr-gr)
+* [Magyar (Hungarian)](?lang=hu-hu)
+* [Italiano (Italian)](?lang=it-it)
+* [日本語 (Japanese)](?lang=ja-jp)
+* [한국어 (Korean)](?lang=ko-kr)
+* [latviešu (Latvian)](?lang=lv-lv)
+* [Lietuvių (Lithuanian)](?lang=lt-lt)
+* [Norsk (Norwegian)](?lang=nb-no)
+* [Nederlands (Dutch)](?lang=nl-nl)
+* [Język Polski (Polish)](?lang=pl-pl)
+* [Português brasileiro (Brazilian Portuguese)](?lang=pt-br)
+* [Português (Portuguese)](?lang=pt-pt)
+* [Română (Romanian)](?lang=ro-ro)
+* [Pусский (Russian)](?lang=ru-ru)
+* [Slovenščina (Slovenian)](?lang=si-si)
+* [Slovenčina (Slovak)](?lang=sk-sk)
+* [Svenska (Swedish)](?lang=sv-se)
+* [Türkçe (Turkish)](?lang=tr-tr)
+* [Українська (Ukrainian)](?lang=uk-ua)
+* [Tiếng Việt (Vietnamese)](?lang=vi-vn)
+* [简体中文 (Simplified Chinese)](?lang=zh-cn)
+* [繁體中文 (Traditional Chinese)](?lang=zh-tw)
+
+![mailcow](/img/cow_mailcow.svg)
+![mailcow-logo-dark](/img/cow_mailcow.svg)
+
+127.0.0.1nnn - mail UI
+
+---
+
+
+
+Username
+
+Password
+
+[> Forgot Password?](/reset-password)
+
+Login
+
+**or login with**
+
+[FIDO2/WebAuthn Login](#)
+
+Not the correct login?  
+[Log in as admin](/admin) | [Log in as domain admin](/domainadmin)
+
+### Confirm deletion
+
+Please confirm your changes to the following object id
+
+
+
+---
+
+Delete now
+Cancel
+
+#####
+
+Loading...
+<<<END CONTENT>>>
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+[2026-01-12 12:12:42,617][scanner.keyword_extractor][INFO] Extracted keywords for http://127.0.0.1:80/: ['mailcow', 'mailcow-logo-dark', 'admin']
+[2026-01-12 12:12:42,631][scanner.keyword_extractor][DEBUG] Extracting keywords for http://127.0.0.1:80/admin/: 
+
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+<<<BEGIN CONTENT>>>
+127.0.0.1nnn - mail UI
+
+
+
+Administrator Login
+
+* [Български (Bulgarian)](?lang=bg-bg)
+* [Čeština (Czech)](?lang=cs-cz)
+* [Dansk (Danish)](?lang=da-dk)
+* [Deutsch (German)](?lang=de-de)
+* [English](?lang=en-gb)
+* [Español (Spanish)](?lang=es-es)
+* [Suomi (Finish)](?lang=fi-fi)
+* [Français (French)](?lang=fr-fr)
+* [Ελληνικά (Greek)](?lang=gr-gr)
+* [Magyar (Hungarian)](?lang=hu-hu)
+* [Italiano (Italian)](?lang=it-it)
+* [日本語 (Japanese)](?lang=ja-jp)
+* [한국어 (Korean)](?lang=ko-kr)
+* [latviešu (Latvian)](?lang=lv-lv)
+* [Lietuvių (Lithuanian)](?lang=lt-lt)
+* [Norsk (Norwegian)](?lang=nb-no)
+* [Nederlands (Dutch)](?lang=nl-nl)
+* [Język Polski (Polish)](?lang=pl-pl)
+* [Português brasileiro (Brazilian Portuguese)](?lang=pt-br)
+* [Português (Portuguese)](?lang=pt-pt)
+* [Română (Romanian)](?lang=ro-ro)
+* [Pусский (Russian)](?lang=ru-ru)
+* [Slovenščina (Slovenian)](?lang=si-si)
+* [Slovenčina (Slovak)](?lang=sk-sk)
+* [Svenska (Swedish)](?lang=sv-se)
+* [Türkçe (Turkish)](?lang=tr-tr)
+* [Українська (Ukrainian)](?lang=uk-ua)
+* [Tiếng Việt (Vietnamese)](?lang=vi-vn)
+* [简体中文 (Simplified Chinese)](?lang=zh-cn)
+* [繁體中文 (Traditional Chinese)](?lang=zh-tw)
+
+![mailcow](/img/cow_mailcow.svg)
+![mailcow-logo-dark](/img/cow_mailcow.svg)
+
+Username
+
+Password
+
+Login
+
+**or login with**
+
+[FIDO2/WebAuthn Login](#)
+
+Not the correct login?  
+[Log in as user](/) | [Log in as domain admin](/domainadmin)
+
+### Confirm deletion
+
+Please confirm your changes to the following object id
+
+
+
+---
+
+Delete now
+Cancel
+
+#####
+
+Loading...
+<<<END CONTENT>>>
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+[2026-01-12 12:12:44,357][scanner.keyword_extractor][INFO] Extracted keywords for http://127.0.0.1:80/admin/: ['mailcow', 'mailcow documentation', 'mailcow github']
+[2026-01-12 12:12:44,359][scanner.keyword_extractor][DEBUG] Extracting keywords for http://127.0.0.1:80/api/: 
+
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+<<<BEGIN CONTENT>>>
+Swagger UI
+<<<END CONTENT>>>
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+[2026-01-12 12:12:45,687][scanner.keyword_extractor][INFO] Extracted keywords for http://127.0.0.1:80/api/: ['Swagger UI']
+[2026-01-12 12:12:45,699][scanner.keyword_extractor][DEBUG] Extracting keywords for http://127.0.0.1:80/index: 
+
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+<<<BEGIN CONTENT>>>
+127.0.0.1nnn - mail UI
+
+
+
+User Login
+
+* [Български (Bulgarian)](?lang=bg-bg)
+* [Čeština (Czech)](?lang=cs-cz)
+* [Dansk (Danish)](?lang=da-dk)
+* [Deutsch (German)](?lang=de-de)
+* [English](?lang=en-gb)
+* [Español (Spanish)](?lang=es-es)
+* [Suomi (Finish)](?lang=fi-fi)
+* [Français (French)](?lang=fr-fr)
+* [Ελληνικά (Greek)](?lang=gr-gr)
+* [Magyar (Hungarian)](?lang=hu-hu)
+* [Italiano (Italian)](?lang=it-it)
+* [日本語 (Japanese)](?lang=ja-jp)
+* [한국어 (Korean)](?lang=ko-kr)
+* [latviešu (Latvian)](?lang=lv-lv)
+* [Lietuvių (Lithuanian)](?lang=lt-lt)
+* [Norsk (Norwegian)](?lang=nb-no)
+* [Nederlands (Dutch)](?lang=nl-nl)
+* [Język Polski (Polish)](?lang=pl-pl)
+* [Português brasileiro (Brazilian Portuguese)](?lang=pt-br)
+* [Português (Portuguese)](?lang=pt-pt)
+* [Română (Romanian)](?lang=ro-ro)
+* [Pусский (Russian)](?lang=ru-ru)
+* [Slovenščina (Slovenian)](?lang=si-si)
+* [Slovenčina (Slovak)](?lang=sk-sk)
+* [Svenska (Swedish)](?lang=sv-se)
+* [Türkçe (Turkish)](?lang=tr-tr)
+* [Українська (Ukrainian)](?lang=uk-ua)
+* [Tiếng Việt (Vietnamese)](?lang=vi-vn)
+* [简体中文 (Simplified Chinese)](?lang=zh-cn)
+* [繁體中文 (Traditional Chinese)](?lang=zh-tw)
+
+![mailcow](/img/cow_mailcow.svg)
+![mailcow-logo-dark](/img/cow_mailcow.svg)
+
+127.0.0.1nnn - mail UI
+
+---
+
+
+
+Username
+
+Password
+
+[> Forgot Password?](/reset-password)
+
+Login
+
+**or login with**
+
+[FIDO2/WebAuthn Login](#)
+
+Not the correct login?  
+[Log in as admin](/admin) | [Log in as domain admin](/domainadmin)
+
+### Confirm deletion
+
+Please confirm your changes to the following object id
+
+
+
+---
+
+Delete now
+Cancel
+
+#####
+
+Loading...
+<<<END CONTENT>>>
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+[2026-01-12 12:12:46,966][scanner.keyword_extractor][INFO] Extracted keywords for http://127.0.0.1:80/index: ['mailcow', 'mailcow-logo-dark', 'mailcow UI', 'mailcow documentation', 'mailcow default credentials', 'mailcow source code', 'mailcow GitHub']
+[2026-01-12 12:12:46,978][scanner.keyword_extractor][DEBUG] Extracting keywords for http://127.0.0.1:80/index.php: 
+
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+<<<BEGIN CONTENT>>>
+127.0.0.1nnn - mail UI
+
+
+
+User Login
+
+* [Български (Bulgarian)](?lang=bg-bg)
+* [Čeština (Czech)](?lang=cs-cz)
+* [Dansk (Danish)](?lang=da-dk)
+* [Deutsch (German)](?lang=de-de)
+* [English](?lang=en-gb)
+* [Español (Spanish)](?lang=es-es)
+* [Suomi (Finish)](?lang=fi-fi)
+* [Français (French)](?lang=fr-fr)
+* [Ελληνικά (Greek)](?lang=gr-gr)
+* [Magyar (Hungarian)](?lang=hu-hu)
+* [Italiano (Italian)](?lang=it-it)
+* [日本語 (Japanese)](?lang=ja-jp)
+* [한국어 (Korean)](?lang=ko-kr)
+* [latviešu (Latvian)](?lang=lv-lv)
+* [Lietuvių (Lithuanian)](?lang=lt-lt)
+* [Norsk (Norwegian)](?lang=nb-no)
+* [Nederlands (Dutch)](?lang=nl-nl)
+* [Język Polski (Polish)](?lang=pl-pl)
+* [Português brasileiro (Brazilian Portuguese)](?lang=pt-br)
+* [Português (Portuguese)](?lang=pt-pt)
+* [Română (Romanian)](?lang=ro-ro)
+* [Pусский (Russian)](?lang=ru-ru)
+* [Slovenščina (Slovenian)](?lang=si-si)
+* [Slovenčina (Slovak)](?lang=sk-sk)
+* [Svenska (Swedish)](?lang=sv-se)
+* [Türkçe (Turkish)](?lang=tr-tr)
+* [Українська (Ukrainian)](?lang=uk-ua)
+* [Tiếng Việt (Vietnamese)](?lang=vi-vn)
+* [简体中文 (Simplified Chinese)](?lang=zh-cn)
+* [繁體中文 (Traditional Chinese)](?lang=zh-tw)
+
+![mailcow](/img/cow_mailcow.svg)
+![mailcow-logo-dark](/img/cow_mailcow.svg)
+
+127.0.0.1nnn - mail UI
+
+---
+
+
+
+Username
+
+Password
+
+[> Forgot Password?](/reset-password)
+
+Login
+
+**or login with**
+
+[FIDO2/WebAuthn Login](#)
+
+Not the correct login?  
+[Log in as admin](/admin) | [Log in as domain admin](/domainadmin)
+
+### Confirm deletion
+
+Please confirm your changes to the following object id
+
+
+
+---
+
+Delete now
+Cancel
+
+#####
+
+Loading...
+<<<END CONTENT>>>
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+[2026-01-12 12:12:47,736][scanner.keyword_extractor][INFO] Extracted keywords for http://127.0.0.1:80/index.php: ['mailcow', 'mailcow-logo-dark', 'mailcow UI', '/munin', '/admin', '/reset-password']
+[2026-01-12 12:12:47,738][scanner.keyword_extractor][DEBUG] Extracting keywords for http://127.0.0.1:80/robots.txt: 
+
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+<<<BEGIN CONTENT>>>
+User-agent: \*
+Disallow: /
+<<<END CONTENT>>>
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+[2026-01-12 12:12:48,335][scanner.keyword_extractor][INFO] Extracted keywords for http://127.0.0.1:80/robots.txt: []
+[2026-01-12 12:12:49,507][scanner.cred_searcher][DEBUG] Starting CredSearcher for service http://127.0.0.1:80
+[2026-01-12 12:12:49,510][scanner.llm][WARNING] Warning: reasoning parameter is ignored for remote LLMs because its not supported.
+[2026-01-12 12:12:49,510][scanner.cred_searcher][DEBUG] CredSearcher prompt for service http://127.0.0.1:80:
+
+You are a blueteam pentester trying to find default credentials for an unknown web application.
+From the web applications pages you have gathered the following keywords/links for a web search:
+mailcow source code
+mailcow default credentials
+/admin
+mailcow documentation
+mailcow-logo-dark
+/munin
+/reset-password
+mailcow UI
+admin
+mailcow GitHub
+Swagger UI
+mailcow github
+mailcow
+
+Follow these steps to find the credentials:
+1. Identify the official website or repository for the application.
+2. Crawl the site or repository for any documentation, installation guides, or configuration files that might contain default credentials. Follow links if necessary.
+3. Submit the found credentials using the submit_credentials tool.
+
+Search the web using carefully chosen, descriptive queries.
+Use the fetch_url tool to retrieve the content of promising links.
+If you find unrelated content, try refining your search.
+You may use tools multiple times. Do not give up quickly.
+Submit the credentials using the submit_credentials tool once you find them.
+
+[2026-01-12 12:12:49,514][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:12:49,514][scanner.cred_searcher][DEBUG] User: 
+You are a blueteam pentester trying to find default credentials for an unknown web application.
+From the web applications pages you have gathered the following keywords/links for a web search:
+mailcow source code
+mailcow default credentials
+/admin
+mailcow documentation
+mailcow-logo-dark
+/munin
+/reset-password
+mailcow UI
+admin
+mailcow GitHub
+Swagger UI
+mailcow github
+mailcow
+
+Follow these steps to find the credentials:
+1. Identify the official website or repository for the application.
+2. Crawl the site or repository for any documentation, installation guides, or configuration files that might contain default credentials. Follow links if necessary.
+3. Submit the found credentials using the submit_credentials tool.
+
+Search the web using carefully chosen, descriptive queries.
+Use the fetch_url tool to retrieve the content of promising links.
+If you find unrelated content, try refining your search.
+You may use tools multiple times. Do not give up quickly.
+Submit the credentials using the submit_credentials tool once you find them.
+
+[2026-01-12 12:12:50,336][scanner.keyword_extractor][INFO] KeywordExtractor exited
+[2026-01-12 12:13:32,586][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:13:32,587][scanner.cred_searcher][DEBUG] AI: [Calling tools: search_web({'query': 'mailcow GitHub'})]
+[2026-01-12 12:13:33,824][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:13:33,824][scanner.cred_searcher][DEBUG] Tool output: {"results": [{"title": "GitHub - mailcow/mailcow-dockerized: mailcow: dockerized - 🐮 + 🐋 = 💕", "href": "https://github.com/mailcow/mailcow-dockerized", "body": "mailcow: dockerized - 🐮 + 🐋 = 💕. Contribute to mailcow/mailcow-dockerized development by creating an account on GitHub."}, {"title": "mailcow · GitHub", "href": "https://github.com/mailcow", "body": "mailcow has 12 repositories available. Follow their code on GitHub."}, {"title": "Install mailcow - mailcow: dockerized documentation", "href": "https://docs.mailcow.email/getstarted/install/", "body": "su umask 0022 cd /opt git clone https://github.com/mailcow/mailcow-dockerized cd mailcow-dockerized · Generate the configuration file: ./generate_config.sh · Adjust the configuration if necessary: nano mailcow.conf · Download the images and start the containers: Docker Compose (Plugin)Docker Compose (Standalone) docker compose pull docker compose up -d ·"}, {"title": "mailcow-dockerized-app/update.sh at master · mailcow/mailcow-dockerized-app", "href": "https://github.com/mailcow/mailcow-dockerized-app/blob/master/update.sh", "body": "Clone of the mailcow-dockerized repo which contains extra services for CowUI. - mailcow-dockerized-app/update.sh at master · mailcow/mailcow-dockerized-app"}, {"title": "GitHub - mailcow/mailcow-dockerized-app: Clone of the mailcow-dockerized repo which contains extra services for CowUI.", "href": "https://github.com/mailcow/mailcow-dockerized-app", "body": "So do not use it instead of original mailcow-dockerized! ... # Get the repo git clone https://github.com/mailcow/mailcow-dockerized-app.git && cd mailcow-dockerized-app/ # Init submodules git submodule init # Get the latest commits git submodule update --remote --recursive"}]}
+[2026-01-12 12:13:43,881][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:13:43,881][scanner.cred_searcher][DEBUG] AI: [Calling tools: fetch_url({'url': 'https://docs.mailcow.email/getstarted/install/'})]
+[2026-01-12 12:13:48,659][scanner.ai.tools][WARNING] Fetched content from https://docs.mailcow.email/getstarted/install/ is very large (20631 characters). Truncated to avoid LLM input error.
+[2026-01-12 12:13:48,660][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:13:48,660][scanner.cred_searcher][DEBUG] Tool output: Install mailcow - mailcow: dockerized documentation
+
+
+
+
+
+
+[Skip to content](#installation-of-mailcow)
+
+#### All Commands are available according to the [Docker Compose Plugin](https://docs.docker.com/compose/install/linux/) and the [Standalone Version](https://docs.docker.com/compose/install/other/) syntax
+
+[![logo](../../assets/images/logo.svg)](../.. "mailcow: dockerized documentation")
+
+
+
+
+mailcow: dockerized documentation
+
+Install mailcow
+
+
+
+
+* [English](./)
+* [Deutsch](../../de/getstarted/install/)
+
+
+
+Type to start searching
+
+[mailcow/mailcow-dockerized
+
+* 2025-12a
+* 11.9k
+* 1.6k](https://github.com/mailcow/mailcow-dockerized "Go to repository")
+
+[![logo](../../assets/images/logo.svg)](../.. "mailcow: dockerized documentation")
+mailcow: dockerized documentation
+
+[mailcow/mailcow-dockerized
+
+* 2025-12a
+* 11.9k
+* 1.6k](https://github.com/mailcow/mailcow-dockerized "Go to repository")
+
+* [Information & Support](../..)
+* Get started
+
+
+
+
+  Get started
+  + [Prepare your system](../prerequisite-system/)
+  + [DNS setup](../prerequisite-dns/)
+  + Install mailcow
+
+    [Install mailcow](./)
+
+
+
+    Table of contents
+    - [Prerequisites](#prerequisites)
+
+      * [System Packages](#system-packages)
+      * [Docker and Docker Compose](#docker-and-docker-compose)
+      * [Quick Installation](#quick-installation)
+
+        + [System Packages](#system-packages_1)
+
+          - [Debian/Ubuntu:](#debianubuntu)
+          - [RHEL-based systems (e.g., Rocky Linux 9):](#rhel-based-systems-eg-rocky-linux-9)
+          - [Alpine Linux (e.g., 3.22):](#alpine-linux-eg-322)
+        + [Docker](#docker)
+
+          - [Debian/Ubuntu:](#debianubuntu_1)
+          - [RHEL-based systems (e.g., Rocky Linux 9):](#rhel-based-systems-eg-rocky-linux-9_1)
+          - [Alpine Linux (e.g., 3.22):](#alpine-linux-eg-322_1)
+        + [Docker Compose](#docker-compose)
+
+          - [Installation via Package Manager (Plugin)](#installation-via-package-manager-plugin)
+
+            * [Debian/Ubuntu:](#debianubuntu_2)
+            * [RHEL-based systems:](#rhel-based-systems)
+            * [Alpine Linux (e.g., 3.22):](#alpine-linux-eg-322_2)
+          - [Installation as a Standalone Version](#installation-as-a-standalone-version)
+    - [SELinux Configuration (Optional)](#selinux-configuration-optional)
+    - [Installing mailcow](#installing-mailcow)
+    - [Starting mailcow](#starting-mailcow)
+    - [Troubleshooting](#troubleshooting)
+
+      * [MTU not equal to 1500 (e.g., OpenStack)](#mtu-not-equal-to-1500-eg-openstack)
+      * [No IPv6 on the Host System](#no-ipv6-on-the-host-system)
+    - [Important Notes](#important-notes)
+* Maintaining mailcow
+
+
+
+
+  Maintaining mailcow
+  + [Update](../../maintenance/update/)
+  + [Migration](../../maintenance/migration/)
+  + [Deinstallation](../../maintenance/deinstall/)
+* Backup & Restore
+
+
+
+
+  Backup & Restore
+  + Component backup & restore
+
+
+
+
+    Component backup & restore
+    - [Backup](../../backup_restore/b_n_r-backup/)
+    - [Restore](../../backup_restore/b_n_r-restore/)
+    - [Export](../../backup_restore/b_n_r-backup-export/)
+  + [Cold-standby (rolling backup)](../../backup_restore/b_n_r-coldstandby/)
+  + Manual backups
+
+
+
+
+    Manual backups
+    - [Maildir](../../backup_restore/b_n_r-backup_restore-maildir/)
+    - [MySQL (mysqldump)](../../backup_restore/b_n_r-backup_restore-mysql/)
+  + mailcow-internal backups
+
+
+
+
+    mailcow-internal backups
+    - [Recover accidentally deleted data](../../backup_restore/b_n_r-accidental_deletion/)
+* Post Installation Tasks
+
+
+
+
+  Post Installation Tasks
+  + [Advanced SSL](../../post_installation/firststeps-ssl/)
+  + [Authorize Watchdog and Bounce Mails](../../post_installation/firststeps-authorize_watchdog_and_bounces/)
+  + [Disable IPv6](../../post_installation/firststeps-disable_ipv6/)
+  + [DMARC Reporting](../../post_installation/firststeps-dmarc_reporting/)
+  + [IP bindings](../../post_installation/firststeps-ip_bindings/)
+  + [Local MTA on Docker host](../../post_installation/firststeps-local_mta/)
+  + [Logging](../../post_installation/firststeps-logging/)
+  + [Setting up MTA-STS](../../post_installation/setup-mta-sts/)
+  + Reverse Proxy
+
+
+
+
+    Reverse Proxy
+    - [Overview](../../post_installation/reverse-proxy/r_p/)
+    - [Apache 2.4](../../post_installation/reverse-proxy/r_p-apache24/)
+    - [Nginx](../../post_installation/reverse-proxy/r_p-nginx/)
+    - [HAProxy (community supported)](../../post_installation/reverse-proxy/r_p-haproxy/)
+    - [Traefik v3 (community supported)](../../post_installation/reverse-proxy/r_p-traefik3/)
+    - [Caddy v2 (community supported)](../../post_installation/reverse-proxy/r_p-caddy2/)
+  + [SNAT](../../post_installation/firststeps-snat/)
+  + [Sync job migration](../../post_installation/firststeps-sync_jobs_migration/)
+* Models
+
+
+
+
+  Models
+  + [ACL](../../models/model-acl/)
+  + [Password hashing](../../models/model-passwd/)
+  + [Sender and receiver model](../../models/model-sender_rcv/)
+* General Troubleshooting
+
+
+
+
+  General Troubleshooting
+  + [Introduction](../../troubleshooting/debug/)
+  + [Admin login to SOGo](../../troubleshooting/debug-admin_login_sogo/)
+  + [Advanced: Find memory leaks in Rspamd](../../troubleshooting/debug-rspamd_memory_leaks/)
+  + [Attach to a Container](../../troubleshooting/debug-attach_service/)
+  + [Common Problems](../../troubleshooting/debug-common_problems/)
+  + [Google SafeBrowsing issues](../../troubleshooting/debug-google_safe_browsing/)
+  + [Logs](../../troubleshooting/debug-logs/)
+  + [Manual MySQL upgrade](../../troubleshooting/debug-mysql_upgrade/)
+  + [Recover crashed Aria storage engine](../../troubleshooting/debug-mysql_aria/)
+  + [Remove Persistent Data](../../troubleshooting/debug-rm_volumes/)
+  + [Resend Quarantine Notifications](../../troubleshooting/debug-resend-quarantine-notifications/)
+  + [Reset Passwords (incl. SQL)](../../troubleshooting/debug-reset_pw/)
+  + [Reset TLS certificates](../../troubleshooting/debug-reset_tls/)
+  + [Use latest SOGo Nightly build](../../troubleshooting/debug-sogo_nightly/)
+* Manual/Guides/Examples
+
+
+
+
+  Manual/Guides/Examples
+  + mailcow UI
+
+
+
+
+    mailcow UI
+    - [Blacklist / Whitelist](../../manual-guides/mailcow-UI/u_e-mailcow_ui-bl_wl/)
+    - [Configuration](../../manual-guides/mailcow-UI/u_e-mailcow_ui-config/)
+    - [CSS overrides](../../manual-guides/mailcow-UI/u_e-mailcow_ui-css/)
+    - [Forgot Password Feature](../../manual-guides/mailcow-UI/u_e-mailcow_ui-forgot_password/)
+    - [Netfilter](../../manual-guides/mailcow-UI/u_e-mailcow_ui-netfilter/)
+    - [Notification templates](../../manual-guides/mailcow-UI/u_e-mailcow_ui-notification-templates/)
+    - [Pushover](../../manual-guides/mailcow-UI/u_e-mailcow_ui-pushover/)
+    - [Spamfilter](../../manual-guides/mailcow-UI/u_e-mailcow_ui-spamfilter/)
+    - [Sub-addressing](../../manual-guides/mailcow-UI/u_e-mailcow_ui-sub_addressing/)
+    - [Tags (for Domains and Mailboxes)](../../manual-guides/mailcow-UI/u_e-mailcow_ui-tags/)
+    - [Temporary email aliases](../../manual-guides/mailcow-UI/u_e-mailcow_ui-spamalias/)
+    - [Two-Factor Authentication](../../manual-guides/mailcow-UI/u_e-mailcow_ui-tfa/)
+    - [WebAuthn / FIDO2](../../manual-guides/mailcow-UI/u_e-mailcow_ui-fido/)
+    - [LDAP](../../manual-guides/mailcow-UI/u_e-mailcow_ui-ldap/)
+    - [Keycloak](../../manual-guides/mailcow-UI/u_e-mailcow_ui-keycloak/)
+    - [Generic-OIDC](../../manual-guides/mailcow-UI/u_e-mailcow_ui-generic-oidc/)
+  + Postfix
+
+
+
+
+    Postfix
+    - [Unauthenticated Relaying](../../manual-guides/Postfix/u_e-postfix-unauthenticated-relaying/)
+    - [Custom transport maps](../../manual-guides/Postfix/u_e-postfix-custom_transport/)
+    - [Customize/Expand main.cf](../../manual-guides/Postfix/u_e-postfix-extra_cf/)
+    - [Disable Sender Addresses Verification](../../manual-guides/Postfix/u_e-postfix-disable_sender_verification/)
+    - [Hardening Ciphers](../../manual-guides/Postfix/u_e-postfix-harden_ciphers/)
+    - [Max. message size (attachment size)](../../manual-guides/Postfix/u_e-postfix-attachment_size/)
+    - [Relayhosts](../../manual-guides/Postfix/u_e-postfix-relayhost/)
+    - [Statistics with pflogsumm](../../manual-guides/Postfix/u_e-postfix-pflogsumm/)
+    - [TLS-Policy override](../../manual-guides/Postfix/u_e-postfix-tls_policy_override/)
+    - [Whitelist IP in Postscreen](../../manual-guides/Postfix/u_e-postfix-postscreen_whitelist/)
+  + Unbound
+
+
+
+
+    Unbound
+    - [Using an external DNS service](../../manual-guides/Unbound/u_e-unbound-fwd/)
+  + Dovecot
+
+
+
+
+    Dovecot
+    - [Customize/Expand dovecot.conf](../../manual-guides/Dovecot/u_e-dovecot-extra_conf/)
+    - [Enable "any" ACL settings](../../manual-guides/Dovecot/u_e-dovecot-any_acl/)
+    - [Expunge a Users mails](../../manual-guides/Dovecot/u_e-dovecot-expunge/)
+    - [Full-Text Search](../../manual-guides/Dovecot/u_e-dovecot-fts/)
+    - [Hardening Ciphers](../../manual-guides/Dovecot/u_e-dovecot-harden_ciphers/)
+    - [IMAP IDLE interval](../../manual-guides/Dovecot/u_e-dovecot-idle_interval/)
+    - [Lazy Expunge (Dovecot Plugin)](../../manual-guides/Dovecot/u_e-dovecot-lazy_expunge/)
+    - [Mail crypt](../../manual-guides/Dovecot/u_e-dovecot-mail-crypt/)
+    - [More Examples with DOVEADM](../../manual-guides/Dovecot/u_e-dovecot-more/)
+    - [Move Maildir (vmail)](../../manual-guides/Dovecot/u_e-dovecot-vmail-volume/)
+    - [Performance Optimizations](../../manual-guides/Dovecot/u_e-dovecot-performance/)
+    - [Public folders](../../manual-guides/Dovecot/u_e-dovecot-public_folder/)
+    - [Static master user](../../manual-guides/Dovecot/u_e-dovecot-static_master/)
+    - [Vacation replies for catchall addresses](../../manual-guides/Dovecot/u_e-dovecot-catchall_vacation/)
+  + Nginx
+
+
+
+
+    Nginx
+    - [Create subdomain webmail.example.org](../../manual-guides/Nginx/u_e-nginx_webmail-site/)
+    - [Custom sites](../../manual-guides/Nginx/u_e-nginx_custom/)
+  + Watchdog
+
+
+
+
+    Watchdog
+    - [Thresholds](../../manual-guides/Watchdog/u_e-watchdog-thresholds/)
+  + [Redis](../../manual-guides/Redis/u_e-redis/)
+  + Rspamd
+
+
+
+
+    Rspamd
+    - [General Settings](../../manual-guides/Rspamd/u_e-rspamd-general/)
+    - [Tweaks](../../manual-guides/Rspamd/u-e-rspamd-tweaks/)
+    - [Work with Spam Data](../../manual-guides/Rspamd/u-e-rspamd-work-with-spamdata/)
+    - [Disable Greylisting](../../manual-guides/Rspamd/u_e-rspamd-disable-greylisting/)
+    - [Add Additional Modules](../../manual-guides/Rspamd/u-e-rspamd-add-additional-modules/)
+  + ClamAV
+
+
+
+
+    ClamAV
+    - [Whitelist](../../manual-guides/ClamAV/u_e-clamav-whitelist/)
+    - [Additional Databases](../../manual-guides/ClamAV/u_e-clamav-additional_dbs/)
+  + [SOGo](../../manual-guides/SOGo/u_e-sogo/)
+  + Docker
+
+
+
+
+    Docker
+    - [Customize Dockerfiles](../../manual-guides/Docker/u_e-docker-cust_dockerfiles/)
+  + [Why unbound?](../../manual-guides/u_e-why_unbound/)
+  + [Autodiscover / Autoconfig](../../manual-guides/u_e-autodiscover_config/)
+  + [Redirect HTTP to HTTPS](../../manual-guides/u_e-80_to_443/)
+  + [Re-enable TLS 1.0 and TLS 1.1](../../manual-guides/u_e-reeanble-weak-protocols/)
+  + [Run scripts before and after updates](../../manual-guides/u_e-update-hooks/)
+* Client Configuration
+
+
+
+
+  Client Configuration
+  + [Overview](../../client/client/)
+  + [Android](../../client/client-android/)
+  + [Apple macOS / iOS](../../client/client-apple/)
+  + [eM Client](../../client/client-emclient/)
+  + [KDE Kontact](../../client/client-kontact/)
+  + [Microsoft Outlook](../../client/client-outlook/)
+  + [Mozilla Thunderbird](../../client/client-thunderbird/)
+  + [Manual configuration](../../client/client-manual/)
+* Third party apps (community managed)
+
+
+
+
+  Third party apps (community managed)
+  + [AbuseIPDB Integration](../../third_party/abuseipdb/third_party-abuseipdb/)
+  + [Borgmatic Backup](../../third_party/borgmatic/third_party-borgmatic/)
+  + [CheckMK](../../third_party/checkmk/u_e-checkmk/)
+  + [Exchange Hybrid Setup](../../third_party/exchange_onprem/third_party-exchange_onprem/)
+  + [Gitea](../../third_party/gitea/third_party-gitea/)
+  + [Gogs](../../third_party/gogs/third_party-gogs/)
+  + [Mailman 3](../../third_party/mailman3/third_party-mailman3/)
+  + [Mailpiler Integration](../../third_party/mailpiler/third_party-mailpiler_integration/)
+  + [Nextcloud](../../third_party/nextcloud/third_party-nextcloud/)
+  + [Portainer](../../third_party/portainer/third_party-portainer/)
+  + [Roundcube](../../third_party/roundcube/third_party-roundcube/)
+  + [Prometheus Exporter](../../third_party/prometheus_exporter/third_party-prometheus_exporter/)
+
+Table of contents
+
+* [Prerequisites](#prerequisites)
+
+  + [System Packages](#system-packages)
+  + [Docker and Docker Compose](#docker-and-docker-compose)
+  + [Quick Installation](#quick-installation)
+
+    - [System Packages](#system-packages_1)
+
+      * [Debian/Ubuntu:](#debianubuntu)
+      * [RHEL-based systems (e.g., Rocky Linux 9):](#rhel-based-systems-eg-rocky-linux-9)
+      * [Alpine Linux (e.g., 3.22):](#alpine-linux-eg-322)
+    - [Docker](#docker)
+
+      * [Debian/Ubuntu:](#debianubuntu_1)
+      * [RHEL-based systems (e.g., Rocky Linux 9):](#rhel-based-systems-eg-rocky-linux-9_1)
+      * [Alpine Linux (e.g., 3.22):](#alpine-linux-eg-322_1)
+    - [Docker Compose](#docker-compose)
+
+      * [Installation via Package Manager (Plugin)](#installation-via-package-manager-plugin)
+
+        + [Debian/Ubuntu:](#debianubuntu_2)
+        + [RHEL-based systems:](#rhel-based-systems)
+        + [Alpine Linux (e.g., 3.22):](#alpine-linux-eg-322_2)
+      * [Installation as a Standalone Version](#installation-as-a-standalone-version)
+* [SELinux Configuration (Optional)](#selinux-configuration-optional)
+* [Installing mailcow](#installing-mailcow)
+* [Starting mailcow](#starting-mailcow)
+* [Troubleshooting](#troubleshooting)
+
+  + [MTU not equal to 1500 (e.g., OpenStack)](#mtu-not-equal-to-1500-eg-openstack)
+  + [No IPv6 on the Host System](#no-ipv6-on-the-host-system)
+* [Important Notes](#important-notes)
+
+Installation of mailcow[¶](#installation-of-mailcow "Permanent link")
+=====================================================================
+
+Prerequisites[¶](#prerequisites "Permanent link")
+-------------------------------------------------
+
+### System Packages[¶](#system-packages "Permanent link")
+
+The following Linux packages are required for using mailcow and may need to be installed depending on your distribution:
+
+* git
+* openssl
+* curl
+* awk
+* sha1sum
+* grep
+* cut
+* jq (**new as of [2025-09](https://mailcow.email/posts/2025/release-2025-09/#2025-09-release-10th-september-2025)**)
+
+### Docker and Docker Compose[¶](#docker-and-docker-compose "Permanent link")
+
+For the installation, you will need:
+
+* **Docker**: Version `>= 24.0.0`
+* **Docker Compose**: Version `>= 2.0`
+
+Installation guides can be found here:
+
+* [Install Docker](https://docs.docker.com/install/)
+* [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+### Quick Installation[¶](#quick-installation "Permanent link")
+
+#### System Packages[¶](#system-packages_1 "Permanent link")
+
+##### Debian/Ubuntu:[¶](#debianubuntu "Permanent link")
+
+```
+apt update
+apt install -y git openssl curl gawk coreutils grep jq
+```
+
+##### RHEL-based systems (e.g., Rocky Linux 9):[¶](#rhel-based-systems-eg-rocky-linux-9 "Permanent link")
+
+```
+dnf install -y git openssl curl gawk coreutils grep jq
+```
+
+##### Alpine Linux (e.g., 3.22):[¶](#alpine-linux-eg-322 "Permanent link")
+
+```
+apk add --no-cache --upgrade sed findutils bash git openssl curl gawk coreutils grep jq
+```
+
+Note
+
+All programs not explicitly listed in the installation process are already included as subprograms in `coreutils`.
+
+#### Docker[¶](#docker "Permanent link")
+
+Important
+
+Use the **latest available Docker Engine** and not the version from your Linux distribution's package sources.
+
+##### Debian/Ubuntu:[¶](#debianubuntu_1 "Permanent link")
+
+```
+curl -sSL https://get.docker.com/ | CHANNEL=stable sh
+systemctl enable --now docker
+```
+
+##### RHEL-based systems (e.g., Rocky Linux 9):[¶](#rhel-based-systems-eg-rocky-linux-9_1 "Permanent link")
+
+```
+dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+systemctl enable --now docker
+```
+
+##### Alpine Linux (e.g., 3.22):[¶](#alpine-linux-eg-322_1 "Permanent link")
+
+```
+apk --no-cache --upgrade add docker
+rc-update add docker default
+rc-service docker start
+```
+
+Note
+
+The `get.docker.com` script does not work reliably or at all on RHEL and Alpine Linux systems. Use the manual method instead.
+
+#### Docker Compose[¶](#docker-compose "Permanent link")
+
+Warning
+
+**mailcow requires Docker Compose version `>= 2.0`.**
+
+##### Installation via Package Manager (Plugin)[¶](#installation-via-package-manager-plugin "Permanent link")
+
+Note
+
+This method requires that the Docker repository has been added (see [Docker](#docker)).
+
+###### Debian/Ubuntu:[¶](#debianubuntu_2 "Permanent link")
+
+```
+apt update
+apt install docker-compose-plugin
+```
+
+###### RHEL-based systems:[¶](#rhel-based-systems "Permanent link")
+
+```
+dnf update
+dnf install docker-compose-plugin
+```
+
+###### Alpine Linux (e.g., 3.22):[¶](#alpine-linux-eg-322_2 "Permanent link")
+
+```
+apk add --no-cache --upgrade docker-cli-compose
+```
+
+Warning
+
+For the plugin version, the command is **`docker compose`** (without a hyphen).
+
+##### Installation as a Standalone Version[¶](#installation-as-a-standalone-version "Permanent link")
+
+```
+LATEST=$(curl -Ls -w %{url_effective} -o /dev/null https://github.com/docker/compose/releases/latest) && \
+LATEST=${LATEST##*/} && \
+curl -L https://github.com/docker/compose/releases/download/$LATEST/docker-compose-$(uname -s)-$(uname -m) > /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+```
+
+Warning
+
+For the standalone version, the command is **`docker-compose`** (with a hyphen).
+
+---
+
+SELinux Configuration (Optional)[¶](#selinux-configuration-optional "Permanent link")
+-------------------------------------------------------------------------------------
+
+On SELinux-enabled systems (e.g., CentOS 7):
+
+1. Check if the `container-selinux` package is installed:
+
+   ```
+   rpm -qa | grep container-selinux
+   ```
+2. Enable SELinux support in Docker:
+
+   * Edit `/etc/docker/daemon.json` and add `"selinux-enabled": true`:
+
+   ```
+   {
+     "selinux-enabled": true
+   }
+   ```
+
+   * Restart the Docker daemon.
+
+For more information, see the [container-selinux Readme](https://github.com/containers/container-selinux).
+
+---
+
+Installing mailcow[¶](#installing-mailcow "Permanent link")
+-----------------------------------------------------------
+
+1. Clone the repository:
+
+   ```
+   su
+   umask 0022
+   cd /opt
+   git clone https://github.com/mailcow/mailcow-dockerized
+   cd mailcow-dockerized
+   ```
+2. Generate the configuration file:
+
+   ```
+   ./generate_config.sh
+   ```
+3. Adjust the configuration if necessary:
+
+   ```
+   nano mailcow.conf
+   ```
+
+---
+
+Starting mailcow[¶](#starting-mailcow "Permanent link")
+-------------------------------------------------------
+
+Download the images and start the containers:
+
+[Docker Compose (Plugin)](#__tabbed_1_1)[Docker Compose (Standalone)](#__tabbed_1_2)
+
+```
+docker compose pull
+docker compose up -d
+```
+
+```
+docker-compose pull
+docker-compose up -d
+```
+
+Done!
+
+You can now access **`https://${MAILCOW_HOSTNAME}/admin`** using the default credentials `admin` and the password `moohoo`.
+
+---
+
+Troubleshooting[¶](#troubleshooting "Permanent link")
+-----------------------------------------------------
+
+### MTU not equal to 1500 (e.g., OpenStack)[¶](#mtu-not-equal-to-1500-eg-openstack "Permanent link")
+
+Adjust the network settings in `docker-compose.yml`:
+
+```
+networks:
+  mailcow-network:
+    driver_opts:
+      com.docker.network.driver.mtu: 1450
+```
+
+### No IPv6 on the Host System[¶](#no-ipv6-on-the-host-system "Permanent link")
+
+Disable IPv6 for the mailcow network if your host system does no
+
+*Content truncated due to length.*
+[2026-01-12 12:13:56,957][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:13:56,957][scanner.cred_searcher][DEBUG] AI: [Calling tools: submit_credentials({'username': 'admin', 'password': 'moohoo'})]
+[2026-01-12 12:13:56,961][scanner.cred_searcher][INFO] Submitted credentials for service http://127.0.0.1:80: admin / moohoo
+[2026-01-12 12:13:56,961][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:13:56,961][scanner.cred_searcher][DEBUG] Tool output: {"message": "Credentials for admin submitted successfully."}
+[2026-01-12 12:13:58,755][scanner.cred_tester][DEBUG] Testing credentials admin:moohoo on http://127.0.0.1:80/
+[2026-01-12 12:14:00,415][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:00,415][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "moohoo"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/3c8c8b3a1c6b3ce2aa532d167f918f5d056abec5.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="e220f70c9fc21822f2ef02534430a9887dc43c5ccd1757c3461a29fca1db0230"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> User Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<legend>127.0.0.1nnn - mail UI</legend><hr/>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Email address" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="mt-2 text-muted" style="font-size: 0.9rem;">
+<a href="/reset-password">&gt; Forgot Password?</a>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="e220f70c9fc21822f2ef02534430a9887dc43c5ccd1757c3461a29fca1db0230"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100 mt-2" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/admin">Log in as admin</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:14:05,252][scanner.cred_searcher][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:05,252][scanner.cred_searcher][DEBUG] AI: The default credentials for the mailcow application have been successfully identified and submitted. 
+
+**Credentials:**
+- **Username:** `admin`
+- **Password:** `moohoo`
+
+These credentials were found in the official installation documentation at [mailcow's GitHub repository](https://github.com/mailcow/mailcow-dockerized). The submission was confirmed via the `submit_credentials` tool. 
+
+No further actions are required.
+[2026-01-12 12:14:07,253][scanner.cred_searcher][INFO] CredSearcher exited
+[2026-01-12 12:14:07,301][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:07,301][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'moohoo'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:14:07,302][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:14:07,304][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:14:09,304][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:14:09,441][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:09,441][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:14:10,080][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:10,080][scanner.cred_tester][DEBUG] AI: All steps completed. The default credentials have been tested.
+[2026-01-12 12:14:13,623][scanner.cred_tester][DEBUG] Login failed: before_path=/ after_path=/ simhash_distance=3
+[2026-01-12 12:14:13,623][scanner.cred_tester][INFO] Credentials admin:moohoo do not work on http://127.0.0.1:80/
+[2026-01-12 12:14:13,626][scanner.cred_tester][DEBUG] Testing credentials admin:moohoo on http://127.0.0.1:80/admin/
+[2026-01-12 12:14:15,304][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:15,304][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/admin/".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "moohoo"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/630ee90d9270fbbf46a945d183c3d406da74ab20.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="04deac7fcfc3c9665c6f4c3c68a16eb701a0e77f8a486daa54edde0d67959140"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> Administrator Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Username" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="04deac7fcfc3c9665c6f4c3c68a16eb701a0e77f8a486daa54edde0d67959140"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/">Log in as user</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:14:17,539][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:17,539][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'moohoo'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:14:17,540][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:14:17,541][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:14:19,542][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:14:19,801][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:19,801][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:14:20,929][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:20,929][scanner.cred_tester][DEBUG] AI: The default credentials test has been completed. The form was filled with the username "admin" and password "moohoo", and the login button was clicked to submit the form. No further action is required.
+[2026-01-12 12:14:24,652][scanner.cred_tester][DEBUG] Login successful: before_path=/admin/ after_path=/admin/dashboard simhash_distance=13
+[2026-01-12 12:14:24,652][scanner.cred_tester][INFO] Found working credentials for http://127.0.0.1:80/admin/: admin:moohoo
+[2026-01-12 12:14:24,670][scanner.cred_tester][DEBUG] Testing credentials admin:moohoo on http://127.0.0.1:80/index
+[2026-01-12 12:14:26,401][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:26,401][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/index".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "moohoo"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/34260ff0091bc6bb69163f8958b6959e8b27c2a8.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="e47a9e77d82c3e4ee68125cb7d7f8d95f0575becc25cbd0e75466e92036ece13"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> User Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<legend>127.0.0.1nnn - mail UI</legend><hr/>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Email address" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="mt-2 text-muted" style="font-size: 0.9rem;">
+<a href="/reset-password">&gt; Forgot Password?</a>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="e47a9e77d82c3e4ee68125cb7d7f8d95f0575becc25cbd0e75466e92036ece13"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100 mt-2" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/admin">Log in as admin</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:14:28,086][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:28,087][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'moohoo'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:14:28,088][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:14:28,089][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:14:30,090][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:14:30,223][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:30,223][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:14:32,180][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:32,180][scanner.cred_tester][DEBUG] AI: All tasks completed.
+[2026-01-12 12:14:35,824][scanner.cred_tester][DEBUG] Login failed: before_path=/index after_path=/index simhash_distance=1
+[2026-01-12 12:14:35,824][scanner.cred_tester][INFO] Credentials admin:moohoo do not work on http://127.0.0.1:80/index
+[2026-01-12 12:14:35,827][scanner.cred_tester][DEBUG] Testing credentials admin:moohoo on http://127.0.0.1:80/index.php
+[2026-01-12 12:14:37,456][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:37,456][scanner.cred_tester][DEBUG] User: 
+You are a blueteam pentester trying to test default credentials for a web application at "http://127.0.0.1:80/index.php".
+The default credentials you want to test are:
+- Username: "admin"
+- Password: "moohoo"
+
+Follow these steps to test the credentials:
+1. Identify required form fields.
+2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
+3. Submit the form using the click_button tool. Then terminate without further output.
+
+You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
+After calling a tool, wait for the result before calling another tool.
+The login page has the following HTML content:
+<<<PAGE CONTENT>>>
+<html lang="en-gb"><head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" name="viewport"/>
+<meta content="#F5D76E" name="theme-color"/>
+<meta content="same-origin" http-equiv="Referrer-Policy"/>
+<title>127.0.0.1nnn - mail UI</title>
+<link href="/cache/34260ff0091bc6bb69163f8958b6959e8b27c2a8.css" rel="stylesheet"/>
+
+<link href="/favicon.png" rel="shortcut icon" type="image/png"/>
+<link href="/favicon.png" rel="icon" type="image/png"/>
+</head>
+<body>
+<div class="overlay" style="display: none;"></div>
+<form action="/" id="logout" method="post"><input name="logout" type="hidden"/><input name="csrf_token" type="hidden" value="dc07dc8ec4dc4144d166b61b49823b1799a27bed6717de2b23e5322cf3768db7"/></form>
+<div class="container flex-grow-1 my-4">
+<div class="row mb-4" style="margin-top: 60px">
+<div class="col-12 col-md-7 col-lg-6 col-xl-5 ms-auto me-auto">
+<div class="card">
+<div class="card-header d-flex align-items-center text-break">
+<i class="bi bi-person-fill me-2"></i> User Login
+        <div class="ms-auto form-check form-switch my-auto d-flex align-items-center">
+<label class="form-check-label"><i class="bi bi-moon-fill"></i></label>
+<input class="form-check-input ms-2" id="dark-mode-toggle" type="checkbox"/>
+</div>
+<div class="ms-4 d-grid d-sm-block">
+<button aria-expanded="false" aria-haspopup="true" class="text-secondary btn p-0 border-0 bg-transparent ms-auto dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<span class="flag-icon flag-icon-gb"></span>
+</button>
+<ul class="dropdown-menu ms-auto login">
+<li>
+<a class="dropdown-item" href="?lang=bg-bg">
+<span class="flag-icon flag-icon-bg"></span>Български (Bulgarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=cs-cz">
+<span class="flag-icon flag-icon-cz"></span>Čeština (Czech)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=da-dk">
+<span class="flag-icon flag-icon-dk"></span>Dansk (Danish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=de-de">
+<span class="flag-icon flag-icon-de"></span>Deutsch (German)
+                </a>
+</li>
+<li>
+<a class="dropdown-item active" href="?lang=en-gb">
+<span class="flag-icon flag-icon-gb"></span>English
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=es-es">
+<span class="flag-icon flag-icon-es"></span>Español (Spanish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fi-fi">
+<span class="flag-icon flag-icon-fi"></span>Suomi (Finish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=fr-fr">
+<span class="flag-icon flag-icon-fr"></span>Français (French)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=gr-gr">
+<span class="flag-icon flag-icon-gr"></span>Ελληνικά (Greek)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=hu-hu">
+<span class="flag-icon flag-icon-hu"></span>Magyar (Hungarian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=it-it">
+<span class="flag-icon flag-icon-it"></span>Italiano (Italian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ja-jp">
+<span class="flag-icon flag-icon-jp"></span>日本語 (Japanese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ko-kr">
+<span class="flag-icon flag-icon-kr"></span>한국어 (Korean)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lv-lv">
+<span class="flag-icon flag-icon-lv"></span>latviešu (Latvian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=lt-lt">
+<span class="flag-icon flag-icon-lt"></span>Lietuvių (Lithuanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nb-no">
+<span class="flag-icon flag-icon-no"></span>Norsk (Norwegian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=nl-nl">
+<span class="flag-icon flag-icon-nl"></span>Nederlands (Dutch)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pl-pl">
+<span class="flag-icon flag-icon-pl"></span>Język Polski (Polish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-br">
+<span class="flag-icon flag-icon-br"></span>Português brasileiro (Brazilian Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=pt-pt">
+<span class="flag-icon flag-icon-pt"></span>Português (Portuguese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ro-ro">
+<span class="flag-icon flag-icon-ro"></span>Română (Romanian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=ru-ru">
+<span class="flag-icon flag-icon-ru"></span>Pусский (Russian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=si-si">
+<span class="flag-icon flag-icon-si"></span>Slovenščina (Slovenian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sk-sk">
+<span class="flag-icon flag-icon-sk"></span>Slovenčina (Slovak)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=sv-se">
+<span class="flag-icon flag-icon-se"></span>Svenska (Swedish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=tr-tr">
+<span class="flag-icon flag-icon-tr"></span>Türkçe (Turkish)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=uk-ua">
+<span class="flag-icon flag-icon-ua"></span>Українська (Ukrainian)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=vi-vn">
+<span class="flag-icon flag-icon-vn"></span>Tiếng Việt (Vietnamese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-cn">
+<span class="flag-icon flag-icon-cn"></span>简体中文 (Simplified Chinese)
+                </a>
+</li>
+<li>
+<a class="dropdown-item" href="?lang=zh-tw">
+<span class="flag-icon flag-icon-tw"></span>繁體中文 (Traditional Chinese)
+                </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="card-body">
+<div class="text-center mailcow-logo mb-4">
+<img alt="mailcow" class="main-logo" src="/img/cow_mailcow.svg"/>
+<img alt="mailcow-logo-dark" class="main-logo-dark d-none" src="/img/cow_mailcow.svg"/>
+</div>
+<legend>127.0.0.1nnn - mail UI</legend><hr/>
+<form autofill="off" method="post">
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="login_user">Username</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-person-fill"></i></div>
+<input autocapitalize="none" autocomplete="username" autocorrect="off" autofocus="" class="form-control" id="login_user" name="login_user" placeholder="Email address" required="" type="text"/>
+</div>
+</div>
+<div class="d-flex mt-3">
+<label class="visually-hidden" for="pass_user">Password</label>
+<div class="input-group">
+<div class="input-group-text"><i class="bi bi-lock-fill"></i></div>
+<input autocomplete="current-password" class="form-control" id="pass_user" name="pass_user" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<div class="mt-2 text-muted" style="font-size: 0.9rem;">
+<a href="/reset-password">&gt; Forgot Password?</a>
+</div>
+<div class="d-flex justify-content-between mt-4" style="position: relative">
+<button class="btn btn-xs-lg btn-success w-100 mt-2 mx-auto" style="max-width: 400px;" type="submit" value="Login">Login</button>
+</div>
+<input name="csrf_token" type="hidden" value="dc07dc8ec4dc4144d166b61b49823b1799a27bed6717de2b23e5322cf3768db7"/></form>
+<div class="hr-title"><strong>or login with</strong></div>
+<div class="d-flex flex-column align-items-center">
+<a class="btn btn-xs-lg btn-secondary w-100 mt-2" href="#" id="fido2-login" style="max-width: 400px;"><i class="bi bi-shield-fill-check"></i> FIDO2/WebAuthn Login</a>
+</div>
+<div class="my-4" id="fido2-alerts"></div>
+</div>
+</div>
+<p class="text-center mt-3 text-muted" style="font-size: 0.9rem;">
+      Not the correct login?<br/>
+<a href="/admin">Log in as admin</a>      |      <a href="/domainadmin">Log in as domain admin</a> </p>
+</div>
+</div>
+</div>
+<div class="modal fade" id="ConfirmDeleteModal" role="dialog">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title">Confirm deletion</h3>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p id="DeleteText">Please confirm your changes to the following object id</p>
+<ul id="ItemsToDelete"></ul>
+<hr/>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-danger" id="IsConfirmed">Delete now</button>
+<button class="btn btn-sm btn-xs-half d-block d-sm-inline btn-secondary" id="isCanceled">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- version modal -->
+<div aria-hidden="true" class="modal fade" id="showVersionModal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title"></h5>
+<button class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body d-flex flex-column mt-2 p-4">
+<div class="spinner-border mx-auto" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+</div>
+</div>
+</div>
+</div><!-- version modal -->
+
+
+<div class="container footer">
+</div>
+</body></html>
+<<<END PAGE CONTENT>>>
+
+[2026-01-12 12:14:44,512][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:44,512][scanner.cred_tester][DEBUG] AI: [Calling tools: insert_text_into_field({'selector': '#login_user', 'text': 'admin'}), insert_text_into_field({'selector': '#pass_user', 'text': 'moohoo'}), click_button({'selector': "button[type='submit']"})]
+[2026-01-12 12:14:44,513][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #login_user
+[2026-01-12 12:14:44,514][scanner.cred_tester.tools][DEBUG] Inserting text into field with selector: #pass_user
+[2026-01-12 12:14:46,514][scanner.cred_tester.tools][DEBUG] Clicking button with selector: button[type='submit']
+[2026-01-12 12:14:46,644][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:46,644][scanner.cred_tester][DEBUG] Tool output: ok
+[2026-01-12 12:14:50,000][scanner.cred_tester][DEBUG] ---------------------------- Chunk ----------------------------
+[2026-01-12 12:14:50,001][scanner.cred_tester][DEBUG] AI: The credentials have been successfully tested. The tool calls have been completed.
+[2026-01-12 12:14:53,538][scanner.cred_tester][DEBUG] Login failed: before_path=/index.php after_path=/index.php simhash_distance=4
+[2026-01-12 12:14:53,538][scanner.cred_tester][INFO] Credentials admin:moohoo do not work on http://127.0.0.1:80/index.php
+[2026-01-12 12:14:56,542][scanner.cred_tester][INFO] CredTester exited
+[2026-01-12 12:14:56,542][scanner.main][INFO] Scanner exiting.

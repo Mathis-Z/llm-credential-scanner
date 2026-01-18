@@ -19,6 +19,7 @@ import simhash
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 
 from scanner.db.models import Endpoint, Service
+from scanner.db import DBConnectionMixin
 
 # relative to this file
 WORDLIST_RELATIVE_PATH = 'wordlist.txt'
@@ -26,7 +27,7 @@ WORDLIST_RELATIVE_PATH = 'wordlist.txt'
 logger = logging.getLogger('scanner.webenum')
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-class WebEnumerator(threading.Thread):
+class WebEnumerator(DBConnectionMixin, threading.Thread):
     """WebEnumerator module. Spawns a worker thread for each discovered web service."""
     def __init__(self):
         super().__init__()

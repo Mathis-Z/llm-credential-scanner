@@ -1,1 +1,1 @@
-from .db import DB, BaseModel
+from .db import DB, BaseModel, DBConnectionMixin

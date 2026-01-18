@@ -39,9 +39,10 @@ def _fetch_url(url: str) -> str:
         content = sb.get_page_source()
         sb.driver.stop()
         md = markdownify(content)
-        if len(md) > 24000:
+        if len(md) > 20000:
             logger.warning("Fetched content from %s is very large (%i characters). Truncated to avoid LLM input error.", url, len(md))
-        return md[:24000]
+            md = md[:20000] + "\n\n*Content truncated due to length.*"
+        return md
     except Exception as e:
         return str(e)
 

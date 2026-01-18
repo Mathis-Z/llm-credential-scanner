@@ -39,14 +39,18 @@ class WrappedInvokeMixin:
 
             while result is None:
                 try:
+                    # disable parallel tool calls to avoid issues with wrong order
+                    kwargs['parallel_tool_calls'] = False
                     result = super().invoke(input, config=config, stop=stop, **kwargs)
                 except openai.RateLimitError as e:
-                    retry_after_header = e.response.headers.get("Retry-After")
-                    ratelimit_reset_header = e.response.headers.get("X-Ratelimit-Reset")
+                    retry_after_header = e.response.headers.get("retry-after", e.response.headers.get("x-ratelimit-timeremaining"))
+                    ratelimit_reset_header = e.response.headers.get("x-ratelimit-reset")
                     if retry_after_header is not None:
                         backoff_seconds = int(retry_after_header)
                     elif ratelimit_reset_header is not None:
                         backoff_seconds = max(int(ratelimit_reset_header) - time.time(), backoff_seconds)
+                    if backoff_seconds > time.time():
+                        backoff_seconds = int(backoff_seconds - time.time()) # convert to seconds from epoch to relative seconds
 
                     logger.debug("Rate limit error details: %s, headers: %s", e, e.response.headers)
 
@@ -55,6 +59,25 @@ class WrappedInvokeMixin:
                     backoff_seconds = min(backoff_seconds * 2, 600) # exponential backoff up to 10 minutes
             return result
 
+    def bind_tools(
+        self,
+        tools,
+        *,
+        tool_choice: dict | str | bool | None = None,
+        strict: bool | None = None,
+        parallel_tool_calls: bool | None = None,
+        response_format = None,
+        **kwargs: Any,
+    ):
+        kwargs.pop("parallel_tool_calls", None)  # remove if present
+        return super().bind_tools(
+            tools,
+            tool_choice=tool_choice,
+            strict=strict,
+            parallel_tool_calls=False,  # disable parallel tool calls to avoid issues with wrong order
+            response_format=response_format,
+            **kwargs,
+        )
 
 class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
     """ChatOllama with WrappedInvokeMixin to handle rate limiting."""
