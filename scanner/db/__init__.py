@@ -1,1 +1,2 @@
-from .db import DB, BaseModel, DBConnectionMixin
+from .db import *
+from .models import Endpoint, Service

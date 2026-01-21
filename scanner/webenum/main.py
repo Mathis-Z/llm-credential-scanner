@@ -133,7 +133,7 @@ class WebEnumWorker(threading.Thread):
                 service=self.service,
                 path=path,
                 is_login=is_login,
-                page_source=response.content.decode()
+                page_source=response.text
             )
 
         logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())

@@ -4,6 +4,7 @@
 *$py.class
 # DB files
 *.db
+scanner.db*
 
 # C extensions
 *.so

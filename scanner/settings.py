@@ -27,6 +27,7 @@ class Settings:
             self.reasoning_llm_name = os.getenv("REASONING_LLM_NAME", "gpt-4o-mini")
             self.nonreasoning_llm_name = os.getenv("NONREASONING_LLM_NAME", "gpt-4o-mini") # TODO: is there a non-reasoning model?
 
+        self.db_path = os.getenv("DB_PATH", "scanner.db")
         self._initialized = True
 
     def _require_env_var(self, var_name: str) -> str:
@@ -34,3 +35,6 @@ class Settings:
         if not value:
             raise EnvironmentError(f"Environment variable '{var_name}' is required but not set.")
         return value
+
+    def configure_cli_arguments(self, **kwargs):
+        self.db_path = kwargs.get("db_path", self.db_path)

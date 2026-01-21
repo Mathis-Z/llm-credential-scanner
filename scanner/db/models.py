@@ -5,7 +5,7 @@ Definition of all DB models used in the scanner.
 import json
 import peewee as pw
 
-from .db import BaseModel, DB
+from .db import BaseModel
 
 DEFAULT_CREDS = [('admin', 'admin')] # list of credentials that should always be tested
 
@@ -103,6 +103,3 @@ class Endpoint(BaseModel):
 #    version = pw.CharField(max_length=128) # version identifier, e.g., 9.2p1
 #    github_url = pw.CharField(max_length=256, null=True) # optional GitHub URL for this software
 #    documentation_url = pw.CharField(max_length=256, null=True) # optional documentation URL for this software
-
-
-DB.create_tables([Service, Endpoint])

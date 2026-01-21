@@ -5,6 +5,8 @@ import click
 from scanner.netscan import NetScanner
 from scanner.webenum import WebEnumerator
 from scanner.ai import CredSearcher, CredTester, KeywordExtractor
+from scanner.settings import Settings
+from scanner.db import init_db
 
 
 def configure_logging(log_level="INFO"):
@@ -42,8 +44,15 @@ logger = logging.getLogger("scanner.main")
 @click.option("--ports", "-p", default=None, help="Comma-separated list of ports to scan; forwarded to nmap")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--max-webdrivers", default=1, help="Maximum number of concurrent WebDriver instances for credential testing")
-def run(subnets, ports, log_level="INFO", max_webdrivers=1):
+@click.option("--db-path", default=None, help="Path to the SQLite database file")
+def main_cmd(subnets, ports, log_level, max_webdrivers, db_path):
+    run(subnets, ports, log_level, max_webdrivers, db_path)
+
+def run(subnets, ports, log_level, max_webdrivers, db_path):
+    Settings().configure_cli_arguments(db_path=db_path, max_webdrivers=max_webdrivers)
     configure_logging(log_level)
+    init_db()
+
     logger.debug("Starting scanner")
 
     subnets = [sub for sub in subnets.split(",") if sub.strip()]
@@ -67,4 +76,4 @@ def run(subnets, ports, log_level="INFO", max_webdrivers=1):
     logger.info("Scanner exiting.")
 
 if __name__ == '__main__':
-    run() # pylint: disable=no-value-for-parameter
+    main_cmd() # pylint: disable=no-value-for-parameter
