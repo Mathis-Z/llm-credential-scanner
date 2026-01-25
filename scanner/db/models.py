@@ -39,7 +39,10 @@ class Service(BaseModel):
 
     def add_credentials(self, creds: tuple[str, str]):
         """Add a (user,password) tuple to the list of possible default credentials for this service"""
-        self.credentials = list(set((json.loads(self._credentials or '[]')) + [creds]))
+        existing = json.loads(self._credentials or '[]')
+        # Normalize all credentials to tuples before de-duplication
+        normalized = [tuple(pair) for pair in existing] + [tuple(creds)]
+        self.credentials = list(set(normalized))
 
     def gather_keywords(self):
         """Gathers all keywords from all endpoints of this service. Removes duplicates"""
