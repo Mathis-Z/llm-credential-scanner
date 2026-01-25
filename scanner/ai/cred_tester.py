@@ -9,7 +9,7 @@ from threading import Thread, Event
 import logging
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 import simhash
 from pubsub import pub
 from langchain.agents import create_agent
@@ -83,7 +83,15 @@ class CredTester(DBConnectionMixin, Thread):
         options = webdriver.FirefoxOptions()
         options.add_argument("--headless")
         driver = webdriver.Firefox(options=options)
-        driver.get(endpoint.url())
+
+        try:
+            driver.get(endpoint.url())
+        except WebDriverException as exc:
+            logger.warning("WebDriver navigation failed for %s: %s", endpoint.url(), str(exc))
+            endpoint.add_tested_credentials((username, password))
+            endpoint.save()
+            driver.quit()
+            return
 
         # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
         soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -151,6 +159,12 @@ class CredTester(DBConnectionMixin, Thread):
                         logger.debug("AI: [Calling tools: %s]", stringified_tool_calls)
                     else:
                         logger.debug("AI: %s", latest_message.content)
+        except WebDriverException as exc:
+            logger.warning("WebDriver failed during credential test for %s: %s", endpoint.url(), str(exc))
+            endpoint.add_tested_credentials((username, password))
+            endpoint.save()
+            driver.quit()
+            return
         finally:
             # wait for potential redirects or DOM updates triggered by form submission
             try:
