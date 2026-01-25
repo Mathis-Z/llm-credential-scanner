@@ -149,6 +149,7 @@ class WebEnumWorker(threading.Thread):
 
         if response.status_code < 200 or response.status_code >= 300:
             return None
+        logger.info(f"got response for {url} with code {response.status_code}")
         return response
 
     def detect_password_input(self, response: requests.Response) -> bool:
