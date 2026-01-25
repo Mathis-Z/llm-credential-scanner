@@ -113,7 +113,7 @@ def run(keep):
         ("Filadex", 8080, "/login", "admin", "admin"),
         ("Grafana", 3000, "/login", "admin", "admin"),
         ("Joplin", 22300, "/login", "admin@localhost", "admin"),
-        ("MongoExpress", 8081, "/", "admin", "pass"),
+        # ("MongoExpress", 8081, "/", "admin", "pass"), WARNING: MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!
         ("osTicket", 8080, "/scp/login.php", "ostadmin", "Admin1"),
         ("ownCloud", 8080, "/login", "admin", "admin"),
         ("PasswordCockpit", 8080, "/login", "admin", "Admin123!"),
