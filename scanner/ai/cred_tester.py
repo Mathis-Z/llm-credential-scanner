@@ -202,7 +202,7 @@ class CredTester(DBConnectionMixin, Thread):
         )
         login_successful = (
             (before_path != after_path) or
-            (simhash_distance > 32)
+            (simhash_distance > 42)
         )
         logger.debug("Login %s: before_path=%s after_path=%s simhash_distance=%s",
                      "successful" if login_successful else "failed",
