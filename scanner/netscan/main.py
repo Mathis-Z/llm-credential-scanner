@@ -10,7 +10,6 @@ import ipaddress
 import nmap3
 from pubsub import pub
 import requests
-import time
 
 from scanner.db.models import Service
 from scanner.db import DBConnectionMixin
@@ -28,7 +27,6 @@ class NetScanner(DBConnectionMixin, threading.Thread):
         pub.sendMessage('netscanner.started')
         for subnet_or_ip in self.subnets_or_ips:
             self.scan_subnet_or_ip(subnet_or_ip)
-        time.sleep(10)  # wait a bit for last services to be created
         pub.sendMessage('netscanner.done')
         logger.info("NetScanner done")
 

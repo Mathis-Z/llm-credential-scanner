@@ -43,7 +43,6 @@ class WebEnumerator(DBConnectionMixin, threading.Thread):
         for worker in self.workers:
             worker.join()
 
-        time.sleep(10)  # wait a bit for last services to be created
         pub.sendMessage('webenum.done')
         logger.info("WebEnumerator done.")
 
