@@ -33,6 +33,7 @@ class TemporaryDatabase:
 
 def found_creds(username, password):
     for s in Service.select():
+        print(f"Checking service {s}")
         if s.credentials and (username, password) in s.credentials:
             return True
     return False
