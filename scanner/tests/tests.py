@@ -101,28 +101,46 @@ def run(keep):
     #    run_app_test("4gaBoards", 3000, "/admin", "demo", "demo")
     #])
 
-    print_results([
-        run_app_test("4gaBoards", 3000, "/login", "demo", "demo"),
-        run_app_test("BabyBuddy", 8000, "/login/", "admin", "admin"),
-        run_app_test("BookStack", 6875, "/login", "admin@admin.com", "password"),
-        run_app_test("CalibrWeb", 8083, "/login", "admin", "admin123"),
-        run_app_test("ClipCascade", 8088, "/login", "admin", "admin123"),
-        run_app_test("Convertigo", 28080, "/convertigo/index.html", "admin", "admin"),
-        run_app_test("DataLens", 8080, "/auth/signin", "admin", "admin"),
-        run_app_test("DockerSSOServer", 3000, "/login", "username", "password"),
-        run_app_test("Filadex", 8080, "/login", "admin", "admin"),
-        run_app_test("Grafana", 3000, "/login", "admin", "admin"),
-        run_app_test("Joplin", 22300, "/login", "admin@localhost", "admin"),
-        run_app_test("MongoExpress", 8081, "/", "admin", "pass"),
-        run_app_test("osTicket", 8080, "/scp/login.php", "ostadmin", "Admin1"),
-        run_app_test("ownCloud", 8080, "/login", "admin", "admin"),
-        run_app_test("PasswordCockpit", 8080, "/login", "admin", "Admin123!"),
-        run_app_test("Pyload", 8000, "/login", "admin", "password"),
-        run_app_test("Rainloop", 80, "/", "admin", "12345"),
-        run_app_test("Readmine", 8084, "/login", "admin", "admin"),
-        run_app_test("SonarQube", 9000, "/sessions/new", "admin", "admin"),
-        run_app_test("Zabbix", 80, "/", "Admin", "zabbix")
-    ])
+    test_cases = [
+        ("4gaBoards", 3000, "/login", "demo", "demo"),
+        ("BabyBuddy", 8000, "/login/", "admin", "admin"),
+        ("BookStack", 6875, "/login", "admin@admin.com", "password"),
+        ("CalibrWeb", 8083, "/login", "admin", "admin123"),
+        ("ClipCascade", 8088, "/login", "admin", "admin123"),
+        ("Convertigo", 28080, "/convertigo/index.html", "admin", "admin"),
+        ("DataLens", 8080, "/auth/signin", "admin", "admin"),
+        ("DockerSSOServer", 3000, "/login", "username", "password"),
+        ("Filadex", 8080, "/login", "admin", "admin"),
+        ("Grafana", 3000, "/login", "admin", "admin"),
+        ("Joplin", 22300, "/login", "admin@localhost", "admin"),
+        ("MongoExpress", 8081, "/", "admin", "pass"),
+        ("osTicket", 8080, "/scp/login.php", "ostadmin", "Admin1"),
+        ("ownCloud", 8080, "/login", "admin", "admin"),
+        ("PasswordCockpit", 8080, "/login", "admin", "Admin123!"),
+        ("Pyload", 8000, "/login", "admin", "password"),
+        ("Rainloop", 80, "/", "admin", "12345"),
+        ("Readmine", 8084, "/login", "admin", "admin"),
+        ("SonarQube", 9000, "/sessions/new", "admin", "admin"),
+        ("Zabbix", 80, "/", "Admin", "zabbix")
+    ]
+
+    results: list[TestResult] = []
+    for (app_name, port, login_path, username, password) in test_cases:
+        try:
+            results.append(run_app_test(app_name, port, login_path, username, password))
+        except Exception as exc:
+            print(f"Test for {app_name} failed: {exc}")
+            results.append(
+                TestResult(
+                    service_name=app_name,
+                    found_creds=False,
+                    verified_creds=False,
+                    found_login_panel=False,
+                    db_path="ERROR"
+                )
+            )
+
+    print_results(results)
 
 if __name__ == "__main__":
     run()  # pylint: disable=no-value-for-parameter

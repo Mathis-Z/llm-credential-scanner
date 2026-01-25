@@ -40,13 +40,21 @@ class StartupScript:
         threading.Thread(target=stream_logs, args=(self.process,), daemon=True).start()
 
         start_time = time.time()
+        last_log_time = 0.0
         while True:
             try:
-                response = requests.get(f"http://localhost:{self.wait_for_port}", timeout=3)
+                response = requests.get(f"http://localhost:{self.wait_for_port}", timeout=10)
                 if response.status_code < 400:
                     break
-            except requests.ConnectionError:
-                pass
+            except requests.RequestException as exc:
+                now = time.time()
+                if now - last_log_time >= 10:
+                    logging.debug(
+                        "Waiting for port %s: %s",
+                        self.wait_for_port,
+                        str(exc)
+                    )
+                    last_log_time = now
 
             if time.time() - start_time > self.timeout:
                 raise TimeoutError(f"Timeout reached while waiting for port {self.wait_for_port} to respond.")
