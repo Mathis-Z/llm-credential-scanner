@@ -4,6 +4,7 @@ import time
 import os
 import requests
 from pathlib import Path
+import threading
 
 
 class StartupScript:
@@ -20,6 +21,10 @@ class StartupScript:
         self.timeout = timeout
 
     def __enter__(self):
+        def stream_logs(process):
+            for line in process.stdout:
+                print(line, end='')
+
         subprocess.run(["sudo", "docker", "container", "prune", "-f"], check=True)
         subprocess.run(["sudo", "docker", "network", "prune", "-f"], check=True)
 
@@ -31,6 +36,8 @@ class StartupScript:
             stderr=subprocess.STDOUT,
             bufsize=1
         )
+
+        threading.Thread(target=stream_logs, args=(self.process,), daemon=True).start()
 
         start_time = time.time()
         while True:
