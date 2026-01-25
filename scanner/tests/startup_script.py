@@ -61,7 +61,7 @@ class RunDockerCompose(StartupScript):
         compose_file_name = full_path.name if (full_path.suffix == ".yaml" or full_path.suffix == ".yml") else "docker-compose.yml"
 
         super().__init__(
-            cmd=["docker", "compose", "up", "--abort-on-container-exit", "-f", compose_file_name],
+            cmd=["docker", "compose", "-f", compose_file_name, "up", "--abort-on-container-exit"],
             cwd=full_path.parent,
             wait_for_port=wait_for_port,
             timeout=timeout
