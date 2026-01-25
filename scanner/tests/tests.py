@@ -102,7 +102,8 @@ def run(keep):
     #])
 
     print_results([
-        run_app_test("BookStack", 6875, "/login", "admin@admin.com", "password")
+        run_app_test("BookStack", 6875, "/login", "admin@admin.com", "password"),
+        run_app_test("BabyBuddy", 8000, "/login/", "admin", "admin")
     ])
 
 if __name__ == "__main__":
