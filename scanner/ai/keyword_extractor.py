@@ -72,6 +72,7 @@ class KeywordExtractor(DBConnectionMixin, Thread):
 
             time.sleep(2)
 
+        time.sleep(10)  # wait a bit for last services to be created
         pub.sendMessage('keyword_extractor.done')
         logger.info("KeywordExtractor exited")
 

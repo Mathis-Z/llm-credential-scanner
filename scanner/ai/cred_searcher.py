@@ -90,6 +90,7 @@ class CredSearcher(DBConnectionMixin, Thread):
 
             time.sleep(2)
 
+        time.sleep(10)  # wait a bit for last services to be created
         pub.sendMessage('cred_searcher.done')
         logger.info("CredSearcher exited")
 
