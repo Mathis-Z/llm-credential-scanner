@@ -102,8 +102,26 @@ def run(keep):
     #])
 
     print_results([
+        run_app_test("4gaBoards", 3000, "/login", "demo", "demo"),
+        run_app_test("BabyBuddy", 8000, "/login/", "admin", "admin"),
         run_app_test("BookStack", 6875, "/login", "admin@admin.com", "password"),
-        run_app_test("BabyBuddy", 8000, "/login/", "admin", "admin")
+        run_app_test("CalibrWeb", 8083, "/login", "admin", "admin123"),
+        run_app_test("ClipCascade", 8088, "/login", "admin", "admin123"),
+        run_app_test("Convertigo", 28080, "/convertigo/index.html", "admin", "admin"),
+        run_app_test("DataLens", 8080, "/auth/signin", "admin", "admin"),
+        run_app_test("DockerSSOServer", 3000, "/login", "username", "password"),
+        run_app_test("Filadex", 8080, "/login", "admin", "admin"),
+        run_app_test("Grafana", 3000, "/login", "admin", "admin"),
+        run_app_test("Joplin", 22300, "/login", "admin@localhost", "admin"),
+        run_app_test("MongoExpress", 8081, "/", "admin", "pass"),
+        run_app_test("osTicket", 8080, "/scp/login.php", "ostadmin", "Admin1"),
+        run_app_test("ownCloud", 8080, "/login", "admin", "admin"),
+        run_app_test("PasswordCockpit", 8080, "/login", "admin", "Admin123!"),
+        run_app_test("Pyload", 8000, "/login", "admin", "password"),
+        run_app_test("Rainloop", 80, "/", "admin", "12345"),
+        run_app_test("Readmine", 8084, "/login", "admin", "admin"),
+        run_app_test("SonarQube", 9000, "/sessions/new", "admin", "admin"),
+        run_app_test("Zabbix", 80, "/", "Admin", "zabbix")
     ])
 
 if __name__ == "__main__":
