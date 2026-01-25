@@ -6,6 +6,7 @@ from tabulate import tabulate
 import click
 from .startup_script import RunDockerCompose
 from scanner.db import Endpoint, Service, init_db
+from scanner.settings import Settings
 
 KEEP_DB_FILES = False
 
@@ -34,16 +35,18 @@ class TemporaryDatabase:
 def found_creds(username, password):
     for s in Service.select():
         print(f"Checking service {s}")
-        if s.credentials and (username, password) in s.credentials:
-            return True
+        # s.credentials may be stored as list of lists (JSON) or tuples; compare values robustly
+        for u, p in (s.credentials or []):
+            if u == username and p == password:
+                return True
     return False
 
 def verified_creds(path, username, password):
-    e = Endpoint.get_or_none(Endpoint.path == path & Endpoint.working_credentials == f"{username}:{password}")
+    e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.working_credentials == f"{username}:{password}"))
     return e is not None
 
 def found_login_panel(path):
-    e = Endpoint.get_or_none(Endpoint.path == path & Endpoint.is_login == True)
+    e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.is_login == True))
     return e is not None
 
 def check_result(service_name, login_path, username, password):
@@ -80,6 +83,9 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
     with TemporaryDatabase() as temp_db_path:
         with RunDockerCompose(f"{app_dir_name}/docker-compose.yaml", wait_for_port=port):
             run_scanner(port, extra_args=["--db-path", str(temp_db_path)])
+            # Rebind our ORM to the same temporary DB used by the scanner run
+            Settings().configure_cli_arguments(db_path=str(temp_db_path))
+            init_db()
             r = check_result(app_dir_name, login_path, username, password)
             r.db_path = str(temp_db_path)
             return r
