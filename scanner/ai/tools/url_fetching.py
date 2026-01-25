@@ -32,7 +32,7 @@ def _fetch_url(url: str) -> str:
     and condenses it for useful content extraction.
     """
     try:
-        sb = sb_cdp.Chrome(url=None, headless=False)
+        sb = sb_cdp.Chrome(url=None, headless=True)
         sb.open(url)
         sb.sleep(1)  # Initial wait for page load
         _wait_for_dom_settle(sb)
