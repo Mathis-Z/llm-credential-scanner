@@ -90,8 +90,12 @@ def run(keep):
     global KEEP_DB_FILES
     KEEP_DB_FILES = keep
 
+    #print_results([
+    #    run_app_test("4gaBoards", 3000, "/admin", "demo", "demo")
+    #])
+
     print_results([
-        run_app_test("4gaBoards", 3000, "/admin", "demo", "demo")
+        run_app_test("4gaBoards", 3000, "/login", "admin@admin.com", "password")
     ])
 
 if __name__ == "__main__":
