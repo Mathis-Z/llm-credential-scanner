@@ -63,7 +63,7 @@ class StartupScript:
 class RunDockerCompose(StartupScript):
     """Run a docker compose file from the test-network directory and wait for a port to respond."""
 
-    def __init__(self, compose_file_path: str, wait_for_port, timeout: int = 30):
+    def __init__(self, compose_file_path: str, wait_for_port, timeout: int = 300):
         full_path = Path(__file__).parent / "test-network" / compose_file_path
         compose_file_name = full_path.name if (full_path.suffix == ".yaml" or full_path.suffix == ".yml") else "docker-compose.yml"
 
