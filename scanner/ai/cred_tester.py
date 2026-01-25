@@ -90,9 +90,20 @@ class CredTester(DBConnectionMixin, Thread):
         for script in soup.find_all("script"):
             script.decompose()
         # store page info to compare with after tool calls
+        before_url = driver.current_url
         before_raw_page_source = driver.page_source
         before_page_source = str(soup)
         before_path = urllib.parse.urlparse(driver.current_url).path
+        before_title = driver.title
+        before_cookies = driver.get_cookies()
+        logger.debug(
+            "Before submit: url=%s path=%s title=%s cookies=%s page_len=%s",
+            before_url,
+            before_path,
+            before_title,
+            [c.get("name") for c in before_cookies],
+            len(before_raw_page_source or "")
+        )
 
         full_prompt = PROMPT_TEMPLATE % (endpoint.url(), username, password, before_page_source)
         llm = get_chat_model(reasoning=False)
@@ -134,9 +145,25 @@ class CredTester(DBConnectionMixin, Thread):
                 script.decompose()
             after_page_source = str(soup)
             after_path = urllib.parse.urlparse(driver.current_url).path
+            after_url = driver.current_url
+            after_title = driver.title
+            after_raw_page_source = driver.page_source
+            after_cookies = driver.get_cookies()
             driver.quit()
 
         simhash_distance = simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source))
+        before_cookie_names = {c.get("name") for c in before_cookies}
+        after_cookie_names = {c.get("name") for c in after_cookies}
+        logger.debug(
+            "After submit: url=%s path=%s title=%s cookies=%s page_len=%s new_cookies=%s removed_cookies=%s",
+            after_url,
+            after_path,
+            after_title,
+            [c.get("name") for c in after_cookies],
+            len(after_raw_page_source or ""),
+            sorted(after_cookie_names - before_cookie_names),
+            sorted(before_cookie_names - after_cookie_names),
+        )
         login_successful = (
             (before_path != after_path) or
             (simhash_distance > 32)
