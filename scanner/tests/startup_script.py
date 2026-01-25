@@ -92,11 +92,33 @@ class RunDockerCompose(StartupScript):
 
         super().__exit__(exc_type, exc_value, traceback)
         try:
-            subprocess.run(
+            down_proc = subprocess.Popen(
                 ["docker", "compose", "-f", self.compose_file_name, "down", "--timeout", "30"],
                 cwd=self.cwd,
-                check=False,
-                timeout=60
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True
             )
+            down_proc.communicate(timeout=60)
         except subprocess.TimeoutExpired:
-            logger.warning("docker compose down timed out for %s; continuing.", self.compose_file_name)
+            logger.warning("docker compose down timed out for %s; terminating down process and force-killing containers.", self.compose_file_name)
+            try:
+                down_proc.terminate()
+                down_proc.communicate(timeout=10)
+            except Exception:
+                down_proc.kill()
+            try:
+                subprocess.run(
+                    ["docker", "compose", "-f", self.compose_file_name, "kill"],
+                    cwd=self.cwd,
+                    check=False,
+                    timeout=30
+                )
+                subprocess.run(
+                    ["docker", "compose", "-f", self.compose_file_name, "down", "--remove-orphans"],
+                    cwd=self.cwd,
+                    check=False,
+                    timeout=30
+                )
+            except subprocess.TimeoutExpired:
+                logger.warning("docker compose kill/down timed out for %s; giving up.", self.compose_file_name)
