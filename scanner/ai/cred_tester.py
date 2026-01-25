@@ -8,6 +8,8 @@ import urllib.parse
 from threading import Thread, Event
 import logging
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 import simhash
 from pubsub import pub
 from langchain.agents import create_agent
@@ -88,6 +90,7 @@ class CredTester(DBConnectionMixin, Thread):
         for script in soup.find_all("script"):
             script.decompose()
         # store page info to compare with after tool calls
+        before_raw_page_source = driver.page_source
         before_page_source = str(soup)
         before_path = urllib.parse.urlparse(driver.current_url).path
 
@@ -116,7 +119,15 @@ class CredTester(DBConnectionMixin, Thread):
                     else:
                         logger.debug("AI: %s", latest_message.content)
         finally:
-            time.sleep(3) # wait for potential redirects
+            # wait for potential redirects or DOM updates triggered by form submission
+            try:
+                WebDriverWait(driver, 10).until(
+                    lambda d: urllib.parse.urlparse(d.current_url).path != before_path
+                    or d.page_source != before_raw_page_source
+                )
+            except TimeoutException:
+                pass
+            time.sleep(1)
             # to compare with before_page_source need to remove script tags again
             soup = BeautifulSoup(driver.page_source, "html.parser")
             for script in soup.find_all("script"):
@@ -125,15 +136,16 @@ class CredTester(DBConnectionMixin, Thread):
             after_path = urllib.parse.urlparse(driver.current_url).path
             driver.quit()
 
+        simhash_distance = simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source))
         login_successful = (
             (before_path != after_path) or
-            (simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source)) > 32)
+            (simhash_distance >= 32)
         )
         logger.debug("Login %s: before_path=%s after_path=%s simhash_distance=%s",
                      "successful" if login_successful else "failed",
                      before_path,
                      after_path,
-                     simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source))
+                     simhash_distance
         )
 
         creds_str = f"{username}:{password}"
