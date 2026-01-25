@@ -91,8 +91,12 @@ class RunDockerCompose(StartupScript):
         logger.info("Stopping docker compose from %s", self.compose_file_name)
 
         super().__exit__(exc_type, exc_value, traceback)
-        subprocess.run(
-            ["docker", "compose", "-f", self.compose_file_name, "down"],
-            cwd=self.cwd,
-            check=False
-        )
+        try:
+            subprocess.run(
+                ["docker", "compose", "-f", self.compose_file_name, "down", "--timeout", "30"],
+                cwd=self.cwd,
+                check=False,
+                timeout=60
+            )
+        except subprocess.TimeoutExpired:
+            logger.warning("docker compose down timed out for %s; continuing.", self.compose_file_name)
