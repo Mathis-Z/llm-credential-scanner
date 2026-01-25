@@ -89,6 +89,28 @@ class CredTester(DBConnectionMixin, Thread):
         soup = BeautifulSoup(driver.page_source, "html.parser")
         for script in soup.find_all("script"):
             script.decompose()
+
+        # If the form action host differs (localhost vs 127.0.0.1), re-open on the action host
+        current_url = driver.current_url
+        current_parts = urllib.parse.urlparse(current_url)
+        form = soup.find("form")
+        form_action = form.get("action") if form else None
+        if form_action:
+            action_url = urllib.parse.urljoin(current_url, form_action)
+            action_parts = urllib.parse.urlparse(action_url)
+            if action_parts.hostname and action_parts.hostname != current_parts.hostname:
+                host_pair = {action_parts.hostname, current_parts.hostname}
+                if host_pair == {"localhost", "127.0.0.1"} and action_parts.port == current_parts.port:
+                    logger.debug(
+                        "Form action host mismatch (current=%s action=%s). Re-opening on action host.",
+                        current_url,
+                        action_url,
+                    )
+                    driver.get(action_url)
+                    soup = BeautifulSoup(driver.page_source, "html.parser")
+                    for script in soup.find_all("script"):
+                        script.decompose()
+
         # store page info to compare with after tool calls
         before_url = driver.current_url
         before_raw_page_source = driver.page_source
