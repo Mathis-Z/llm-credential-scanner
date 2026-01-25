@@ -77,12 +77,11 @@ def run_scanner(port, extra_args=[]):
 
 def run_app_test(app_dir_name, port, login_path, username, password) -> TestResult:
     with TemporaryDatabase() as temp_db_path:
-        with RunDockerCompose(app_dir_name, wait_for_port=port):
+        with RunDockerCompose(f"{app_dir_name}/docker-compose.yml", wait_for_port=port):
             run_scanner(port, extra_args=["--db-path", str(temp_db_path)])
             r = check_result(app_dir_name, login_path, username, password)
             r.db_path = str(temp_db_path)
             return r
-
 
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary database files after tests complete")
