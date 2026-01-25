@@ -67,9 +67,24 @@ class RunDockerCompose(StartupScript):
         full_path = Path(__file__).parent / "test-network" / compose_file_path
         compose_file_name = full_path.name if (full_path.suffix == ".yaml" or full_path.suffix == ".yml") else "docker-compose.yml"
 
+        logger = logging.getLogger('scanner.tests.startup_script')
+        logger.info("Starting docker compose from %s", full_path)
+
         super().__init__(
             cmd=["docker", "compose", "-f", compose_file_name, "up", "--abort-on-container-exit"],
             cwd=full_path.parent,
             wait_for_port=wait_for_port,
             timeout=timeout
+        )
+        self.compose_file_name = compose_file_name
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        logger = logging.getLogger('scanner.tests.startup_script')
+        logger.info("Stopping docker compose from %s", self.compose_file_name)
+
+        super().__exit__(exc_type, exc_value, traceback)
+        subprocess.run(
+            ["docker", "compose", "-f", self.compose_file_name, "down"],
+            cwd=self.cwd,
+            check=False
         )
