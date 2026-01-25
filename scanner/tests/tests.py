@@ -118,7 +118,7 @@ def run(keep):
         ("ownCloud", 8080, "/login", "admin", "admin"),
         ("PasswordCockpit", 8080, "/login", "admin", "Admin123!"),
         ("Pyload", 8000, "/login", "admin", "password"),
-        ("Rainloop", 80, "/", "admin", "12345"),
+        # ("Rainloop", 80, "/", "admin", "12345"), Error response from daemon: error while creating mount source path '/opt/docker-rainloop/data': mkdir /opt/docker-rainloop: read-only file system
         ("Readmine", 8084, "/login", "admin", "admin"),
         ("SonarQube", 9000, "/sessions/new", "admin", "admin"),
         ("Zabbix", 80, "/", "Admin", "zabbix")
