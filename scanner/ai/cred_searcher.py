@@ -121,7 +121,7 @@ class CredSearcher(DBConnectionMixin, Thread):
 
             logger.debug("---------------------------- Chunk ----------------------------")
             if isinstance(latest_message, ToolMessage):
-                logger.debug("Tool output: %s", latest_message.content)
+                logger.debug("Tool: %s", latest_message.content[:100])
             elif isinstance(latest_message, HumanMessage):
                 logger.debug("User: %s", latest_message.content)
             elif isinstance(latest_message, AIMessage):
