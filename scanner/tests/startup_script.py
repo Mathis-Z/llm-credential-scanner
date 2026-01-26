@@ -67,15 +67,19 @@ class StartupScript:
         sb = sb_cdp.Chrome(url=None, headless=True)
         sb.open(url)
 
-        for i in range(int(timeout)):
+        wait = 1
+        while timeout > 0:
             sb.refresh()
-            sb.sleep(1) # TODO: this wait might be too short for some slow-loading login pages
-            logger.info("[%d] Waiting for login panel at %s to come up.", i, url)
+            sb.sleep(wait)
+            logger.info("Waiting for login panel at %s to come up.", url)
 
             if sb.is_element_present('input[type="password"]'):
                 logger.info("Login panel is up at %s", url)
                 sb.driver.stop()
                 return True
+
+            timeout -= wait
+            wait = min(wait * 2, 10)  # exponential backoff up to 10 seconds
 
         sb.driver.stop()
         logger.error("Login panel did not come up at %s within %i seconds.", url, timeout)
