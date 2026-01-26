@@ -108,10 +108,16 @@ class CredSearcher(DBConnectionMixin, Thread):
                 logger.info("Submitted credentials for service %s: %s / %s", service.url(), username, password)
                 return {"message": f"Credentials for {username} submitted successfully."}
 
-            keywords = "\n".join(service.gather_keywords())
+            keywords = service.gather_keywords()
+            if not keywords:
+                logger.warning("No keywords were found for service %s, skipping", service.url())
+                if service.credentials is None:
+                    service.credentials = []
+                    service.save()
+                return
 
             llm = get_chat_model(reasoning=True)
-            prompt = PROMPT_TEMPLATE % keywords
+            prompt = PROMPT_TEMPLATE % "\n".join(keywords)
             logger.debug("CredSearcher prompt for service %s:\n%s", service.url(), prompt)
             agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url])
 
