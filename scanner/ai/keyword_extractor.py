@@ -90,18 +90,21 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         sends it to the LLM to extract keywords.
         Updates the endpoint with the extracted keywords.
         """
-        llm = get_chat_model(reasoning=False)
-        prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
-        logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
-        response = llm.invoke([("human", prompt)]).content
-        if response is None: # aborted
-            return
-        lines = [line.strip() for line in response.split('\n')]
+        try:
+            llm = get_chat_model(reasoning=False)
+            prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
+            logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
+            response = llm.invoke([("human", prompt)]).content
+            if response is None: # aborted
+                return
+            lines = [line.strip() for line in response.split('\n')]
 
-        keyword_count = int(lines[0])
-        endpoint.keywords = [kw for kw in lines[1:keyword_count+1] if len(kw) > 3]
-        endpoint.save()
-        logger.info("Extracted keywords for %s: %s", endpoint.url(), endpoint.keywords)
+            keyword_count = int(lines[0])
+            endpoint.keywords = [kw for kw in lines[1:keyword_count+1] if len(kw) > 3]
+            endpoint.save()
+            logger.info("Extracted keywords for %s: %s", endpoint.url(), endpoint.keywords)
+        except Exception as e:
+            logger.error("Error extracting keywords for %s: %s", endpoint.url(), str(e))
 
     def _on_abort(self):
         self.termination_event.set()

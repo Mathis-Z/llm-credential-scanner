@@ -100,16 +100,24 @@ class WebEnumWorker(threading.Thread):
             except (queue.ShutDown, queue.Empty):
                 break
 
-            endpoint_url = f"{self.service.url()}{path}"
-            response = self.query_url(endpoint_url)
-
             paths_tested += 1
             if time.time() - last_log_time > 5:
                 logger.debug("WebEnumWorker tested %d paths on %s", paths_tested, self.service.url())
                 last_log_time = time.time()
 
+            self.process_path(path)
+
+        logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())
+        self.service.enum_in_progress = False
+        self.service.save()
+
+    def process_path(self, path: str):
+        try:
+            endpoint_url = f"{self.service.url()}{path}"
+            response = self.query_url(endpoint_url)
+
             if response is None or self.is_404_response(response):
-                continue
+                return
 
             # handle redirects
             # TODO: this is duplicated with allow_redirects=True in query_url
@@ -117,7 +125,7 @@ class WebEnumWorker(threading.Thread):
             path = re.sub(r'/+', '/', path)  # normalize multiple slashes
 
             if Endpoint.select().where((Endpoint.service == self.service) & (Endpoint.path == path)).count() != 0:
-                continue # skip already known endpoints
+                return # skip already known endpoints
 
             # handle BFS crawling
             for link in self.parse_links(response):
@@ -135,10 +143,8 @@ class WebEnumWorker(threading.Thread):
                 is_login=is_login,
                 page_source=response.text
             )
-
-        logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())
-        self.service.enum_in_progress = False
-        self.service.save()
+        except Exception as e:
+            logger.error("Error processing path %s on %s: %s", path, self.service.url(), str(e))
 
     def query_url(self, url) -> None|requests.Response:
         """Query a URL and return the response if status code is 2xx, else None. Follows redirects."""
@@ -149,7 +155,7 @@ class WebEnumWorker(threading.Thread):
 
         if response.status_code < 200 or response.status_code >= 300:
             return None
-        logger.info(f"Got response for {url} with code {response.status_code}")
+        logger.info("Got response for %s with code %d", url, response.status_code)
         return response
 
     def detect_password_input(self, response: requests.Response) -> bool:

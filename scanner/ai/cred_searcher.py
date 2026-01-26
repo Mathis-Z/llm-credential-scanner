@@ -98,35 +98,38 @@ class CredSearcher(DBConnectionMixin, Thread):
 
     def search_service(self, service: Service):
         """Search default credentials for a service using its keywords"""
-        logger.debug("Starting CredSearcher for service %s", service.url())
+        try:
+            logger.debug("Starting CredSearcher for service %s", service.url())
 
-        @tool(description="Submit credentials (username & password)")
-        def submit_credentials(username: str, password: str):
-            service.add_credentials((username, password))
-            service.save()
-            logger.info("Submitted credentials for service %s: %s / %s", service.url(), username, password)
-            return {"message": f"Credentials for {username} submitted successfully."}
+            @tool(description="Submit credentials (username & password)")
+            def submit_credentials(username: str, password: str):
+                service.add_credentials((username, password))
+                service.save()
+                logger.info("Submitted credentials for service %s: %s / %s", service.url(), username, password)
+                return {"message": f"Credentials for {username} submitted successfully."}
 
-        keywords = "\n".join(service.gather_keywords())
+            keywords = "\n".join(service.gather_keywords())
 
-        llm = get_chat_model(reasoning=True)
-        prompt = PROMPT_TEMPLATE % keywords
-        logger.debug("CredSearcher prompt for service %s:\n%s", service.url(), prompt)
-        agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url])
+            llm = get_chat_model(reasoning=True)
+            prompt = PROMPT_TEMPLATE % keywords
+            logger.debug("CredSearcher prompt for service %s:\n%s", service.url(), prompt)
+            agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url])
 
-        # https://docs.langchain.com/oss/python/langchain/agents#streaming
-        for chunk in agent.stream({"messages": [{"role": "user", "content": prompt}]}, stream_mode="values"):
-            # Each chunk contains the full state at that point
-            latest_message = chunk["messages"][-1]
+            # https://docs.langchain.com/oss/python/langchain/agents#streaming
+            for chunk in agent.stream({"messages": [{"role": "user", "content": prompt}]}, stream_mode="values"):
+                # Each chunk contains the full state at that point
+                latest_message = chunk["messages"][-1]
 
-            logger.debug("---------------------------- Chunk ----------------------------")
-            if isinstance(latest_message, ToolMessage):
-                logger.debug("Tool: %s", latest_message.content[:100])
-            elif isinstance(latest_message, HumanMessage):
-                logger.debug("User: %s", latest_message.content)
-            elif isinstance(latest_message, AIMessage):
-                if latest_message.tool_calls:
-                    stringified_tool_calls = ', '.join([f"{tc['name']}({tc['args']})" for tc in latest_message.tool_calls])
-                    logger.debug("AI: [Calling tools: %s]", stringified_tool_calls)
-                else:
-                    logger.debug("AI: %s", latest_message.content)
+                logger.debug("---------------------------- Chunk ----------------------------")
+                if isinstance(latest_message, ToolMessage):
+                    logger.debug("Tool: %s", latest_message.content[:100])
+                elif isinstance(latest_message, HumanMessage):
+                    logger.debug("User: %s", latest_message.content)
+                elif isinstance(latest_message, AIMessage):
+                    if latest_message.tool_calls:
+                        stringified_tool_calls = ', '.join([f"{tc['name']}({tc['args']})" for tc in latest_message.tool_calls])
+                        logger.debug("AI: [Calling tools: %s]", stringified_tool_calls)
+                    else:
+                        logger.debug("AI: %s", latest_message.content)
+        except Exception as e:
+            logger.error("Error in CredSearcher for service %s: %s", service.url(), str(e))
