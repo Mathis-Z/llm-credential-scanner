@@ -184,6 +184,11 @@ class WebEnumWorker(threading.Thread):
             return None
         logger.info("Got response for %s with code %d", url, response.status_code)
 
+        # Skip rendering if the final path is already known in the DB
+        final_path = self.normalize_path(response.url)
+        if self.already_found(final_path):
+            return None
+
         final_url, rendered_html = fetch_url(response.url)
         if not rendered_html:
             return None
