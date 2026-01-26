@@ -1,11 +1,11 @@
 import subprocess
 import logging
+import threading
 import time
-import os
 import requests
 from pathlib import Path
-import threading
 
+logger = logging.getLogger('scanner.tests.startup_script')
 
 class StartupScript:
     """
@@ -49,7 +49,7 @@ class StartupScript:
             except requests.RequestException as exc:
                 now = time.time()
                 if now - last_log_time >= 10:
-                    logging.debug(
+                    logger.debug(
                         "Waiting for port %s: %s",
                         self.wait_for_port,
                         str(exc)
@@ -60,16 +60,27 @@ class StartupScript:
                 raise TimeoutError(f"Timeout reached while waiting for port {self.wait_for_port} to respond.")
             time.sleep(1)
 
-        logging.info("Startup command %s ran successfully.", self.cmd)
+        logger.info("Startup command %s ran successfully.", self.cmd)
         return self.process
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.process:
-            self.process.kill()
-            self.process.kill()
-            self.process.kill()
-            self.process.kill()
-            self.process.kill()
+            self.process.terminate() # graceful shutdown
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning("Process did not terminate gracefully, sending SIGKILL.")
+
+            self.process.kill() # force kill
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.error("Process did not respond to SIGKILL, may be a zombie process.")
+
+            # Double-check process status
+            if self.process.poll() is None:
+                logger.warning("Process still running after kill attempts, forcing kill again.")
+                self.process.kill()
 
 
 class RunDockerCompose(StartupScript):
@@ -79,7 +90,6 @@ class RunDockerCompose(StartupScript):
         full_path = Path(__file__).parent / "test-network" / compose_file_path
         compose_file_name = full_path.name if (full_path.suffix == ".yaml" or full_path.suffix == ".yml") else "docker-compose.yml"
 
-        logger = logging.getLogger('scanner.tests.startup_script')
         logger.info("Starting docker compose from %s", full_path)
 
         super().__init__(
@@ -91,7 +101,6 @@ class RunDockerCompose(StartupScript):
         self.compose_file_name = compose_file_name
 
     def __exit__(self, exc_type, exc_value, traceback):
-        logger = logging.getLogger('scanner.tests.startup_script')
         logger.info("Stopping docker compose from %s", self.compose_file_name)
 
         super().__exit__(exc_type, exc_value, traceback)
