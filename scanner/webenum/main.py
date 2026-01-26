@@ -63,6 +63,7 @@ class WebEnumWorker(threading.Thread):
         service.enum_in_progress = True
         service.save()
         self.service = service
+        self.render_cache: dict[str, str] = {}
         self.not_found_simhash = self.get_404_simhash() # for soft 404 detection
         self.path_queue = queue.Queue()
         self.enqueue_path('/')   # start with the root
@@ -189,9 +190,13 @@ class WebEnumWorker(threading.Thread):
         if self.already_found(final_path):
             return None
 
+        if response.url in self.render_cache:
+            return response.status_code, response.url, self.render_cache[response.url]
+
         final_url, rendered_html = fetch_url(response.url)
         if not rendered_html:
             return None
+        self.render_cache[response.url] = rendered_html
         return response.status_code, final_url, rendered_html
 
     def detect_password_input(self, url, content) -> bool:
