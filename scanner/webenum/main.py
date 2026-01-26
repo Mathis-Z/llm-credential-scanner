@@ -120,7 +120,7 @@ class WebEnumWorker(threading.Thread):
             if response is None or self.is_404_response(response):
                 return
 
-            if Endpoint.select().where((Endpoint.service == self.service) & (Endpoint.initial_path == initial_path)).count() != 0:
+            if Endpoint.select().where((Endpoint.service == self.service) & ((Endpoint.path == initial_path) | (Endpoint.initial_path == initial_path))).count() != 0:
                 return # skip already known endpoints
 
             # use full browser rendering to get page source; also handles redirects
