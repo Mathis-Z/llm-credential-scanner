@@ -57,6 +57,7 @@ class Endpoint(BaseModel):
     pk = pw.AutoField()
     service = pw.ForeignKeyField(Service, backref='endpoints')
     path = pw.CharField()
+    initial_path = pw.CharField() # the first path used to reach this endpoint (before redirects)
     is_login = pw.BooleanField(default=False)
     page_source = pw.TextField() # raw HTML of the page at this endpoint
     # keywords from the page at this endpoint; None means not analyzed yet

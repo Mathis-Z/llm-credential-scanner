@@ -112,46 +112,40 @@ class WebEnumWorker(threading.Thread):
         self.service.enum_in_progress = False
         self.service.save()
 
-    def process_path(self, path: str):
+    def process_path(self, initial_path: str):
         try:
-            endpoint_url = f"{self.service.url()}{path}"
+            endpoint_url = f"{self.service.url()}{initial_path}"
             response = self.query_url(endpoint_url)
 
             if response is None or self.is_404_response(response):
                 return
 
-            # use full browser rendering to get page source; also handles redirects
-            # TODO: querying before testing whether we know this endpoint is inefficient
-            current_url, page_source = fetch_url(response.url)
-            path = urllib.parse.urlparse(current_url).path
-
-            logger.debug("Discovered valid endpoint: %s", current_url)
-
-            if Endpoint.select().where((Endpoint.service == self.service) & (Endpoint.path == path)).count() != 0:
+            if Endpoint.select().where((Endpoint.service == self.service) & (Endpoint.initial_path == initial_path)).count() != 0:
                 return # skip already known endpoints
 
-            logger.debug("Parsing links on: %s", current_url)
+            # use full browser rendering to get page source; also handles redirects
+            final_url, page_source = fetch_url(response.url)
+            initial_path = urllib.parse.urlparse(final_url).path
+
             # handle BFS crawling
-            for link in self.parse_links(current_url, page_source):
+            for link in self.parse_links(final_url, page_source):
                 if self.service.url() in link:
                     p = urllib.parse.urlparse(link).path
                     self.path_queue.put(p)
-            
-            logger.debug("Detecting login forms on: %s", current_url)
 
-            is_login = self.detect_password_input(current_url, page_source)
+            is_login = self.detect_password_input(final_url, page_source)
             if is_login:
-                logger.info("Found directory with password input: %s", current_url)
+                logger.info("Found directory with password input: %s", final_url)
 
             Endpoint.create(
                 service=self.service,
-                path=path,
+                path=urllib.parse.urlparse(final_url).path,
+                initial_path=initial_path,
                 is_login=is_login,
                 page_source=page_source
             )
-            logger.debug("Created Endpoint record for %s on %s", path, self.service.url())
         except Exception as e:
-            logger.error("Error processing path %s on %s: %s", path, self.service.url(), str(e))
+            logger.error("Error processing path %s on %s: %s", initial_path, self.service.url(), str(e))
 
     def query_url(self, url) -> None|requests.Response:
         """Query a URL and return the response if status code is 2xx, else None. Follows redirects."""

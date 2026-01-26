@@ -1,4 +1,5 @@
 import logging
+import time
 import logging.config
 import click
 
@@ -54,6 +55,7 @@ def run(subnets, ports, log_level, max_webdrivers, db_path):
     configure_logging(log_level)
     init_db()
 
+    start_time = time.time()
     logger.debug("Starting scanner")
 
     subnets = [sub for sub in subnets.split(",") if sub.strip()]
@@ -75,10 +77,10 @@ def run(subnets, ports, log_level, max_webdrivers, db_path):
         module.join()
 
     logger.info("All modules completed.")
-    print_scan_summary()
+    print_scan_summary(start_time)
 
 
-def print_scan_summary():
+def print_scan_summary(start_time):
     summary = "\n" + "=" * 30 + " Scan Summary " + "=" * 30 + "\n"
 
     endpoints_with_default_creds = Endpoint.select().where(Endpoint.working_credentials != '')
@@ -105,6 +107,8 @@ def print_scan_summary():
         headers=['Service URL', 'Endpoints', 'Potential Default Credentials'],
         tablefmt='grid'
     ) + "\n"
+
+    summary += f"Total scan duration: {time.time() - start_time:.2f} seconds\n"
     logger.info(summary)
 
 

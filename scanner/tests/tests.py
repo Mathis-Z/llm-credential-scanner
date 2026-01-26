@@ -1,5 +1,6 @@
 import subprocess
 import random
+import time
 from pathlib import Path
 from dataclasses import dataclass
 from tabulate import tabulate
@@ -94,6 +95,7 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
 @click.option("--keep", is_flag=True, help="Keep temporary database files after tests complete")
 @click.option("--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
 def run(keep, select):
+    start_time = time.time()
     init_db()
     global KEEP_DB_FILES
     KEEP_DB_FILES = keep
@@ -144,6 +146,7 @@ def run(keep, select):
             )
 
     print_results(results)
+    print(f"All tests completed in {time.time() - start_time:.2f} seconds.")
 
 if __name__ == "__main__":
     run()  # pylint: disable=no-value-for-parameter
