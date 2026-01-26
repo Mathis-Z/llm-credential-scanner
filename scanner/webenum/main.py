@@ -65,7 +65,7 @@ class WebEnumWorker(threading.Thread):
         self.service = service
         self.not_found_simhash = self.get_404_simhash() # for soft 404 detection
         self.path_queue = queue.Queue()
-        self.path_queue.put('/')   # start with the root
+        self.enqueue_path('/')   # start with the root
 
         pub.subscribe(self._on_abort, 'abort')
 
@@ -84,7 +84,7 @@ class WebEnumWorker(threading.Thread):
                 for line in f:
                     word = line.strip()
                     if word:
-                        self.path_queue.put(word)
+                        self.enqueue_path(word)
 
         except FileNotFoundError:
             logger.error("Wordlist file not found: %s", wordlist_path)
@@ -112,26 +112,50 @@ class WebEnumWorker(threading.Thread):
         self.service.enum_in_progress = False
         self.service.save()
 
+    def normalize_path(self, raw_path: str) -> str:
+        if not raw_path:
+            return '/'
+        parsed = urllib.parse.urlparse(raw_path)
+        path = parsed.path or '/'
+        if not path.startswith('/'):
+            path = '/' + path
+        return path
+
+    def already_found(self, path: str) -> bool:
+        normalized = self.normalize_path(path)
+        return Endpoint.select().where(
+            (Endpoint.service == self.service)
+            & ((Endpoint.path == normalized) | (Endpoint.initial_path == normalized))
+        ).exists()
+
+    def enqueue_path(self, raw_path: str):
+        path = self.normalize_path(raw_path)
+        if not self.already_found(path):
+            self.path_queue.put(path)
+
     def process_path(self, initial_path: str):
         try:
+            initial_path = self.normalize_path(initial_path)
+            if self.already_found(initial_path):
+                return
+
             endpoint_url = f"{self.service.url()}{initial_path}"
             response = self.query_url(endpoint_url)
 
             if response is None or self.is_404_response(response):
                 return
 
-            if Endpoint.select().where((Endpoint.service == self.service) & ((Endpoint.path == initial_path) | (Endpoint.initial_path == initial_path))).count() != 0:
-                return # skip already known endpoints
-
             # use full browser rendering to get page source; also handles redirects
             final_url, page_source = fetch_url(response.url)
-            initial_path = urllib.parse.urlparse(final_url).path
+            final_path = self.normalize_path(final_url)
+
+            if self.already_found(final_path):
+                return # skip already known endpoints
 
             # handle BFS crawling
             for link in self.parse_links(final_url, page_source):
                 if self.service.url() in link:
-                    p = urllib.parse.urlparse(link).path
-                    self.path_queue.put(p)
+                    self.enqueue_path(link)
 
             is_login = self.detect_password_input(final_url, page_source)
             if is_login:
@@ -139,7 +163,7 @@ class WebEnumWorker(threading.Thread):
 
             Endpoint.create(
                 service=self.service,
-                path=urllib.parse.urlparse(final_url).path,
+                path=final_path,
                 initial_path=initial_path,
                 is_login=is_login,
                 page_source=page_source
