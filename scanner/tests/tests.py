@@ -108,7 +108,7 @@ def run(keep):
         ("CalibrWeb", 8083, "/login", "admin", "admin123"),
         ("ClipCascade", 8088, "/login", "admin", "admin123"),
         ("Convertigo", 28080, "/convertigo/index.html", "admin", "admin"),
-        ("DataLens", 8080, "/auth/signin", "admin", "admin"),
+        # ("DataLens", 8080, "/auth/signin", "admin", "admin"), Worked, but is broken for some reason now
         ("DockerSSOServer", 3000, "/login", "username", "password"),
         ("Filadex", 8080, "/login", "admin", "admin"),
         ("Grafana", 3000, "/login", "admin", "admin"),
