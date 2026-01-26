@@ -140,13 +140,15 @@ class WebEnumWorker(threading.Thread):
                 return
 
             endpoint_url = f"{self.service.url()}{initial_path}"
-            response = self.query_url(endpoint_url)
+            result = self.query_url(endpoint_url)
 
-            if response is None or self.is_404_response(response):
+            if result is None:
                 return
 
-            # use full browser rendering to get page source; also handles redirects
-            final_url, page_source = fetch_url(response.url)
+            status_code, final_url, page_source = result
+            if self.is_404_response(status_code, page_source):
+                return
+
             final_path = self.normalize_path(final_url)
 
             if self.already_found(final_path):
@@ -171,8 +173,8 @@ class WebEnumWorker(threading.Thread):
         except Exception as e:
             logger.error("Error processing path %s on %s: %s", initial_path, self.service.url(), str(e))
 
-    def query_url(self, url) -> None|requests.Response:
-        """Query a URL and return the response if status code is 2xx, else None. Follows redirects."""
+    def query_url(self, url) -> None | tuple[int, str, str]:
+        """Query a URL and return (status_code, final_url, rendered_html) if status code is 2xx."""
         try:
             response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
         except:
@@ -181,7 +183,11 @@ class WebEnumWorker(threading.Thread):
         if response.status_code < 200 or response.status_code >= 300:
             return None
         logger.info("Got response for %s with code %d", url, response.status_code)
-        return response
+
+        final_url, rendered_html = fetch_url(response.url)
+        if not rendered_html:
+            return None
+        return response.status_code, final_url, rendered_html
 
     def detect_password_input(self, url, content) -> bool:
         """Detects if the HTML contains a password input."""
@@ -214,16 +220,21 @@ class WebEnumWorker(threading.Thread):
         """Fetches a non-existent page to compute its simhash for soft 404 detection."""
         url = f"{self.service.url()}/nonexistent_{int(time.time())}"
         try:
-            response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
-        except:
+            _, html = fetch_url(url)
+            if not html:
+                return None
+            return simhash.Simhash(html)
+        except Exception:
             return None
-        return simhash.Simhash(response.text)
 
-    def is_404_response(self, response: requests.Response) -> bool:
+    def is_404_response(self, status_code: int, html: str) -> bool:
         """Determines if the response is a 404 based on simhash comparison."""
-        if response.status_code == 404:
+        if status_code == 404:
             return True
 
-        response_simhash = simhash.Simhash(response.text)
+        if not self.not_found_simhash or not html:
+            return False
+
+        response_simhash = simhash.Simhash(html)
         distance = self.not_found_simhash.distance(response_simhash)
         return distance < 5
