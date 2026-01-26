@@ -23,7 +23,7 @@ class Settings:
             self.nonreasoning_llm_name = os.environ.get("NONREASONING_LLM_NAME", "qwen3:4b-instruct-2507-q4_K_M")
         else:
             self.openai_api_key = self._require_env_var("OPENAI_API_KEY")
-            self.openai_base_url = os.environ.get("OPENAI_BASE_URL", "https://models.github.ai/inference")
+            self.openai_base_url = os.environ.get("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
             self.reasoning_llm_name = os.getenv("REASONING_LLM_NAME", "gpt-4o-mini")
             self.nonreasoning_llm_name = os.getenv("NONREASONING_LLM_NAME", "gpt-4o-mini") # TODO: is there a non-reasoning model?
 
