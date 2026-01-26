@@ -8,6 +8,7 @@ import click
 from .startup_script import RunDockerCompose
 from scanner.db import Endpoint, Service, init_db
 from scanner.settings import Settings
+from scanner.main import configure_logging
 
 KEEP_DB_FILES = False
 
@@ -82,7 +83,7 @@ def run_scanner(port, extra_args=[]):
 
 def run_app_test(app_dir_name, port, login_path, username, password) -> TestResult:
     with TemporaryDatabase() as temp_db_path:
-        with RunDockerCompose(f"{app_dir_name}/docker-compose.yaml", wait_for_port=port):
+        with RunDockerCompose(app_dir_name, wait_for_login_url=f"http://localhost:{port}{login_path}"):
             run_scanner(port, extra_args=["--db-path", str(temp_db_path)])
             # Rebind our ORM to the same temporary DB used by the scanner run
             Settings().configure_cli_arguments(db_path=str(temp_db_path))
@@ -94,7 +95,9 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary database files after tests complete")
 @click.option("--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
-def run(keep, select):
+@click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+def run(keep, select, log_level):
+    configure_logging(log_level)
     start_time = time.time()
     init_db()
     global KEEP_DB_FILES
