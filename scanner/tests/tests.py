@@ -92,14 +92,14 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
 
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary database files after tests complete")
-def run(keep):
+@click.option("--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
+def run(keep, select):
     init_db()
     global KEEP_DB_FILES
     KEEP_DB_FILES = keep
 
-    #print_results([
-    #    run_app_test("4gaBoards", 3000, "/admin", "demo", "demo")
-    #])
+    if select:
+        selected_apps = set([app.strip() for app in select.split(",")])
 
     test_cases = [
         ("4gaBoards", 3000, "/login", "demo", "demo"),
@@ -107,7 +107,7 @@ def run(keep):
         ("BookStack", 6875, "/login", "admin@admin.com", "password"),
         ("CalibrWeb", 8083, "/login", "admin", "admin123"),
         ("ClipCascade", 8088, "/login", "admin", "admin123"),
-        ("Convertigo", 28080, "/convertigo/index.html", "admin", "admin"),
+        ("Convertigo", 28080, "/convertigo/admin/login.html", "admin", "admin"),
         # ("DataLens", 8080, "/auth/signin", "admin", "admin"), Worked, but is broken for some reason now
         ("DockerSSOServer", 3000, "/login", "username", "password"),
         ("Filadex", 8080, "/login", "admin", "admin"),
@@ -123,6 +123,9 @@ def run(keep):
         ("SonarQube", 9000, "/sessions/new", "admin", "admin"),
         ("Zabbix", 80, "/", "Admin", "zabbix")
     ]
+
+    if select:
+        test_cases = [tc for tc in test_cases if tc[0] in selected_apps]
 
     results: list[TestResult] = []
     for (app_name, port, login_path, username, password) in test_cases:
