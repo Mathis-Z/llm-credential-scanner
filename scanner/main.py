@@ -83,14 +83,14 @@ def print_scan_summary():
 
     endpoints_with_default_creds = Endpoint.select().where(Endpoint.working_credentials != '')
     if endpoints_with_default_creds.count() > 0:
-        summary += "\nEndpoints with default credentials found:\n"
+        summary += "Endpoints with default credentials found:\n"
         for endpoint in endpoints_with_default_creds:
             summary += f"- {endpoint.url()} | Credentials: {endpoint.working_credentials}\n"
     else:
-        summary += "No endpoints with default credentials found.\n\n"
+        summary += "No endpoints with default credentials found.\n"
 
     services = Service.select()
-    summary += f"Total services scanned: {services.count()}\n"
+    summary += f"\nTotal services scanned: {services.count()}\n"
 
     service_data = []
     for service in Service.select():

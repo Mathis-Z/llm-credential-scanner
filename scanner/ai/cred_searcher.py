@@ -12,7 +12,7 @@ from langchain.tools import tool
 from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
 from peewee import fn, Case
 from scanner.ai.llm import get_chat_model
-from scanner.ai.tools import search_web, fetch_url
+from scanner.ai.tools import search_web, fetch_url_as_markdown
 from scanner.db.models import Service, Endpoint
 from scanner.db import DBConnectionMixin
 
@@ -119,7 +119,7 @@ class CredSearcher(DBConnectionMixin, Thread):
             llm = get_chat_model(reasoning=True)
             prompt = PROMPT_TEMPLATE % "\n".join(keywords)
             logger.debug("CredSearcher prompt for service %s:\n%s", service.url(), prompt)
-            agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url])
+            agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url_as_markdown])
 
             # https://docs.langchain.com/oss/python/langchain/agents#streaming
             for chunk in agent.stream({"messages": [{"role": "user", "content": prompt}]}, stream_mode="values"):

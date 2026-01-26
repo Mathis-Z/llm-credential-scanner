@@ -4,6 +4,7 @@ from seleniumbase import sb_cdp
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.tools import tool
 from markdownify import markdownify
+import simhash
 
 from scanner.ai.llm import get_chat_model
 
@@ -15,39 +16,42 @@ def fetch_url_summary(url: str) -> str:
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
     and condenses it for useful content extraction.
     """
-    raw = _fetch_url(url)
-    return summarize_text_with_map_reduce(raw)
+    _, raw_content = fetch_url(url)
+    return summarize_text_with_map_reduce(raw_content)
 
-@tool(description="Fetch a URL, returning its raw content.")
-def fetch_url(url: str) -> str:
+@tool(description="Fetch a URL, returning its raw content as markdown.")
+def fetch_url_as_markdown(url: str) -> str:
     """
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
     and returns the raw content.
     """
-    return _fetch_url(url)
+    _, raw_content = fetch_url(url)
+    md = markdownify(raw_content)
+    if len(md) > 20000:
+        logger.warning("Fetched content from %s is very large (%i characters). Truncated to avoid LLM input error.", url, len(md))
+        md = md[:20000] + "\n\n*Content truncated due to length.*"
+    return md
 
-def _fetch_url(url: str) -> str:
+def fetch_url(start_url: str) -> tuple[str, str]:
     """
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
-    and condenses it for useful content extraction.
+    and returns the final URL and raw HTML content.
     """
     try:
+        logger.debug("Fetching URL: %s", start_url)
         sb = sb_cdp.Chrome(url=None, headless=True)
-        sb.open(url)
+        sb.open(start_url)
         sb.sleep(1)  # Initial wait for page load
         _wait_for_dom_settle(sb)
-        content = sb.get_page_source()
+        raw = sb.get_page_source()
+        current_url = sb.get_current_url()
         sb.driver.stop()
-        md = markdownify(content)
-        if len(md) > 20000:
-            logger.warning("Fetched content from %s is very large (%i characters). Truncated to avoid LLM input error.", url, len(md))
-            md = md[:20000] + "\n\n*Content truncated due to length.*"
-        return md
+        return current_url, raw
     except Exception as e:
         return str(e)
 
 
-def _wait_for_dom_settle(sb, timeout=2000, stable_ms=300):
+def _wait_for_dom_settle(sb, timeout_ms=2000, stable_ms=300):
     start = time.time()
     last_html = sb.get_page_source()
 
@@ -55,12 +59,13 @@ def _wait_for_dom_settle(sb, timeout=2000, stable_ms=300):
         time.sleep(stable_ms / 1000)
         current_html = sb.get_page_source()
 
-        if current_html == last_html:
+        if simhash.Simhash(current_html).distance(simhash.Simhash(last_html)) < 20:
             return
+        logger.debug(simhash.Simhash(current_html).distance(simhash.Simhash(last_html)))
 
         last_html = current_html
 
-        if (time.time() - start) * 1000 > timeout:
+        if (time.time() - start) * 1000 > timeout_ms:
             return
 
 
@@ -97,8 +102,3 @@ def reduce_summaries(summaries: list[str], prompt: str, max_tokens: int = 500) -
     prompt = prompt + f"\n\n<<<BEGIN SUMMARIES>>>\n{combined}\n<<<END SUMMARIES>>>\nEnsure the final summary is no more than {max_tokens} tokens."
     response = llm.invoke([("human", prompt)])
     return response.content
-
-
-if __name__ == "__main__":
-    raw = _fetch_url("https://github.com/Casvt/MIND")
-    print(summarize_text_with_map_reduce(raw))

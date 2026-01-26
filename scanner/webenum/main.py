@@ -20,6 +20,7 @@ from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 
 from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
+from scanner.ai.tools.url_fetching import fetch_url
 
 # relative to this file
 WORDLIST_RELATIVE_PATH = 'wordlist.txt'
@@ -119,30 +120,36 @@ class WebEnumWorker(threading.Thread):
             if response is None or self.is_404_response(response):
                 return
 
-            # handle redirects
-            # TODO: this is duplicated with allow_redirects=True in query_url
-            path = urllib.parse.urlparse(response.url).path
-            path = re.sub(r'/+', '/', path)  # normalize multiple slashes
+            # use full browser rendering to get page source; also handles redirects
+            # TODO: querying before testing whether we know this endpoint is inefficient
+            current_url, page_source = fetch_url(response.url)
+            path = urllib.parse.urlparse(current_url).path
+
+            logger.debug("Discovered valid endpoint: %s", current_url)
 
             if Endpoint.select().where((Endpoint.service == self.service) & (Endpoint.path == path)).count() != 0:
                 return # skip already known endpoints
 
+            logger.debug("Parsing links on: %s", current_url)
             # handle BFS crawling
-            for link in self.parse_links(response):
+            for link in self.parse_links(current_url, page_source):
                 if self.service.url() in link:
                     p = urllib.parse.urlparse(link).path
                     self.path_queue.put(p)
+            
+            logger.debug("Detecting login forms on: %s", current_url)
 
-            is_login = self.detect_password_input(response)
+            is_login = self.detect_password_input(current_url, page_source)
             if is_login:
-                logger.info("Found directory with password input: %s", endpoint_url)
+                logger.info("Found directory with password input: %s", current_url)
 
             Endpoint.create(
                 service=self.service,
                 path=path,
                 is_login=is_login,
-                page_source=response.text
+                page_source=page_source
             )
+            logger.debug("Created Endpoint record for %s on %s", path, self.service.url())
         except Exception as e:
             logger.error("Error processing path %s on %s: %s", path, self.service.url(), str(e))
 
@@ -158,31 +165,31 @@ class WebEnumWorker(threading.Thread):
         logger.info("Got response for %s with code %d", url, response.status_code)
         return response
 
-    def detect_password_input(self, response: requests.Response) -> bool:
-        """Detects if the HTTP response contains a password input."""
-        # TODO: what about JS-generated forms?
+    def detect_password_input(self, url, content) -> bool:
+        """Detects if the HTML contains a password input."""
         try:
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(content, 'html.parser')
             return bool(soup.select("input[type=password]"))
         except Exception as e:
-            logger.error("Error parsing HTML from %s: %s", response.url, str(e))
+            logger.error("Error parsing HTML from %s: %s", url, str(e))
             return False
 
-    def parse_links(self, response: requests.Response) -> list[str]:
-        """Extracts links from the HTTP response for crawling."""
+    def parse_links(self, url, content) -> list[str]:
+        """Extracts links from the HTML for crawling."""
         urls = []
-        netloc = urllib.parse.urlparse(response.url).netloc
+        netloc = urllib.parse.urlparse(url).netloc
 
         try:
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(content, 'html.parser')
             for link in soup.find_all('a', href=True):
                 href = link['href']
 
-                if href.startswith('/'):
-                    urls.append(f"{netloc}{href}")
+                if not href.startswith(('http://', 'https://', '//', 'mailto:', 'tel:')):
+                    urls.append(urllib.parse.urljoin(url, href))
         except Exception as e:
-            logger.error("Error parsing HTML from %s: %s", response.url, str(e))
+            logger.error("Error parsing HTML from %s: %s", url, str(e))
 
+        logger.debug("Extracted %d links from %s: %s", len(urls), url, urls)
         return urls
 
     def get_404_simhash(self) -> simhash.Simhash:
