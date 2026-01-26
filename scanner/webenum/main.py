@@ -192,7 +192,7 @@ class WebEnumWorker(threading.Thread):
         final_url, rendered_html = fetch_url(response.url)
         if not rendered_html:
             return None
-        return response.status_code, final_path, rendered_html
+        return response.status_code, final_url, rendered_html
 
     def detect_password_input(self, url, content) -> bool:
         """Detects if the HTML contains a password input."""
