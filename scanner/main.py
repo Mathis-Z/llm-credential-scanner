@@ -6,7 +6,8 @@ from scanner.netscan import NetScanner
 from scanner.webenum import WebEnumerator
 from scanner.ai import CredSearcher, CredTester, KeywordExtractor
 from scanner.settings import Settings
-from scanner.db import init_db
+from scanner.db import init_db, Endpoint, Service
+from tabulate import tabulate
 
 
 def configure_logging(log_level="INFO"):
@@ -73,7 +74,39 @@ def run(subnets, ports, log_level, max_webdrivers, db_path):
     for module in modules:
         module.join()
 
-    logger.info("Scanner exiting.")
+    logger.info("All modules completed.")
+    print_scan_summary()
+
+
+def print_scan_summary():
+    summary = "\n" + "=" * 30 + " Scan Summary " + "=" * 30 + "\n"
+
+    endpoints_with_default_creds = Endpoint.select().where(Endpoint.working_credentials != '')
+    if endpoints_with_default_creds.count() > 0:
+        summary += "\nEndpoints with default credentials found:\n"
+        for endpoint in endpoints_with_default_creds:
+            summary += f"- {endpoint.url()} | Credentials: {endpoint.working_credentials}\n"
+    else:
+        summary += "No endpoints with default credentials found.\n\n"
+
+    services = Service.select()
+    summary += f"Total services scanned: {services.count()}\n"
+
+    service_data = []
+    for service in Service.select():
+        service_data.append([
+            service.url(),
+            len(service.endpoints),
+            service.credentials if service.credentials else 'Unknown or N/A'
+        ])
+
+    summary += tabulate(
+        service_data,
+        headers=['Service URL', 'Endpoints', 'Potential Default Credentials'],
+        tablefmt='grid'
+    ) + "\n"
+    logger.info(summary)
+
 
 if __name__ == '__main__':
     main_cmd() # pylint: disable=no-value-for-parameter
