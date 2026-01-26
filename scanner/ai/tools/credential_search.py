@@ -7,7 +7,8 @@ from langchain.tools import tool
 @tool(description="Perform a web search")
 def search_web(query: str):
     with DDGS() as ddgs:
-        return {"results": ddgs.text(query, max_results=5)}
+        results = list(ddgs.text(query, max_results=5))
+        return {"results": results}
 
 
 @tool(description="Submit credentials (username & password)")
