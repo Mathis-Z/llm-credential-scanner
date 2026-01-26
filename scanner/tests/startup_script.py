@@ -65,7 +65,7 @@ class StartupScript:
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.process:
-            self.process.kill()
+            self.process.terminate()
 
 
 class RunDockerCompose(StartupScript):
