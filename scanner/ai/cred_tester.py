@@ -11,6 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import simhash
+from markdownify import markdownify
 from pubsub import pub
 from bs4 import BeautifulSoup
 from langchain.agents import create_agent
@@ -72,6 +73,10 @@ class CredTester(DBConnectionMixin, Thread):
 
     def _on_abort(self):
         self.termination_event.set()
+
+    def markdownify_simhash(self, html) -> simhash.Simhash:
+        md = markdownify(html)
+        return simhash.Simhash(md)
 
     def test_credentials(self, endpoint: Endpoint, username: str, password: str):
         """
@@ -188,7 +193,7 @@ class CredTester(DBConnectionMixin, Thread):
                 after_cookies = driver.get_cookies()
                 driver.quit()
 
-            simhash_distance = simhash.Simhash(before_page_source).distance(simhash.Simhash(after_page_source))
+            simhash_distance = self.markdownify_simhash(before_page_source).distance(self.markdownify_simhash(after_page_source))
             before_cookie_names = {c.get("name") for c in before_cookies}
             after_cookie_names = {c.get("name") for c in after_cookies}
             logger.debug(
@@ -203,7 +208,7 @@ class CredTester(DBConnectionMixin, Thread):
             )
             login_successful = (
                 (before_path != after_path) or
-                (simhash_distance > 42)
+                (simhash_distance > 5)
             )
             logger.debug("Login %s: before_path=%s after_path=%s simhash_distance=%s",
                         "successful" if login_successful else "failed",

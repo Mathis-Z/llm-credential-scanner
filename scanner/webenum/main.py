@@ -216,7 +216,6 @@ class WebEnumWorker(threading.Thread):
     def parse_links(self, url, content) -> list[str]:
         """Extracts links from the HTML for crawling."""
         urls = []
-        netloc = urllib.parse.urlparse(url).netloc
 
         try:
             soup = BeautifulSoup(content, 'html.parser')
@@ -233,14 +232,23 @@ class WebEnumWorker(threading.Thread):
 
     def get_404_simhash(self) -> simhash.Simhash:
         """Fetches a non-existent page to compute its simhash for soft 404 detection."""
-        url = f"{self.service.url()}/nonexistent_{int(time.time())}"
+        path = f"/nonexistent_{int(time.time())}"
+        before_url = f"{self.service.url()}{path}"
         try:
-            _, html = fetch_url(url)
+            after_url, html = fetch_url(before_url)
             if not html:
+                logger.warning("Failed to fetch HTML for 404 simhash from %s; disabling soft 404 detection", before_url)
                 return None
-            logger.debug(html)
+
+            after_path = urllib.parse.urlparse(after_url).path
+            if after_path != path:
+                # TODO: this is a rather lazy check for apps that redirect all or most requests to their login page
+                logger.debug("Soft 404 detection encountered redirect from %s to %s; disabling soft 404 detection", before_url, after_url)
+                return None
+
             return self.simhash(html)
-        except Exception:
+        except Exception as e:
+            logger.error("Error fetching 404 page from %s: %s; disabling soft 404 detection", before_url, str(e))
             return None
 
     def clean_html_for_simhash(self, html: str) -> str:
@@ -271,7 +279,4 @@ class WebEnumWorker(threading.Thread):
 
         response_simhash = self.simhash(html)
         distance = self.not_found_simhash.distance(response_simhash)
-        if distance < 5:
-            logger.debug("Soft 404 detected (simhash distance %d)", distance)
-            logger.debug(html)
-            return True
+        return distance < 5
