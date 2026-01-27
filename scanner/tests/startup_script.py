@@ -24,8 +24,8 @@ class StartupScript:
             for line in process.stdout:
                 print(line, end='')
 
-        subprocess.run(["sudo", "docker", "container", "prune", "-f"], check=True)
-        subprocess.run(["sudo", "docker", "network", "prune", "-f"], check=True)
+        subprocess.run(["docker", "container", "prune", "-f"], check=True)
+        subprocess.run(["docker", "network", "prune", "-f"], check=True)
 
         self.process = subprocess.Popen(
             self.cmd,

@@ -253,7 +253,7 @@ class WebEnumWorker(threading.Thread):
         # Normalize whitespace
         text = re.sub(r'\s+', ' ', text)
         return text
-    
+
     def simhash(self, html: str) -> simhash.Simhash:
         """Computes the simhash of cleaned HTML content."""
         # TODO: evaluate other simhash techniques like tlsh
