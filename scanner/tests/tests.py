@@ -1,23 +1,26 @@
 import subprocess
 import random
+import logging
 import time
 from pathlib import Path
 from dataclasses import dataclass
 from tabulate import tabulate
 import click
-from .startup_script import RunDockerCompose
+from scanner.tests.startup_script import RunDockerCompose
 from scanner.db import Endpoint, Service, init_db
 from scanner.settings import Settings
 from scanner.main import configure_logging
 
 KEEP_DB_FILES = False
+logger = logging.getLogger("scanner.tests")
+
 
 @dataclass
 class TestResult:
-    service_name: str
     found_creds: bool
     verified_creds: bool
     found_login_panel: bool
+    endpoints_num: int
     db_path: str = ""
 
 
@@ -51,25 +54,29 @@ def found_login_panel(path):
     e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.is_login == True))
     return e is not None
 
-def check_result(service_name, login_path, username, password):
-    return TestResult(
-        service_name=service_name,
-        found_creds=found_creds(username, password),
-        verified_creds=verified_creds(login_path, username, password),
-        found_login_panel=found_login_panel(login_path)
-    )
+def endpoints_num():
+    return Endpoint.select().count()
 
-def print_results(results: list[TestResult]):
-    headers = ["Service Name", "Found Credentials", "Verified Credentials", "Found Login Panel", "DB Path"]
-    table = [
-        [
-            result.service_name,
+
+def print_results(results: dict[str, TestResult | None]):
+    """Prints the test results in a tabular format."""
+    headers = ["Service Name", "Found Credentials", "Verified Credentials", "Found Login Panel", "Endpoints Detected", "DB Path"]
+    table = []
+
+    for service_name, result in results.items():
+        if result is None:
+            table.append([service_name, "-", "-", "-", "-", "-"])
+            continue
+
+        table.append([
+            service_name,
             emojify(result.found_creds),
             emojify(result.verified_creds),
             emojify(result.found_login_panel),
+            result.endpoints_num,
             result.db_path
-        ] for result in results
-    ]
+        ])
+
     print(tabulate(table, headers=headers, tablefmt="grid"))
 
 def emojify(value: bool):
@@ -88,8 +95,13 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
             # Rebind our ORM to the same temporary DB used by the scanner run
             Settings().configure_cli_arguments(db_path=str(temp_db_path))
             init_db()
-            r = check_result(app_dir_name, login_path, username, password)
-            r.db_path = str(temp_db_path)
+            r = TestResult(
+                found_creds=found_creds(username, password),
+                verified_creds=verified_creds(login_path, username, password),
+                found_login_panel=found_login_panel(login_path),
+                endpoints_num=endpoints_num(),
+                db_path = str(temp_db_path)
+            )
             return r
 
 @click.command()
@@ -132,24 +144,16 @@ def run(keep, select, log_level):
     if select:
         test_cases = [tc for tc in test_cases if tc[0] in selected_apps]
 
-    results: list[TestResult] = []
+    results: dict[str, TestResult | None] = {}
     for (app_name, port, login_path, username, password) in test_cases:
         try:
-            results.append(run_app_test(app_name, port, login_path, username, password))
+            results[app_name] = run_app_test(app_name, port, login_path, username, password)
         except Exception as exc:
-            print(f"Test for {app_name} failed: {exc}")
-            results.append(
-                TestResult(
-                    service_name=app_name,
-                    found_creds=False,
-                    verified_creds=False,
-                    found_login_panel=False,
-                    db_path="ERROR"
-                )
-            )
+            logger.error("Test for %s failed: %s", app_name, exc)
+            results[app_name] = None
 
     print_results(results)
-    print(f"All tests completed in {time.time() - start_time:.2f} seconds.")
+    logger.info("All tests completed in %.2f seconds.", time.time() - start_time)
 
 if __name__ == "__main__":
     run()  # pylint: disable=no-value-for-parameter
