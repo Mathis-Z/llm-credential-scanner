@@ -7,8 +7,8 @@ services:
       POSTGRES_DB: joplin
       POSTGRES_USER: joplin
       POSTGRES_PASSWORD: joplin
-    volumes:
-      - joplin-db:/var/lib/postgresql/data
+    tmpfs:
+      - /var/lib/postgresql/data
 
   joplin:
     image: joplin/server:latest
@@ -22,6 +22,3 @@ services:
       POSTGRES_HOST: db
     depends_on:
       - db
-
-volumes:
-  joplin-db:

@@ -8,9 +8,9 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/London
-    volumes:
-      - ./config:/config
-      - ./downloads:/downloads
+    tmpfs:
+      - /config
+      - /downloads
     ports:
       - 8000:8000
     restart: unless-stopped
