@@ -47,11 +47,17 @@ def found_creds(username, password):
     return False
 
 def verified_creds(path, username, password):
-    e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.working_credentials == f"{username}:{password}"))
+    if path and path != "*":
+        e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.working_credentials == f"{username}:{password}"))
+    else:
+        e = Endpoint.get_or_none(Endpoint.working_credentials == f"{username}:{password}")
     return e is not None
 
 def found_login_panel(path):
-    e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.is_login == True))
+    if path and path != "*":
+        e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.is_login == True))
+    else:
+        e = Endpoint.get_or_none(Endpoint.is_login == True)
     return e is not None
 
 def endpoints_num():
