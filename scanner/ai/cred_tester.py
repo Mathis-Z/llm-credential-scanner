@@ -48,6 +48,7 @@ class CredTester(DBConnectionMixin, Thread):
         super().__init__()
         self.termination_event = Event()
         self.cred_searcher_done_event = Event()
+        self.failed_login_baselines = {}
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.cred_searcher_done_event.set, 'cred_searcher.done')
 
@@ -93,26 +94,30 @@ class CredTester(DBConnectionMixin, Thread):
         cleaned_html = self.clean_html_for_simhash(html)
         return simhash.Simhash(cleaned_html)
 
-    def test_credentials(self, endpoint: Endpoint, username: str, password: str):
-        """
-        Uses the LLM to test the given credentials on the given login panel endpoint.
-        Success is determined by detecting a page change after submitting the login form.
-        """
+    def _get_failed_login_baseline(self, endpoint: Endpoint):
+        cached = self.failed_login_baselines.get(endpoint.pk)
+        if cached:
+            return cached
+
+        wrong_username = f"invalid_user_{int(time.time())}"
+        wrong_password = f"invalid_pass_{int(time.time())}"
+        logger.debug("Capturing failed-login baseline on %s", endpoint.url())
+        baseline = self._perform_login_attempt(endpoint, wrong_username, wrong_password)
+        if baseline:
+            self.failed_login_baselines[endpoint.pk] = baseline
+        return baseline
+
+    def _perform_login_attempt(self, endpoint: Endpoint, username: str, password: str):
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")
+        driver = webdriver.Chrome(options=options)
+
         try:
-            logger.debug("Testing credentials %s:%s on %s", username, password, endpoint.url())
-
-            options = webdriver.ChromeOptions()
-            options.add_argument("--headless")
-            driver = webdriver.Chrome(options=options)
-
             try:
                 driver.get(endpoint.url())
             except WebDriverException as exc:
                 logger.warning("WebDriver navigation failed for %s: %s", endpoint.url(), str(exc))
-                endpoint.add_tested_credentials((username, password))
-                endpoint.save()
-                driver.quit()
-                return
+                return None
 
             # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
             soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -182,10 +187,7 @@ class CredTester(DBConnectionMixin, Thread):
                             logger.debug("AI: %s", latest_message.content)
             except WebDriverException as exc:
                 logger.warning("WebDriver failed during credential test for %s: %s", endpoint.url(), str(exc))
-                endpoint.add_tested_credentials((username, password))
-                endpoint.save()
-                driver.quit()
-                return
+                return None
             finally:
                 # wait for potential redirects or DOM updates triggered by form submission
                 try:
@@ -206,31 +208,86 @@ class CredTester(DBConnectionMixin, Thread):
                 after_title = driver.title
                 after_raw_page_source = driver.page_source
                 after_cookies = driver.get_cookies()
-                driver.quit()
 
-            simhash_distance = self.simhash(before_page_source).distance(self.simhash(after_page_source))
-            before_cookie_names = {c.get("name") for c in before_cookies}
-            after_cookie_names = {c.get("name") for c in after_cookies}
+            return {
+                "before_url": before_url,
+                "before_path": before_path,
+                "before_title": before_title,
+                "before_page_source": before_page_source,
+                "before_raw_page_source": before_raw_page_source,
+                "before_cookies": before_cookies,
+                "after_url": after_url,
+                "after_path": after_path,
+                "after_title": after_title,
+                "after_page_source": after_page_source,
+                "after_raw_page_source": after_raw_page_source,
+                "after_cookies": after_cookies,
+                "after_simhash": self.simhash(after_page_source),
+            }
+        finally:
+            driver.quit()
+
+    def test_credentials(self, endpoint: Endpoint, username: str, password: str):
+        """
+        Uses the LLM to test the given credentials on the given login panel endpoint.
+        Success is determined by detecting a page change after submitting the login form.
+        """
+        try:
+            logger.debug("Testing credentials %s:%s on %s", username, password, endpoint.url())
+
+            baseline = self._get_failed_login_baseline(endpoint)
+            attempt = self._perform_login_attempt(endpoint, username, password)
+            if not attempt:
+                endpoint.add_tested_credentials((username, password))
+                endpoint.save()
+                return
+
+            before_cookie_names = {c.get("name") for c in attempt["before_cookies"]}
+            after_cookie_names = {c.get("name") for c in attempt["after_cookies"]}
             logger.debug(
                 "After submit: url=%s path=%s title=%s cookies=%s page_len=%s new_cookies=%s removed_cookies=%s",
-                after_url,
-                after_path,
-                after_title,
-                [c.get("name") for c in after_cookies],
-                len(after_raw_page_source or ""),
+                attempt["after_url"],
+                attempt["after_path"],
+                attempt["after_title"],
+                [c.get("name") for c in attempt["after_cookies"]],
+                len(attempt["after_raw_page_source"] or ""),
                 sorted(after_cookie_names - before_cookie_names),
                 sorted(before_cookie_names - after_cookie_names),
             )
-            login_successful = (
-                (before_path != after_path) or
-                (simhash_distance > 13) # experimental threshold
-            )
-            logger.debug("Login %s: before_path=%s after_path=%s simhash_distance=%s",
-                        "successful" if login_successful else "failed",
-                        before_path,
-                        after_path,
-                        simhash_distance
-            )
+
+            if baseline:
+                baseline_distance = baseline["after_simhash"].distance(attempt["after_simhash"])
+                baseline_cookie_names = {c.get("name") for c in baseline["after_cookies"]}
+                attempt_cookie_names = {c.get("name") for c in attempt["after_cookies"]}
+                cookie_name_delta = baseline_cookie_names != attempt_cookie_names
+                title_changed = (baseline["after_title"] or "") != (attempt["after_title"] or "")
+                login_successful = (
+                    (attempt["after_path"] != baseline["after_path"]) or
+                    (baseline_distance > 13) or
+                    title_changed or
+                    cookie_name_delta
+                )
+                logger.debug(
+                    "Baseline compare: baseline_path=%s attempt_path=%s simhash_distance=%s title_changed=%s cookie_name_delta=%s",
+                    baseline["after_path"],
+                    attempt["after_path"],
+                    baseline_distance,
+                    title_changed,
+                    cookie_name_delta
+                )
+            else:
+                simhash_distance = self.simhash(attempt["before_page_source"]).distance(attempt["after_simhash"])
+                login_successful = (
+                    (attempt["before_path"] != attempt["after_path"]) or
+                    (simhash_distance > 13) # experimental threshold
+                )
+                logger.debug(
+                    "Login %s: before_path=%s after_path=%s simhash_distance=%s",
+                    "successful" if login_successful else "failed",
+                    attempt["before_path"],
+                    attempt["after_path"],
+                    simhash_distance
+                )
 
             creds_str = f"{username}:{password}"
             if login_successful:
