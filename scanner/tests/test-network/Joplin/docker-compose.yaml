@@ -15,11 +15,11 @@ services:
     ports:
       - "22300:22300"
     environment:
-      JOPLIN_IGNORE_CORS: "true"
+      APP_BASE_URL: http://127.0.0.1:22300
       DB_CLIENT: pg
-      POSTGRES_HOST: db
+      POSTGRES_PASSWORD: joplin
       POSTGRES_DATABASE: joplin
       POSTGRES_USER: joplin
-      POSTGRES_PASSWORD: joplin
+      POSTGRES_HOST: db
     depends_on:
       - db

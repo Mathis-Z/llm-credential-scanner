@@ -90,7 +90,7 @@ def run_scanner(port, extra_args=[]):
 
 def run_app_test(app_dir_name, port, login_path, username, password) -> TestResult:
     with TemporaryDatabase() as temp_db_path:
-        with RunDockerCompose(app_dir_name, wait_for_login_url=f"http://localhost:{port}{login_path}"):
+        with RunDockerCompose(app_dir_name, wait_for_login_url=f"http://127.0.0.1:{port}{login_path}"):
             run_scanner(port, extra_args=["--db-path", str(temp_db_path)])
             # Rebind our ORM to the same temporary DB used by the scanner run
             Settings().configure_cli_arguments(db_path=str(temp_db_path))
