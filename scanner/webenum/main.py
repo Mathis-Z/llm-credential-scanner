@@ -244,7 +244,30 @@ class WebEnumWorker(threading.Thread):
             if after_path != path:
                 # TODO: this is a rather lazy check for apps that redirect all or most requests to their login page
                 logger.debug("Soft 404 detection encountered redirect from %s to %s; disabling soft 404 detection", before_url, after_url)
+                if self.detect_password_input(after_url, html):
+                    normalized_after_path = self.normalize_path(after_path)
+                    if not self.already_found(normalized_after_path):
+                        logger.info("Non-existent path redirected to login page %s; recording login endpoint", after_url)
+                        Endpoint.create(
+                            service=self.service,
+                            path=normalized_after_path,
+                            initial_path=self.normalize_path(path),
+                            is_login=True,
+                            page_source=html
+                        )
                 return None
+
+            if self.detect_password_input(after_url, html):
+                normalized_after_path = self.normalize_path(after_path)
+                if not self.already_found(normalized_after_path):
+                    logger.info("Non-existent path returned login page %s; recording login endpoint", after_url)
+                    Endpoint.create(
+                        service=self.service,
+                        path=normalized_after_path,
+                        initial_path=self.normalize_path(path),
+                        is_login=True,
+                        page_source=html
+                    )
 
             return self.simhash(html)
         except Exception as e:
@@ -283,7 +306,5 @@ class WebEnumWorker(threading.Thread):
         distance = self.not_found_simhash.distance(response_simhash)
         if distance < 5:
             logger.info("Soft 404 detected for %s with simhash distance %d", self.service.url(), distance)
-            # Temporary disabled, due to some sites always returning the same login page.
-            # TODO: Find a solution to this
-            # return True
+            return True
         return False
