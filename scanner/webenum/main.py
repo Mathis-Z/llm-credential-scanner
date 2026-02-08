@@ -283,5 +283,7 @@ class WebEnumWorker(threading.Thread):
         distance = self.not_found_simhash.distance(response_simhash)
         if distance < 5:
             logger.info("Soft 404 detected for %s with simhash distance %d", self.service.url(), distance)
-            return True
+            # Temporary disabled, due to some sites always returning the same login page.
+            # TODO: Find a solution to this
+            # return True
         return False
