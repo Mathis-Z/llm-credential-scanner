@@ -94,6 +94,12 @@ class CredTester(DBConnectionMixin, Thread):
         cleaned_html = self.clean_html_for_simhash(html)
         return simhash.Simhash(cleaned_html)
 
+    def _url_signature(self, url: str) -> str:
+        parts = urllib.parse.urlparse(url)
+        if parts.query or parts.fragment:
+            return f"{parts.path}?{parts.query}#{parts.fragment}"
+        return parts.path
+
     def _get_failed_login_baseline(self, endpoint: Endpoint):
         cached = self.failed_login_baselines.get(endpoint.pk)
         if cached:
@@ -152,6 +158,7 @@ class CredTester(DBConnectionMixin, Thread):
             before_path = urllib.parse.urlparse(driver.current_url).path
             before_title = driver.title
             before_cookies = driver.get_cookies()
+            before_has_password = bool(soup.select("input[type=password]"))
             logger.debug(
                 "Before submit: url=%s path=%s title=%s cookies=%s page_len=%s",
                 before_url,
@@ -197,7 +204,7 @@ class CredTester(DBConnectionMixin, Thread):
                     )
                 except TimeoutException:
                     pass
-                time.sleep(1)
+                time.sleep(2)
                 # to compare with before_page_source need to remove script tags again
                 soup = BeautifulSoup(driver.page_source, "html.parser")
                 for script in soup.find_all("script"):
@@ -208,6 +215,7 @@ class CredTester(DBConnectionMixin, Thread):
                 after_title = driver.title
                 after_raw_page_source = driver.page_source
                 after_cookies = driver.get_cookies()
+                after_has_password = bool(soup.select("input[type=password]"))
 
             return {
                 "before_url": before_url,
@@ -216,12 +224,15 @@ class CredTester(DBConnectionMixin, Thread):
                 "before_page_source": before_page_source,
                 "before_raw_page_source": before_raw_page_source,
                 "before_cookies": before_cookies,
+                "before_has_password": before_has_password,
                 "after_url": after_url,
+                "after_url_sig": self._url_signature(after_url),
                 "after_path": after_path,
                 "after_title": after_title,
                 "after_page_source": after_page_source,
                 "after_raw_page_source": after_raw_page_source,
                 "after_cookies": after_cookies,
+                "after_has_password": after_has_password,
                 "after_simhash": self.simhash(after_page_source),
             }
         finally:
@@ -261,32 +272,44 @@ class CredTester(DBConnectionMixin, Thread):
                 attempt_cookie_names = {c.get("name") for c in attempt["after_cookies"]}
                 cookie_name_delta = baseline_cookie_names != attempt_cookie_names
                 title_changed = (baseline["after_title"] or "") != (attempt["after_title"] or "")
+                url_changed = baseline.get("after_url_sig") != attempt["after_url_sig"]
+                password_gone = baseline.get("after_has_password", True) and not attempt["after_has_password"]
                 login_successful = (
                     (attempt["after_path"] != baseline["after_path"]) or
-                    (baseline_distance > 13) or
+                    url_changed or
+                    password_gone or
+                    (baseline_distance > 7) or
                     title_changed or
                     cookie_name_delta
                 )
                 logger.debug(
-                    "Baseline compare: baseline_path=%s attempt_path=%s simhash_distance=%s title_changed=%s cookie_name_delta=%s",
+                    "Baseline compare: baseline_path=%s attempt_path=%s simhash_distance=%s title_changed=%s cookie_name_delta=%s url_changed=%s password_gone=%s",
                     baseline["after_path"],
                     attempt["after_path"],
                     baseline_distance,
                     title_changed,
-                    cookie_name_delta
+                    cookie_name_delta,
+                    url_changed,
+                    password_gone
                 )
             else:
                 simhash_distance = self.simhash(attempt["before_page_source"]).distance(attempt["after_simhash"])
+                url_changed = self._url_signature(attempt["before_url"]) != attempt["after_url_sig"]
+                password_gone = attempt.get("before_has_password", True) and not attempt["after_has_password"]
                 login_successful = (
                     (attempt["before_path"] != attempt["after_path"]) or
-                    (simhash_distance > 13) # experimental threshold
+                    url_changed or
+                    password_gone or
+                    (simhash_distance > 7) # experimental threshold
                 )
                 logger.debug(
-                    "Login %s: before_path=%s after_path=%s simhash_distance=%s",
+                    "Login %s: before_path=%s after_path=%s simhash_distance=%s url_changed=%s password_gone=%s",
                     "successful" if login_successful else "failed",
                     attempt["before_path"],
                     attempt["after_path"],
-                    simhash_distance
+                    simhash_distance,
+                    url_changed,
+                    password_gone
                 )
 
             creds_str = f"{username}:{password}"
