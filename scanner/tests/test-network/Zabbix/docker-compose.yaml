@@ -1,54 +1,54 @@
+version: "3.8"
+
 networks:
   zabbix-network:
 
 services:
   postgres:
     image: postgres:15
-    tmpfs:
-      - /var/lib/postgresql/data
     environment:
       POSTGRES_DB: zabbixdb
       POSTGRES_USER: zabbixdbuser
       POSTGRES_PASSWORD: C7GRpMXAdZR5pZi4gyqr
+    tmpfs:
+      - /var/lib/postgresql/data
     networks:
       - zabbix-network
     healthcheck:
-      test: ["CMD", "pg_isready", "-q", "-d", "zabbixdb", "-U", "zabbixdbuser"]
+      test: ["CMD", "pg_isready", "-U", "zabbixdbuser", "-d", "zabbixdb"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
   zabbix-server:
     image: zabbix/zabbix-server-pgsql:6.4.6-ubuntu
     environment:
       DB_SERVER_HOST: postgres
-      DB_SERVER_PORT: 5432
       POSTGRES_DB: zabbixdb
       POSTGRES_USER: zabbixdbuser
       POSTGRES_PASSWORD: C7GRpMXAdZR5pZi4gyqr
-      ZBX_CACHESIZE: 1G
+      ZBX_CACHESIZE: 128M
     networks:
       - zabbix-network
     ports:
       - "10051:10051"
     healthcheck:
-      test: grep -qr "zabbix_server" /proc/*/status || exit 1
+      test: ["CMD", "nc", "-z", "localhost", "10051"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 90s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
 
-  zabbix-dashboard:
+  zabbix-web:
     image: zabbix/zabbix-web-nginx-pgsql:6.4.6-ubuntu
     environment:
       DB_SERVER_HOST: postgres
-      DB_SERVER_PORT: 5432
       POSTGRES_DB: zabbixdb
       POSTGRES_USER: zabbixdbuser
       POSTGRES_PASSWORD: C7GRpMXAdZR5pZi4gyqr
@@ -63,8 +63,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 90s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     depends_on:
       postgres:
@@ -75,35 +75,29 @@ services:
   zabbix-agent:
     image: zabbix/zabbix-agent2:6.4.6-ubuntu
     environment:
-      ZBX_HOSTNAME: Zabbix server
+      ZBX_HOSTNAME: zabbix-agent
       ZBX_SERVER_HOST: zabbix-server
     networks:
       - zabbix-network
     restart: unless-stopped
     depends_on:
-      - postgres
-      - zabbix-server
+      zabbix-server:
+        condition: service_healthy
 
   backups:
     image: postgres:15
-    command: >-
+    command: >
       sh -c 'sleep 30m &&
       while true; do
         pg_dump -h postgres -p 5432 -d zabbixdb -U zabbixdbuser | gzip > /srv/zabbix-postgres/backups/zabbix-postgres-backup-$(date "+%Y-%m-%d_%H-%M").gz &&
         find /srv/zabbix-postgres/backups -type f -mtime +7 | xargs rm -f &&
-        sleep 24h; done'
+        sleep 24h;
+      done'
     tmpfs:
       - /var/lib/postgresql/data
       - /srv/zabbix-postgres/backups
     environment:
-      ZABBIX_DB_NAME: zabbixdb
-      ZABBIX_DB_USER: zabbixdbuser
       PGPASSWORD: C7GRpMXAdZR5pZi4gyqr
-      ZABBIX_BACKUP_INIT_SLEEP: 30m
-      ZABBIX_BACKUP_INTERVAL: 24h
-      ZABBIX_POSTGRES_BACKUP_PRUNE_DAYS: 7
-      ZABBIX_POSTGRES_BACKUPS_PATH: /srv/zabbix-postgres/backups
-      ZABBIX_POSTGRES_BACKUP_NAME: zabbix-postgres-backup
     networks:
       - zabbix-network
     restart: unless-stopped
