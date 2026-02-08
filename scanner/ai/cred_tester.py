@@ -101,9 +101,9 @@ class CredTester(DBConnectionMixin, Thread):
         try:
             logger.debug("Testing credentials %s:%s on %s", username, password, endpoint.url())
 
-            options = webdriver.FirefoxOptions()
+            options = webdriver.ChromeOptions()
             options.add_argument("--headless")
-            driver = webdriver.Firefox(options=options)
+            driver = webdriver.Chrome(options=options)
 
             try:
                 driver.get(endpoint.url())
