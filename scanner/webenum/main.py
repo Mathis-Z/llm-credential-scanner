@@ -272,11 +272,16 @@ class WebEnumWorker(threading.Thread):
     def is_404_response(self, status_code: int, html: str) -> bool:
         """Determines if the response is a 404 based on simhash comparison."""
         if status_code == 404:
+            logger.warning("Received explicit 404 status code for %s; treating as not found", self.service.url())
             return True
 
         if not self.not_found_simhash or not html:
+            logger.warning("Soft 404 detection is disabled for %s due to missing simhash or HTML content", self.service.url())
             return False
 
         response_simhash = self.simhash(html)
         distance = self.not_found_simhash.distance(response_simhash)
-        return distance < 5
+        if distance < 5:
+            logger.info("Soft 404 detected for %s with simhash distance %d", self.service.url(), distance)
+            return True
+        return False
