@@ -153,7 +153,8 @@ def _load_run_data(run_path: Path):
             "endpoints": 0,
             "login_panels": 0,
             "found_credentials": 0,
-            "screenshots": 0
+            "screenshots": 0,
+            "keywords": 0
         }
     }
 
@@ -168,7 +169,7 @@ def _load_run_data(run_path: Path):
         try:
             services = conn.execute("SELECT pk, host, port, https, _credentials FROM service").fetchall()
             endpoints = conn.execute(
-                "SELECT pk, service_id, path, is_login, working_credentials FROM endpoint"
+                "SELECT pk, service_id, path, is_login, working_credentials, _keywords FROM endpoint"
             ).fetchall()
         finally:
             conn.close()
@@ -192,6 +193,7 @@ def _load_run_data(run_path: Path):
         endpoint_list = []
         found_credentials = []
         login_panels = []
+        keyword_counts = {}
         for row in endpoints:
             service = service_map.get(row["service_id"])
             endpoint_url = None
@@ -203,8 +205,18 @@ def _load_run_data(run_path: Path):
                 "path": row["path"],
                 "is_login": bool(row["is_login"]),
                 "working_credentials": row["working_credentials"] or "",
-                "url": endpoint_url
+                "url": endpoint_url,
+                "keywords": []
             }
+            if row["_keywords"]:
+                try:
+                    item["keywords"] = json.loads(row["_keywords"])
+                except json.JSONDecodeError:
+                    item["keywords"] = []
+
+            for keyword in item["keywords"]:
+                keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+
             endpoint_list.append(item)
 
             if item["working_credentials"]:
@@ -216,6 +228,10 @@ def _load_run_data(run_path: Path):
         data["endpoints"] = endpoint_list
         data["found_credentials"] = found_credentials
         data["login_panels"] = login_panels
+        data["keywords"] = [
+            {"keyword": key, "count": count}
+            for key, count in sorted(keyword_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        ]
 
         endpoint_map = {item["pk"]: item for item in endpoint_list}
         if data["screenshots"]:
@@ -227,6 +243,7 @@ def _load_run_data(run_path: Path):
         data["summary"]["endpoints"] = len(endpoint_list)
         data["summary"]["login_panels"] = len(login_panels)
         data["summary"]["found_credentials"] = len(found_credentials)
+        data["summary"]["keywords"] = len(keyword_counts)
 
     scanner_log_lines, scanner_truncated = _read_log_tail(scanner_log_path)
     docker_log_lines, docker_truncated = _read_log_tail(docker_log_path)

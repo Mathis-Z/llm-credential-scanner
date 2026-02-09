@@ -302,6 +302,35 @@ body {
     color: var(--muted);
 }
 
+.keyword-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.keyword-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #fff0da;
+    border: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.keyword-text {
+    font-weight: 600;
+}
+
+.keyword-count {
+    background: #f8d1c6;
+    color: #8c2c1e;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+}
+
 .shots-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

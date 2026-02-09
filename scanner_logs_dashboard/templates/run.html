@@ -107,6 +107,25 @@
 
 <section class="panel">
     <div class="panel-header">
+        <h3>Extracted keywords</h3>
+        <span class="pill">{{ data.summary.keywords }}</span>
+    </div>
+    {% if data.keywords %}
+        <div class="keyword-grid">
+            {% for item in data.keywords %}
+                <div class="keyword-pill">
+                    <span class="keyword-text">{{ item.keyword }}</span>
+                    <span class="keyword-count">{{ item.count }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">No keywords extracted.</div>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="panel-header">
         <h3>Screenshots</h3>
         <span class="pill">{{ data.summary.screenshots }}</span>
     </div>
