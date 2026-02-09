@@ -234,7 +234,7 @@ class CredTester(DBConnectionMixin, Thread):
                     )
                 except TimeoutException:
                     pass
-                time.sleep(5)
+                time.sleep(20)
                 # to compare with before_page_source need to remove script tags again
                 soup = BeautifulSoup(driver.page_source, "html.parser")
                 for script in soup.find_all("script"):
