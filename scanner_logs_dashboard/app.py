@@ -63,7 +63,7 @@ def _read_log_full(path: Path):
 
 def _parse_screenshot_name(name: str):
     match = re.match(
-        r"^endpoint-(\d+)_(.+)_user-([^_]+)_(before|after)_(\d+)\.png$",
+        r"^endpoint-(\d+)_(.+)_user-(.+)_(before|after)_(\d+)\.png$",
         name
     )
     if not match:
