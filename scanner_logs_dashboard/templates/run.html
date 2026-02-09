@@ -61,11 +61,17 @@
             <span class="pill">{{ data.summary.login_panels }}</span>
         </div>
         {% if data.login_panels %}
-            <ul class="list">
+            <div class="cred-grid">
                 {% for item in data.login_panels %}
-                    <li>{{ item.url or item.path }}</li>
+                    <div class="cred-card">
+                        <div class="cred-endpoint">{{ item.url or item.path }}</div>
+                        <div class="cred-pair">
+                            <span class="cred-label">Endpoint</span>
+                            <span class="cred-value">Login panel</span>
+                        </div>
+                    </div>
                 {% endfor %}
-            </ul>
+            </div>
         {% else %}
             <div class="empty">No login panels detected.</div>
         {% endif %}
