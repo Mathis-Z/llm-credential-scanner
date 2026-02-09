@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="header">
+    <div>
+        <h2>{{ run_name }}</h2>
+        <p>Artifacts folder: {{ base_dir }}/{{ run_name }}</p>
+    </div>
+    <div class="badge">Scanner run</div>
+</section>
+
+<section class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-label">Services</div>
+        <div class="metric-value">{{ data.summary.services }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Endpoints</div>
+        <div class="metric-value">{{ data.summary.endpoints }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Login panels</div>
+        <div class="metric-value">{{ data.summary.login_panels }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Working creds</div>
+        <div class="metric-value">{{ data.summary.found_credentials }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">Screenshots</div>
+        <div class="metric-value">{{ data.summary.screenshots }}</div>
+    </div>
+</section>
+
+<section class="panel-grid">
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Found credentials</h3>
+            <span class="pill accent">{{ data.summary.found_credentials }}</span>
+        </div>
+        {% if data.found_credentials %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Credentials</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in data.found_credentials %}
+                    <tr>
+                        <td>{{ item.url or item.path }}</td>
+                        <td>{{ item.working_credentials }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty">No working credentials found.</div>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Login panels</h3>
+            <span class="pill">{{ data.summary.login_panels }}</span>
+        </div>
+        {% if data.login_panels %}
+            <ul class="list">
+                {% for item in data.login_panels %}
+                    <li>{{ item.url or item.path }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="empty">No login panels detected.</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h3>Services</h3>
+        <span class="pill">{{ data.summary.services }}</span>
+    </div>
+    {% if data.services %}
+        <div class="service-grid">
+            {% for service in data.services %}
+                <div class="service-card">
+                    <div class="service-url">{{ service.url }}</div>
+                    {% if service.credentials %}
+                        <div class="service-creds">
+                            {% for cred in service.credentials %}
+                                <span>{{ cred[0] }} / {{ cred[1] }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="muted">No candidate credentials stored.</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">No services found in the database.</div>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h3>Screenshots</h3>
+        <span class="pill">{{ data.summary.screenshots }}</span>
+    </div>
+    {% if data.screenshots %}
+        <div class="shots-grid">
+            {% for shot in data.screenshots %}
+                <div class="shot-card">
+                    <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                    <div class="shot-label">{{ shot.name }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty">No screenshots captured for this run.</div>
+    {% endif %}
+</section>
+
+<section class="panel-grid">
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Scanner log</h3>
+            {% if data.scanner_log_truncated %}
+                <span class="pill warn">tail</span>
+            {% endif %}
+        </div>
+        {% if data.scanner_log_lines %}
+            <pre class="log-box">{{ data.scanner_log_lines | join('') }}</pre>
+        {% else %}
+            <div class="empty">No scanner log found.</div>
+        {% endif %}
+    </div>
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Docker log</h3>
+            {% if data.docker_log_truncated %}
+                <span class="pill warn">tail</span>
+            {% endif %}
+        </div>
+        {% if data.docker_log_lines %}
+            <pre class="log-box">{{ data.docker_log_lines | join('') }}</pre>
+        {% else %}
+            <div class="empty">No docker log found.</div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <h2>Scanner Logs Dashboard</h2>
+        <p>Pick a run on the left to explore results, credentials, and screenshots.</p>
+    </div>
+    <div class="hero-card">
+        <div class="hero-title">Quick Tips</div>
+        <ul>
+            <li>Runs are loaded from <strong>{{ base_dir }}</strong></li>
+            <li>Set SCANNER_LOGS_DIR to use a different base directory</li>
+            <li>Each run includes scanner.db, scanner.log, docker.log</li>
+        </ul>
+    </div>
+</section>
+
+<section class="empty-state">
+    <h3>No run selected</h3>
+    <p>Select a run from the sidebar to see its details.</p>
+</section>
+{% endblock %}

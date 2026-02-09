@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scanner Logs Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">SL</div>
+                <div>
+                    <h1>Scanner Logs</h1>
+                    <p>Base: {{ base_dir }}</p>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <h2>Runs</h2>
+                <div class="run-list">
+                    {% for run in runs %}
+                        <a class="run-item" href="{{ url_for('run_view', run_name=run.name) }}">
+                            <div class="run-name">{{ run.name }}</div>
+                            <div class="run-meta">
+                                <span>{{ run.mtime_human }}</span>
+                                {% if not run.db_exists %}
+                                    <span class="pill warn">no db</span>
+                                {% else %}
+                                    <span class="pill ok">db ok</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="empty">No runs found yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>
