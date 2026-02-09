@@ -101,7 +101,7 @@ class KeywordExtractor(DBConnectionMixin, Thread):
 
             keyword_count = int(lines[0])
             endpoint.keywords = [kw for kw in lines[1:keyword_count+1] if len(kw) > 3]
-            endpoint.save()
+            endpoint.save(only=[Endpoint._keywords])
             logger.info("Extracted keywords for %s: %s", endpoint.url(), endpoint.keywords)
         except Exception as e:
             logger.error("Error extracting keywords for %s: %s", endpoint.url(), str(e))

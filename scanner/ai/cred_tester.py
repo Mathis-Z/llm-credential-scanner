@@ -283,7 +283,7 @@ class CredTester(DBConnectionMixin, Thread):
             attempt = self._perform_login_attempt(endpoint, username, password, attempt_label="attempt")
             if not attempt:
                 endpoint.add_tested_credentials((username, password))
-                endpoint.save()
+                endpoint.save(only=[Endpoint._tested_credentials])
                 return
 
             before_cookie_names = {c.get("name") for c in attempt["before_cookies"]}
@@ -353,6 +353,9 @@ class CredTester(DBConnectionMixin, Thread):
                 logger.info("Credentials %s do not work on %s", creds_str, endpoint.url())
                 endpoint.add_tested_credentials((username, password))
 
-            endpoint.save()
+            if login_successful:
+                endpoint.save(only=[Endpoint.working_credentials])
+            else:
+                endpoint.save(only=[Endpoint._tested_credentials])
         except Exception as exc:
             logger.error("Error testing credentials %s:%s on %s: %s", username, password, endpoint.url(), str(exc))
