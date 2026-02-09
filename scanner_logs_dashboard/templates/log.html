@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="log-page">
+    <div class="log-header">
+        <div>
+            <h2>{{ run_name }} · {{ log_name }} log</h2>
+            <p>Full log view</p>
+        </div>
+        <button class="fullscreen-button" onclick="toggleFullscreen()">Fullscreen</button>
+    </div>
+    <pre id="logTarget" class="fullscreen-target">{{ log_content }}</pre>
+</section>
+
+<script>
+function toggleFullscreen() {
+    const target = document.getElementById('logTarget');
+    if (!document.fullscreenElement) {
+        target.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+</script>
+{% endblock %}

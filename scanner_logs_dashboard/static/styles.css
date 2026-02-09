@@ -216,6 +216,17 @@ body {
     margin-bottom: 16px;
 }
 
+.log-actions {
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+.log-link {
+    text-decoration: none;
+    font-size: 12px;
+    color: var(--accent-2);
+}
+
 .list {
     list-style: none;
     padding: 0;
@@ -255,6 +266,48 @@ body {
     gap: 16px;
 }
 
+.shot-groups {
+    display: grid;
+    gap: 20px;
+}
+
+.shot-group {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: #fffefc;
+}
+
+.shot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.shot-title {
+    font-weight: 600;
+}
+
+.shot-sub {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.shot-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.shot-stage-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
 .shot-card {
     border-radius: 16px;
     overflow: hidden;
@@ -282,6 +335,41 @@ body {
     max-height: 360px;
     overflow: auto;
     font-size: 12px;
+}
+
+.log-page {
+    display: grid;
+    gap: 16px;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fullscreen-target {
+    background: #0f0f12;
+    color: #f1e9dc;
+    padding: 18px;
+    border-radius: 16px;
+    max-height: 75vh;
+    overflow: auto;
+    font-size: 12px;
+}
+
+.fullscreen-button {
+    border: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--accent-2);
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.panel-sub {
+    margin-top: 18px;
 }
 
 .empty {

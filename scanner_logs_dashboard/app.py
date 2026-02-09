@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sqlite3
 from pathlib import Path
 from datetime import datetime
@@ -52,6 +53,84 @@ def _read_log_tail(path: Path, max_lines: int = 300):
     return lines, False
 
 
+def _read_log_full(path: Path):
+    if not path.exists():
+        return None
+
+    with path.open("r", encoding="utf-8", errors="replace") as log_file:
+        return log_file.read()
+
+
+def _parse_screenshot_name(name: str):
+    match = re.match(
+        r"^endpoint-(\d+)_(.+)_user-([^_]+)_(before|after)_(\d+)\.png$",
+        name
+    )
+    if not match:
+        return None
+
+    endpoint_pk = int(match.group(1))
+    prefix = match.group(2)
+    user = match.group(3)
+    phase = match.group(4)
+    ts = int(match.group(5))
+
+    parts = prefix.split("_")
+    label = parts[-1] if parts else "unknown"
+    host_path = "_".join(parts[:-1]) if len(parts) > 1 else "unknown"
+
+    return {
+        "endpoint_pk": endpoint_pk,
+        "host_path": host_path,
+        "label": label,
+        "user": user,
+        "phase": phase,
+        "ts": ts
+    }
+
+
+def _group_screenshots(shots, endpoint_map):
+    groups = {}
+    unparsed = []
+
+    for shot in shots:
+        meta = _parse_screenshot_name(shot.name)
+        if not meta:
+            unparsed.append(shot)
+            continue
+
+        key = (meta["endpoint_pk"], meta["user"], meta["label"])
+        endpoint = endpoint_map.get(meta["endpoint_pk"], {})
+        group = groups.setdefault(
+            key,
+            {
+                "endpoint_pk": meta["endpoint_pk"],
+                "endpoint_url": endpoint.get("url"),
+                "host_path": meta["host_path"],
+                "label": meta["label"],
+                "user": meta["user"],
+                "before": [],
+                "after": []
+            }
+        )
+        group[meta["phase"]].append({
+            "path": shot,
+            "name": shot.name,
+            "ts": meta["ts"]
+        })
+
+    for group in groups.values():
+        group["before"].sort(key=lambda s: s["ts"])
+        group["after"].sort(key=lambda s: s["ts"])
+
+    grouped = sorted(
+        groups.values(),
+        key=lambda g: (g["endpoint_pk"], g["user"], g["label"])
+    )
+
+    return grouped, unparsed
+
+
 def _load_run_data(run_path: Path):
     db_path = run_path / "scanner.db"
     scanner_log_path = run_path / "scanner.log"
@@ -63,6 +142,8 @@ def _load_run_data(run_path: Path):
         "scanner_log_path": scanner_log_path,
         "docker_log_path": docker_log_path,
         "screenshots": [],
+        "screenshot_groups": [],
+        "screenshot_unparsed": [],
         "services": [],
         "endpoints": [],
         "found_credentials": [],
@@ -136,6 +217,12 @@ def _load_run_data(run_path: Path):
         data["found_credentials"] = found_credentials
         data["login_panels"] = login_panels
 
+        endpoint_map = {item["pk"]: item for item in endpoint_list}
+        if data["screenshots"]:
+            groups, unparsed = _group_screenshots(data["screenshots"], endpoint_map)
+            data["screenshot_groups"] = groups
+            data["screenshot_unparsed"] = unparsed
+
         data["summary"]["services"] = len(data["services"])
         data["summary"]["endpoints"] = len(endpoint_list)
         data["summary"]["login_panels"] = len(login_panels)
@@ -184,6 +271,35 @@ def screenshot(run_name: str, filename: str):
     if not shot_dir.exists():
         abort(404)
     return send_from_directory(shot_dir, filename)
+
+
+@app.route("/run/<run_name>/log/<log_name>")
+def log_view(run_name: str, log_name: str):
+    run_path = _run_dir(run_name)
+    if not run_path.exists() or not run_path.is_dir():
+        abort(404)
+
+    log_map = {
+        "scanner": "scanner.log",
+        "docker": "docker.log"
+    }
+    if log_name not in log_map:
+        abort(404)
+
+    log_path = run_path / log_map[log_name]
+    log_content = _read_log_full(log_path)
+    if log_content is None:
+        abort(404)
+
+    runs = _list_runs()
+    return render_template(
+        "log.html",
+        runs=runs,
+        run_name=run_name,
+        base_dir=str(BASE_DIR),
+        log_name=log_name,
+        log_content=log_content
+    )
 
 
 @app.route("/health")

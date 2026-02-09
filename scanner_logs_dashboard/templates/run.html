@@ -109,17 +109,64 @@
         <h3>Screenshots</h3>
         <span class="pill">{{ data.summary.screenshots }}</span>
     </div>
-    {% if data.screenshots %}
-        <div class="shots-grid">
-            {% for shot in data.screenshots %}
-                <div class="shot-card">
-                    <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
-                    <div class="shot-label">{{ shot.name }}</div>
+    {% if data.screenshot_groups %}
+        <div class="shot-groups">
+            {% for group in data.screenshot_groups %}
+                <div class="shot-group">
+                    <div class="shot-header">
+                        <div>
+                            <div class="shot-title">{{ group.endpoint_url or group.host_path }}</div>
+                            <div class="shot-sub">Endpoint {{ group.endpoint_pk }} · {{ group.label }} · user {{ group.user }}</div>
+                        </div>
+                        <span class="pill">{{ (group.before | length) + (group.after | length) }}</span>
+                    </div>
+                    <div class="shot-row">
+                        <div class="shot-stage">
+                            <div class="shot-stage-title">Before</div>
+                            <div class="shots-grid">
+                                {% for shot in group.before %}
+                                    <div class="shot-card">
+                                        <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                        <div class="shot-label">{{ shot.name }}</div>
+                                    </div>
+                                {% else %}
+                                    <div class="empty">No before screenshots.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="shot-stage">
+                            <div class="shot-stage-title">After</div>
+                            <div class="shots-grid">
+                                {% for shot in group.after %}
+                                    <div class="shot-card">
+                                        <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                        <div class="shot-label">{{ shot.name }}</div>
+                                    </div>
+                                {% else %}
+                                    <div class="empty">No after screenshots.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             {% endfor %}
         </div>
     {% else %}
         <div class="empty">No screenshots captured for this run.</div>
+    {% endif %}
+
+    {% if data.screenshot_unparsed %}
+        <div class="panel-sub">
+            <h4>Unparsed screenshots</h4>
+            <div class="shots-grid">
+                {% for shot in data.screenshot_unparsed %}
+                    <div class="shot-card">
+                        <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                        <div class="shot-label">{{ shot.name }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     {% endif %}
 </section>
 
@@ -127,6 +174,9 @@
     <div class="panel">
         <div class="panel-header">
             <h3>Scanner log</h3>
+            <div class="log-actions">
+                <a class="log-link" href="{{ url_for('log_view', run_name=run_name, log_name='scanner') }}">Fullscreen</a>
+            </div>
             {% if data.scanner_log_truncated %}
                 <span class="pill warn">tail</span>
             {% endif %}
@@ -140,6 +190,9 @@
     <div class="panel">
         <div class="panel-header">
             <h3>Docker log</h3>
+            <div class="log-actions">
+                <a class="log-link" href="{{ url_for('log_view', run_name=run_name, log_name='docker') }}">Fullscreen</a>
+            </div>
             {% if data.docker_log_truncated %}
                 <span class="pill warn">tail</span>
             {% endif %}
