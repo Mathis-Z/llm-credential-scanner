@@ -5,8 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
+    tmpfs:
+      - /data/db
 
   mongo-express:
     image: mongo-express
@@ -18,7 +18,3 @@ services:
       ME_CONFIG_MONGODB_SERVER: mongo
     depends_on:
       - mongo
-
-volumes:
-  mongo-data:
-

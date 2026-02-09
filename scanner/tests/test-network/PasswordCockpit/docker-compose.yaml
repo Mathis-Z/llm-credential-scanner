@@ -8,8 +8,8 @@ services:
             - "8080:8080"
             # Use with PASSWORDCOCKPIT_SSL: enable
             #- "4343:4343"
-        volumes:
-            - ./volumes/upload:/var/www/html/upload
+        tmpfs:
+            - /var/www/html/upload
             # Overwrite self-signed SSL certificate file
             #- ./volumes/ssl_certificate/passwordcockpit.crt:/etc/ssl/certs/passwordcockpit.crt:ro
             #- ./volumes/ssl_certificate/passwordcockpit.key:/etc/ssl/certs/passwordcockpit.key:ro
@@ -46,7 +46,7 @@ services:
             #PASSWORDCOCKPIT_LDAP_BASEDN: ''
             #PASSWORDCOCKPIT_LDAP_ACCOUNTFILTERFORMAT: ''
             #PASSWORDCOCKPIT_LDAP_BINDREQUIRESDN: 'true'
-            PASSWORDCOCKPIT_UPLOAD_ACCEPTED_MIMETYPES: 'pdf,zip'
+            PASSWORDCOCKPIT_UPLOAD_ACCEPTED_MIMETYPES: "pdf,zip"
             #PASSWORDCOCKPIT_DEBUG: true
         depends_on:
             - mariadb
@@ -54,9 +54,9 @@ services:
         image: mariadb:10
         #container_name: mariadb
         ports:
-            - '3306:3306'
-        volumes:
-            - ./volumes/mariadb:/var/lib/mysql
+            - "3306:3306"
+        tmpfs:
+            - /var/lib/mysql
         environment:
             - MARIADB_ROOT_PASSWORD=root_password
             - MARIADB_USER=passwordcockpit_db_usr

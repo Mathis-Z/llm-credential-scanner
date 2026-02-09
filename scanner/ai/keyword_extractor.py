@@ -16,7 +16,7 @@ from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
 
 PROMPT_TEMPLATE = """
-You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. For this you need to identify keywords or links for a web search. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
+You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. Identify keywords or links for a web search. If an application name appears (title, logo text, headings), include it as a keyword even if it is the only one. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
 <<<BEGIN CONTENT>>>
 %s
 <<<END CONTENT>>>

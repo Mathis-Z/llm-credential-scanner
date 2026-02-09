@@ -4,6 +4,3 @@ services:
     image: linuxserver/calibre-web
     ports:
       - "8083:8083"
-    volumes:
-      - ./config:/config
-      - ./books:/books

@@ -1,5 +1,4 @@
 ---
-
 # This is an example complete example docker-compose.yml
 # file for a linuxserver.io based BookStack setup
 # using the linuxserver.io MariaDB conatiner.
@@ -11,11 +10,10 @@
 # These containers are maintained by the linuxserver.io
 # team, not the official BookStack project.
 
-# For non-commented options, refer to the linuxserver documentation: 
+# For non-commented options, refer to the linuxserver documentation:
 # https://docs.linuxserver.io/images/docker-bookstack/#environment-variables-e
 
 services:
-
   # The container for BookStack itself
   bookstack:
     # You should update the version here to match the latest
@@ -43,11 +41,6 @@ services:
       - DB_DATABASE=bookstack
       - DB_USERNAME=bookstack
       - DB_PASSWORD=bookstack8432
-    volumes:
-      # You generally only ever need to map this one volume.
-      # This maps it to a "bookstack_app_data" folder in the same
-      # directory as this compose config file.
-      - ./bookstack_app_data:/config
     ports:
       # This exposes port 6875 for general web access.
       # Commonly you'd have a reverse proxy in front of this,
@@ -74,11 +67,6 @@ services:
       - MYSQL_DATABASE=bookstack
       - MYSQL_USER=bookstack
       - MYSQL_PASSWORD=bookstack8432
-    volumes:
-      # You generally only ever need to map this one volume.
-      # This maps it to a "bookstack_db_data" folder in the same
-      # directory as this compose config file.
-      - ./bookstack_db_data:/config
 
     # These ports are commented out as you don't really need this port
     # exposed for normal use, mainly only if connecting direct the the

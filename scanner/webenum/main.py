@@ -148,11 +148,13 @@ class WebEnumWorker(threading.Thread):
 
             status_code, final_url, page_source = result
             if self.is_404_response(status_code, page_source):
+                logger.warning("Weird: Path %s on %s returned 404", initial_path, self.service.url())
                 return
 
             final_path = self.normalize_path(final_url)
 
             if self.already_found(final_path):
+                logger.warning("Weird: Path %s on %s resolved to already known path %s", initial_path, self.service.url(), final_path)
                 return # skip already known endpoints
 
             # handle BFS crawling
@@ -188,13 +190,16 @@ class WebEnumWorker(threading.Thread):
         # Skip rendering if the final path is already known in the DB
         final_path = self.normalize_path(response.url)
         if self.already_found(final_path):
+            logger.debug("Skipping rendering for known path %s", final_path)
             return None
 
+        # TODO: maybe we can use the functools memoization for the fetch_url method instead?
         if response.url in self.render_cache:
             return response.status_code, response.url, self.render_cache[response.url]
 
         final_url, rendered_html = fetch_url(response.url)
         if not rendered_html:
+            logger.warning("Failed to render HTML for %s", response.url)
             return None
         self.render_cache[response.url] = rendered_html
         return response.status_code, final_url, rendered_html
@@ -211,7 +216,6 @@ class WebEnumWorker(threading.Thread):
     def parse_links(self, url, content) -> list[str]:
         """Extracts links from the HTML for crawling."""
         urls = []
-        netloc = urllib.parse.urlparse(url).netloc
 
         try:
             soup = BeautifulSoup(content, 'html.parser')
@@ -228,23 +232,79 @@ class WebEnumWorker(threading.Thread):
 
     def get_404_simhash(self) -> simhash.Simhash:
         """Fetches a non-existent page to compute its simhash for soft 404 detection."""
-        url = f"{self.service.url()}/nonexistent_{int(time.time())}"
+        path = f"/nonexistent_{int(time.time())}"
+        before_url = f"{self.service.url()}{path}"
         try:
-            _, html = fetch_url(url)
+            after_url, html = fetch_url(before_url)
             if not html:
+                logger.warning("Failed to fetch HTML for 404 simhash from %s; disabling soft 404 detection", before_url)
                 return None
-            return simhash.Simhash(html)
-        except Exception:
+
+            after_path = urllib.parse.urlparse(after_url).path
+            if after_path != path:
+                # TODO: this is a rather lazy check for apps that redirect all or most requests to their login page
+                logger.debug("Soft 404 detection encountered redirect from %s to %s; disabling soft 404 detection", before_url, after_url)
+                if self.detect_password_input(after_url, html):
+                    normalized_after_path = self.normalize_path(after_path)
+                    if not self.already_found(normalized_after_path):
+                        logger.info("Non-existent path redirected to login page %s; recording login endpoint", after_url)
+                        Endpoint.create(
+                            service=self.service,
+                            path=normalized_after_path,
+                            initial_path=self.normalize_path(path),
+                            is_login=True,
+                            page_source=html
+                        )
+                return None
+
+            if self.detect_password_input(after_url, html):
+                normalized_after_path = self.normalize_path(after_path)
+                if not self.already_found(normalized_after_path):
+                    logger.info("Non-existent path returned login page %s; recording login endpoint", after_url)
+                    Endpoint.create(
+                        service=self.service,
+                        path=normalized_after_path,
+                        initial_path=self.normalize_path(path),
+                        is_login=True,
+                        page_source=html
+                    )
+
+            return self.simhash(html)
+        except Exception as e:
+            logger.error("Error fetching 404 page from %s: %s; disabling soft 404 detection", before_url, str(e))
             return None
+
+    def clean_html_for_simhash(self, html: str) -> str:
+        """Cleans HTML content to improve simhash accuracy."""
+        # Remove scripts and styles
+        soup = BeautifulSoup(html, 'html.parser')
+        for script_or_style in soup(['script', 'style', 'link']):
+            script_or_style.decompose()
+        text = soup.get_text()
+        # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text)
+        return text
+
+    def simhash(self, html: str) -> simhash.Simhash:
+        """Computes the simhash of cleaned HTML content."""
+        # TODO: evaluate other simhash techniques like tlsh
+        # TODO: evaluate using just markdown content instead of full HTML
+        cleaned_html = self.clean_html_for_simhash(html)
+        return simhash.Simhash(cleaned_html)
 
     def is_404_response(self, status_code: int, html: str) -> bool:
         """Determines if the response is a 404 based on simhash comparison."""
         if status_code == 404:
+            logger.warning("Received explicit 404 status code for %s; treating as not found", self.service.url())
             return True
 
         if not self.not_found_simhash or not html:
+            logger.warning("Soft 404 detection is disabled for %s due to missing simhash or HTML content", self.service.url())
             return False
 
-        response_simhash = simhash.Simhash(html)
+        response_simhash = self.simhash(html)
         distance = self.not_found_simhash.distance(response_simhash)
-        return distance < 5
+        if distance < 5:
+            logger.info("Soft 404 detected for %s with simhash distance %d", self.service.url(), distance)
+            return True
+        return False

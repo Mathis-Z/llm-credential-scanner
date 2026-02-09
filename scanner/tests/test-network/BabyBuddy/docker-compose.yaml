@@ -5,6 +5,4 @@ services:
     container_name: babybuddy
     ports:
       - "8000:8000"
-    volumes:
-      - ./babybuddy-config:/config
     restart: unless-stopped

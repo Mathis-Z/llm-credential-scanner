@@ -7,8 +7,6 @@ services:
       - MYSQL_DATABASE=owncloud
       - MYSQL_USER=owncloud
       - MYSQL_PASSWORD=owncloud
-    volumes:
-      - ./owncloud-db:/var/lib/mysql
 
   owncloud:
     image: owncloud/server:latest
@@ -20,7 +18,5 @@ services:
       - OWNCLOUD_DB_USERNAME=owncloud
       - OWNCLOUD_DB_PASSWORD=owncloud
       - OWNCLOUD_DB_HOST=owncloud-db
-    volumes:
-      - ./owncloud-data:/var/www/html
     depends_on:
       - owncloud-db

@@ -7,14 +7,15 @@ services:
       POSTGRES_DB: joplin
       POSTGRES_USER: joplin
       POSTGRES_PASSWORD: joplin
-    volumes:
-      - joplin-db:/var/lib/postgresql/data
+    tmpfs:
+      - /var/lib/postgresql/data
 
   joplin:
     image: joplin/server:latest
     ports:
       - "22300:22300"
     environment:
+      APP_BASE_URL: http://127.0.0.1:22300
       DB_CLIENT: pg
       POSTGRES_PASSWORD: joplin
       POSTGRES_DATABASE: joplin
@@ -22,6 +23,3 @@ services:
       POSTGRES_HOST: db
     depends_on:
       - db
-
-volumes:
-  joplin-db:
