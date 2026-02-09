@@ -203,14 +203,12 @@
             <div class="log-actions">
                 <a class="log-link" href="{{ url_for('log_view', run_name=run_name, log_name='scanner') }}">Fullscreen</a>
             </div>
-            {% if data.scanner_log_truncated %}
-                <span class="pill warn">tail</span>
-            {% endif %}
+            <span id="scannerTailPill" class="pill warn{% if not data.scanner_log_truncated %} is-hidden{% endif %}">tail</span>
         </div>
         {% if data.scanner_log_lines %}
-            <pre class="log-box">{{ data.scanner_log_lines | join('') }}</pre>
+            <pre id="scannerLogBox" class="log-box">{{ data.scanner_log_lines | join('') }}</pre>
         {% else %}
-            <div class="empty">No scanner log found.</div>
+            <div id="scannerLogEmpty" class="empty">No scanner log found.</div>
         {% endif %}
     </div>
     <div class="panel">
@@ -219,14 +217,12 @@
             <div class="log-actions">
                 <a class="log-link" href="{{ url_for('log_view', run_name=run_name, log_name='docker') }}">Fullscreen</a>
             </div>
-            {% if data.docker_log_truncated %}
-                <span class="pill warn">tail</span>
-            {% endif %}
+            <span id="dockerTailPill" class="pill warn{% if not data.docker_log_truncated %} is-hidden{% endif %}">tail</span>
         </div>
         {% if data.docker_log_lines %}
-            <pre class="log-box">{{ data.docker_log_lines | join('') }}</pre>
+            <pre id="dockerLogBox" class="log-box">{{ data.docker_log_lines | join('') }}</pre>
         {% else %}
-            <div class="empty">No docker log found.</div>
+            <div id="dockerLogEmpty" class="empty">No docker log found.</div>
         {% endif %}
     </div>
 </section>
@@ -243,6 +239,10 @@
 const modal = document.getElementById('shotModal');
 const modalImg = document.getElementById('shotModalImage');
 let lastState = null;
+const pollUrl = '{{ url_for("run_poll", run_name=run_name) }}';
+const scannerTailUrl = '{{ url_for("log_tail", run_name=run_name, log_name="scanner") }}';
+const dockerTailUrl = '{{ url_for("log_tail", run_name=run_name, log_name="docker") }}';
+const reloadKey = 'runReloadState';
 
 function openModal(src) {
     modalImg.src = src;
@@ -272,9 +272,101 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+function isAtBottom(element) {
+    const threshold = 20;
+    return (element.scrollHeight - element.scrollTop - element.clientHeight) < threshold;
+}
+
+function updateLogBox(box, empty, pill, text, truncated) {
+    if (!box || !pill || !empty) {
+        return;
+    }
+    const wasAtBottom = box && isAtBottom(box);
+    if (text) {
+        empty.classList.add('is-hidden');
+        box.classList.remove('is-hidden');
+        box.textContent = text;
+    } else {
+        empty.classList.remove('is-hidden');
+        box.classList.add('is-hidden');
+    }
+    if (truncated) {
+        pill.classList.remove('is-hidden');
+    } else {
+        pill.classList.add('is-hidden');
+    }
+    if (box && wasAtBottom) {
+        box.scrollTop = box.scrollHeight;
+    }
+}
+
+async function pollLogs() {
+    try {
+        const [scannerResp, dockerResp] = await Promise.all([
+            fetch(scannerTailUrl, { cache: 'no-store' }),
+            fetch(dockerTailUrl, { cache: 'no-store' })
+        ]);
+        if (!scannerResp.ok || !dockerResp.ok) {
+            return;
+        }
+        const scanner = await scannerResp.json();
+        const docker = await dockerResp.json();
+
+        updateLogBox(
+            document.getElementById('scannerLogBox'),
+            document.getElementById('scannerLogEmpty'),
+            document.getElementById('scannerTailPill'),
+            (scanner.lines || []).join(''),
+            scanner.truncated
+        );
+        updateLogBox(
+            document.getElementById('dockerLogBox'),
+            document.getElementById('dockerLogEmpty'),
+            document.getElementById('dockerTailPill'),
+            (docker.lines || []).join(''),
+            docker.truncated
+        );
+    } catch (error) {
+        return;
+    }
+}
+
+function storeScrollState() {
+    const state = {
+        page: window.scrollY,
+        scanner: document.getElementById('scannerLogBox')?.scrollTop ?? 0,
+        docker: document.getElementById('dockerLogBox')?.scrollTop ?? 0
+    };
+    sessionStorage.setItem(reloadKey, JSON.stringify(state));
+}
+
+function restoreScrollState() {
+    const raw = sessionStorage.getItem(reloadKey);
+    if (!raw) {
+        return;
+    }
+    sessionStorage.removeItem(reloadKey);
+    try {
+        const state = JSON.parse(raw);
+        window.scrollTo(0, state.page || 0);
+        const scanner = document.getElementById('scannerLogBox');
+        const docker = document.getElementById('dockerLogBox');
+        if (scanner) {
+            scanner.scrollTop = state.scanner || 0;
+        }
+        if (docker) {
+            docker.scrollTop = state.docker || 0;
+        }
+    } catch (error) {
+        return;
+    }
+}
+
+restoreScrollState();
+
 async function pollRunState() {
     try {
-        const response = await fetch('{{ url_for("run_poll", run_name=run_name) }}', {
+        const response = await fetch(pollUrl, {
             cache: 'no-store'
         });
         if (!response.ok) {
@@ -282,8 +374,17 @@ async function pollRunState() {
         }
         const state = await response.json();
         if (lastState) {
-            const changed = JSON.stringify(state) !== JSON.stringify(lastState);
-            if (changed) {
+            const dbChanged = state.db.mtime !== lastState.db.mtime || state.db.size !== lastState.db.size;
+            const shotsChanged = state.screenshots !== lastState.screenshots;
+            const logsChanged = state.scanner_log.size !== lastState.scanner_log.size
+                || state.docker_log.size !== lastState.docker_log.size;
+
+            if (logsChanged) {
+                pollLogs();
+            }
+
+            if (dbChanged || shotsChanged) {
+                storeScrollState();
                 window.location.reload();
                 return;
             }
@@ -295,6 +396,8 @@ async function pollRunState() {
 }
 
 setInterval(pollRunState, 5000);
+setInterval(pollLogs, 5000);
 pollRunState();
+pollLogs();
 </script>
 {% endblock %}

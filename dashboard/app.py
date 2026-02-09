@@ -88,6 +88,17 @@ def _read_log_full(path: Path):
         return log_file.read()
 
 
+def _log_path(run_path: Path, log_name: str):
+    log_map = {
+        "scanner": "scanner.log",
+        "docker": "docker.log"
+    }
+    filename = log_map.get(log_name)
+    if not filename:
+        return None
+    return run_path / filename
+
+
 def _parse_screenshot_name(name: str):
     match = re.match(
         r"^endpoint-(\d+)_(.+)_user-(.+)_pass-(.+)_(before|after)_(\d+)\.png$",
@@ -352,14 +363,9 @@ def log_view(run_name: str, log_name: str):
     if not run_path.exists() or not run_path.is_dir():
         abort(404)
 
-    log_map = {
-        "scanner": "scanner.log",
-        "docker": "docker.log"
-    }
-    if log_name not in log_map:
+    log_path = _log_path(run_path, log_name)
+    if not log_path:
         abort(404)
-
-    log_path = run_path / log_map[log_name]
     log_content = _read_log_full(log_path)
     if log_content is None:
         abort(404)
@@ -375,6 +381,40 @@ def log_view(run_name: str, log_name: str):
     )
 
 
+@app.route("/run/<run_name>/log-tail/<log_name>")
+def log_tail(run_name: str, log_name: str):
+    run_path = _run_dir(run_name)
+    if not run_path.exists() or not run_path.is_dir():
+        abort(404)
+
+    log_path = _log_path(run_path, log_name)
+    if not log_path:
+        abort(404)
+
+    lines, truncated = _read_log_tail(log_path)
+    return {
+        "lines": lines,
+        "truncated": truncated
+    }
+
+
+@app.route("/run/<run_name>/log-content/<log_name>")
+def log_content(run_name: str, log_name: str):
+    run_path = _run_dir(run_name)
+    if not run_path.exists() or not run_path.is_dir():
+        abort(404)
+
+    log_path = _log_path(run_path, log_name)
+    if not log_path:
+        abort(404)
+
+    content = _read_log_full(log_path)
+    if content is None:
+        abort(404)
+
+    return content, 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
 @app.route("/run/<run_name>/poll")
 def run_poll(run_name: str):
     run_path = _run_dir(run_name)
@@ -382,6 +422,21 @@ def run_poll(run_name: str):
         abort(404)
 
     return _run_state(run_path)
+
+
+@app.route("/runs")
+def runs_poll():
+    return {
+        "runs": [
+            {
+                "name": run["name"],
+                "db_exists": run["db_exists"],
+                "mtime": run["mtime"],
+                "mtime_human": run["mtime_human"]
+            }
+            for run in _list_runs()
+        ]
+    }
 
 
 @app.route("/health")

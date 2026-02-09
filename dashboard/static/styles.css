@@ -418,6 +418,10 @@ body {
     font-size: 12px;
 }
 
+.is-hidden {
+    display: none;
+}
+
 .log-page {
     display: grid;
     gap: 16px;

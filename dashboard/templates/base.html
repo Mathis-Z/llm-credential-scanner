@@ -18,7 +18,7 @@
             </div>
             <div class="sidebar-section">
                 <h2>Runs</h2>
-                <div class="run-list">
+                <div class="run-list" id="runList">
                     {% for run in runs %}
                         <a class="run-item" href="{{ url_for('run_view', run_name=run.name) }}">
                             <div class="run-name">{{ run.name }}</div>
@@ -41,5 +41,51 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    <script>
+    const runsUrl = '{{ url_for("runs_poll") }}';
+    const runList = document.getElementById('runList');
+
+    function renderRuns(runs) {
+        if (!runList) {
+            return;
+        }
+        if (!runs.length) {
+            runList.innerHTML = '<div class="empty">No runs found yet.</div>';
+            return;
+        }
+
+        runList.innerHTML = runs.map((run) => {
+            const badge = run.db_exists
+                ? '<span class="pill ok">db ok</span>'
+                : '<span class="pill warn">no db</span>';
+            return `
+                <a class="run-item" href="/run/${run.name}">
+                    <div class="run-name">${run.name}</div>
+                    <div class="run-meta">
+                        <span>${run.mtime_human}</span>
+                        ${badge}
+                    </div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    async function pollRuns() {
+        try {
+            const response = await fetch(runsUrl, { cache: 'no-store' });
+            if (!response.ok) {
+                return;
+            }
+            const data = await response.json();
+            renderRuns(data.runs || []);
+        } catch (error) {
+            return;
+        }
+    }
+
+    setInterval(pollRuns, 8000);
+    pollRuns();
+    </script>
 </body>
 </html>

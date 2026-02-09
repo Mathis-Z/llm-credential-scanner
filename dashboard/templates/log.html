@@ -13,13 +13,41 @@
 </section>
 
 <script>
+const logTarget = document.getElementById('logTarget');
+
 function toggleFullscreen() {
-    const target = document.getElementById('logTarget');
     if (!document.fullscreenElement) {
-        target.requestFullscreen().catch(() => {});
+        logTarget.requestFullscreen().catch(() => {});
     } else {
         document.exitFullscreen().catch(() => {});
     }
 }
+
+function atBottom(element) {
+    const threshold = 20;
+    return (element.scrollHeight - element.scrollTop - element.clientHeight) < threshold;
+}
+
+async function pollFullLog() {
+    try {
+        const response = await fetch('{{ url_for("log_content", run_name=run_name, log_name=log_name) }}', {
+            cache: 'no-store'
+        });
+        if (!response.ok) {
+            return;
+        }
+        const text = await response.text();
+        const keepBottom = atBottom(logTarget);
+        logTarget.textContent = text;
+        if (keepBottom) {
+            logTarget.scrollTop = logTarget.scrollHeight;
+        }
+    } catch (error) {
+        return;
+    }
+}
+
+setInterval(pollFullLog, 1000);
+pollFullLog();
 </script>
 {% endblock %}
