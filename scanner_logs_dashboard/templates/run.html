@@ -126,7 +126,9 @@
                             <div class="shots-grid">
                                 {% for shot in group.before %}
                                     <div class="shot-card">
-                                        <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
+                                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                        </button>
                                         <div class="shot-label">{{ shot.name }}</div>
                                     </div>
                                 {% else %}
@@ -139,7 +141,9 @@
                             <div class="shots-grid">
                                 {% for shot in group.after %}
                                     <div class="shot-card">
-                                        <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
+                                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                        </button>
                                         <div class="shot-label">{{ shot.name }}</div>
                                     </div>
                                 {% else %}
@@ -161,7 +165,9 @@
             <div class="shots-grid">
                 {% for shot in data.screenshot_unparsed %}
                     <div class="shot-card">
-                        <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
+                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                        </button>
                         <div class="shot-label">{{ shot.name }}</div>
                     </div>
                 {% endfor %}
@@ -204,4 +210,45 @@
         {% endif %}
     </div>
 </section>
+
+<div class="shot-modal" id="shotModal" aria-hidden="true">
+    <div class="shot-modal-backdrop" data-close="true"></div>
+    <div class="shot-modal-content" role="dialog" aria-modal="true">
+        <button class="shot-modal-close" type="button" data-close="true" aria-label="Close">Close</button>
+        <img id="shotModalImage" src="" alt="Expanded screenshot">
+    </div>
+</div>
+
+<script>
+const modal = document.getElementById('shotModal');
+const modalImg = document.getElementById('shotModalImage');
+
+function openModal(src) {
+    modalImg.src = src;
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('is-open');
+}
+
+function closeModal() {
+    modalImg.src = '';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.classList.remove('is-open');
+}
+
+document.querySelectorAll('.shot-button').forEach((button) => {
+    button.addEventListener('click', () => openModal(button.dataset.full));
+});
+
+modal.addEventListener('click', (event) => {
+    if (event.target.dataset.close === 'true') {
+        closeModal();
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+        closeModal();
+    }
+});
+</script>
 {% endblock %}
