@@ -127,7 +127,7 @@ class CredTester(DBConnectionMixin, Thread):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _save_screenshot(self, driver, endpoint: Endpoint, username: str, attempt_label: str, phase: str):
+    def _save_screenshot(self, driver, endpoint: Endpoint, username: str, password: str, attempt_label: str, phase: str):
         screenshot_dir = self._get_screenshot_dir()
         if not screenshot_dir:
             return
@@ -136,9 +136,10 @@ class CredTester(DBConnectionMixin, Thread):
         host = self._sanitize_for_filename(parts.hostname or "host")
         path = self._sanitize_for_filename(parts.path.strip("/") or "root")
         user = self._sanitize_for_filename(username)
+        pwd = self._sanitize_for_filename(password)
         label = self._sanitize_for_filename(attempt_label)
         ts = int(time.time() * 1000)
-        filename = f"endpoint-{endpoint.pk}_{host}_{path}_{label}_user-{user}_{phase}_{ts}.png"
+        filename = f"endpoint-{endpoint.pk}_{host}_{path}_{label}_user-{user}_pass-{pwd}_{phase}_{ts}.png"
         driver.save_screenshot(str(screenshot_dir / filename))
 
     def _perform_login_attempt(self, endpoint: Endpoint, username: str, password: str, attempt_label: str = "attempt"):
@@ -179,7 +180,7 @@ class CredTester(DBConnectionMixin, Thread):
                         for script in soup.find_all("script"):
                             script.decompose()
 
-            self._save_screenshot(driver, endpoint, username, attempt_label, "before")
+            self._save_screenshot(driver, endpoint, username, password, attempt_label, "before")
 
             # store page info to compare with after tool calls
             before_url = driver.current_url
@@ -247,7 +248,7 @@ class CredTester(DBConnectionMixin, Thread):
                 after_cookies = driver.get_cookies()
                 after_has_password = bool(soup.select("input[type=password]"))
 
-            self._save_screenshot(driver, endpoint, username, attempt_label, "after")
+            self._save_screenshot(driver, endpoint, username, password, attempt_label, "after")
 
             return {
                 "before_url": before_url,

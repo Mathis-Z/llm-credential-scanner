@@ -63,7 +63,7 @@ def _read_log_full(path: Path):
 
 def _parse_screenshot_name(name: str):
     match = re.match(
-        r"^endpoint-(\d+)_(.+)_user-(.+)_(before|after)_(\d+)\.png$",
+        r"^endpoint-(\d+)_(.+)_user-(.+)_pass-(.+)_(before|after)_(\d+)\.png$",
         name
     )
     if not match:
@@ -72,8 +72,9 @@ def _parse_screenshot_name(name: str):
     endpoint_pk = int(match.group(1))
     prefix = match.group(2)
     user = match.group(3)
-    phase = match.group(4)
-    ts = int(match.group(5))
+    pwd = match.group(4)
+    phase = match.group(5)
+    ts = int(match.group(6))
 
     parts = prefix.split("_")
     label = parts[-1] if parts else "unknown"
@@ -84,6 +85,7 @@ def _parse_screenshot_name(name: str):
         "host_path": host_path,
         "label": label,
         "user": user,
+        "password": pwd,
         "phase": phase,
         "ts": ts
     }
@@ -99,7 +101,7 @@ def _group_screenshots(shots, endpoint_map):
             unparsed.append(shot)
             continue
 
-        key = (meta["endpoint_pk"], meta["user"], meta["label"])
+        key = (meta["endpoint_pk"], meta["user"], meta["password"], meta["label"])
         endpoint = endpoint_map.get(meta["endpoint_pk"], {})
         group = groups.setdefault(
             key,
@@ -109,6 +111,7 @@ def _group_screenshots(shots, endpoint_map):
                 "host_path": meta["host_path"],
                 "label": meta["label"],
                 "user": meta["user"],
+                "password": meta["password"],
                 "before": [],
                 "after": []
             }
