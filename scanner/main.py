@@ -11,8 +11,29 @@ from scanner.db import init_db, Endpoint, Service
 from tabulate import tabulate
 
 
-def configure_logging(log_level="INFO"):
+def configure_logging(log_level="INFO", log_file: str | None = None):
     """Configure logging for the scanner application. Excludes logs from other modules."""
+    handlers = {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["scanner_only"],
+            "formatter": "default",
+        }
+    }
+
+    if log_file:
+        handlers["file"] = {
+            "class": "logging.FileHandler",
+            "filters": ["scanner_only"],
+            "formatter": "default",
+            "filename": log_file,
+            "encoding": "utf-8"
+        }
+
+    root_handlers = ["console"]
+    if log_file:
+        root_handlers.append("file")
+
     logging.config.dictConfig({
         "version": 1,
         "disable_existing_loggers": False,
@@ -21,13 +42,7 @@ def configure_logging(log_level="INFO"):
                 "()": lambda: logging.Filter("scanner")
             }
         },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "filters": ["scanner_only"],
-                "formatter": "default",
-            }
-        },
+        "handlers": handlers,
         "formatters": {
             "default": {
                 "format": "[%(asctime)s][%(name)s][%(levelname)s] %(message)s"
@@ -35,7 +50,7 @@ def configure_logging(log_level="INFO"):
         },
         "root": {
             "level": log_level.upper(),
-            "handlers": ["console"]
+            "handlers": root_handlers
         }
     })
 
@@ -45,14 +60,15 @@ logger = logging.getLogger("scanner.main")
 @click.argument("subnets")
 @click.option("--ports", "-p", default=None, help="Comma-separated list of ports to scan; forwarded to nmap")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+@click.option("--log-file", default=None, help="Path to the log file")
 @click.option("--max-webdrivers", default=1, help="Maximum number of concurrent WebDriver instances for credential testing")
 @click.option("--db-path", default=None, help="Path to the SQLite database file")
-def main_cmd(subnets, ports, log_level, max_webdrivers, db_path):
-    run(subnets, ports, log_level, max_webdrivers, db_path)
+def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, db_path):
+    run(subnets, ports, log_level, log_file, max_webdrivers, db_path)
 
-def run(subnets, ports, log_level, max_webdrivers, db_path):
+def run(subnets, ports, log_level, log_file, max_webdrivers, db_path):
     Settings().configure_cli_arguments(db_path=db_path, max_webdrivers=max_webdrivers)
-    configure_logging(log_level)
+    configure_logging(log_level, log_file)
     init_db()
 
     start_time = time.time()

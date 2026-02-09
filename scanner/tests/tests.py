@@ -22,19 +22,30 @@ class TestResult:
     found_login_panel: bool
     endpoints_num: int
     db_path: str = ""
+    artifacts_dir: str = ""
 
 
-class TemporaryDatabase:
+class TemporaryScanArtifacts:
     def __init__(self):
         scan_id = random.randint(100000, 999999)
-        self.path = Path(f"/tmp/scanner-test-{scan_id}.db")
+        self.dir_path = Path(f"/tmp/scanner-test-{scan_id}")
+        self.db_path = self.dir_path / "scanner.db"
+        self.scanner_log_path = self.dir_path / "scanner.log"
+        self.docker_log_path = self.dir_path / "docker.log"
 
     def __enter__(self):
-        return self.path
+        self.dir_path.mkdir(parents=True, exist_ok=True)
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if not KEEP_DB_FILES:
-            self.path.unlink(missing_ok=True)
+            self.db_path.unlink(missing_ok=True)
+            self.scanner_log_path.unlink(missing_ok=True)
+            self.docker_log_path.unlink(missing_ok=True)
+            try:
+                self.dir_path.rmdir()
+            except OSError:
+                pass
 
 
 def found_creds(username, password):
@@ -66,12 +77,20 @@ def endpoints_num():
 
 def print_results(results: dict[str, TestResult | None]):
     """Prints the test results in a tabular format."""
-    headers = ["Service Name", "Found Credentials", "Verified Credentials", "Found Login Panel", "Endpoints Detected", "DB Path"]
+    headers = [
+        "Service Name",
+        "Found Credentials",
+        "Verified Credentials",
+        "Found Login Panel",
+        "Endpoints Detected",
+        "DB Path",
+        "Artifacts Dir"
+    ]
     table = []
 
     for service_name, result in results.items():
         if result is None:
-            table.append([service_name, "-", "-", "-", "-", "-"])
+            table.append([service_name, "-", "-", "-", "-", "-", "-"])
             continue
 
         table.append([
@@ -80,7 +99,8 @@ def print_results(results: dict[str, TestResult | None]):
             emojify(result.verified_creds),
             emojify(result.found_login_panel),
             result.endpoints_num,
-            result.db_path
+            result.db_path,
+            result.artifacts_dir
         ])
 
     print(tabulate(table, headers=headers, tablefmt="grid"))
@@ -88,26 +108,46 @@ def print_results(results: dict[str, TestResult | None]):
 def emojify(value: bool):
     return "✅" if value else "❌"
 
-def run_scanner(port, extra_args=[]):
-    cmd = ["python", "-m", "scanner.main", "127.0.0.1", "-p", str(port), "-L", "DEBUG"] + extra_args
+def run_scanner(port, log_path, extra_args=[]):
+    cmd = [
+        "python",
+        "-m",
+        "scanner.main",
+        "127.0.0.1",
+        "-p",
+        str(port),
+        "-L",
+        "DEBUG",
+        "--log-file",
+        str(log_path)
+    ] + extra_args
     p = subprocess.Popen(cmd, text=True)
     p.wait()
 
 
 def run_app_test(app_dir_name, port, login_path, username, password) -> TestResult:
-    with TemporaryDatabase() as temp_db_path:
+    with TemporaryScanArtifacts() as artifacts:
         wait_path = "/" if login_path == "*" else login_path
-        with RunDockerCompose(app_dir_name, wait_for_login_url=f"http://127.0.0.1:{port}{wait_path}"):
-            run_scanner(port, extra_args=["--db-path", str(temp_db_path)])
+        with RunDockerCompose(
+            app_dir_name,
+            wait_for_login_url=f"http://127.0.0.1:{port}{wait_path}",
+            log_path=artifacts.docker_log_path
+        ):
+            run_scanner(
+                port,
+                artifacts.scanner_log_path,
+                extra_args=["--db-path", str(artifacts.db_path)]
+            )
             # Rebind our ORM to the same temporary DB used by the scanner run
-            Settings().configure_cli_arguments(db_path=str(temp_db_path))
+            Settings().configure_cli_arguments(db_path=str(artifacts.db_path))
             init_db()
             r = TestResult(
                 found_creds=found_creds(username, password),
                 verified_creds=verified_creds(login_path, username, password),
                 found_login_panel=found_login_panel(login_path),
                 endpoints_num=endpoints_num(),
-                db_path = str(temp_db_path)
+                db_path=str(artifacts.db_path),
+                artifacts_dir=str(artifacts.dir_path)
             )
             return r
 

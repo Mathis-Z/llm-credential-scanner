@@ -12,17 +12,23 @@ class StartupScript:
     Implements the context manager protocol to start and stop the script.
     """
 
-    def __init__(self, cmd: list[str], wait_for_login_url: int, timeout: int = 30, cwd="/tmp"):
+    def __init__(self, cmd: list[str], wait_for_login_url: int, timeout: int = 30, cwd="/tmp", log_path: Path | None = None):
         self.cmd = cmd
         self.cwd = cwd
         self.wait_for_login_url = wait_for_login_url
         self.process = None
         self.timeout = timeout
+        self.log_path = log_path
+        self.log_file = None
 
     def __enter__(self):
-        def stream_logs(process):
+        def stream_logs(process, log_file):
             for line in process.stdout:
-                print(line, end='')
+                if log_file:
+                    log_file.write(line)
+                    log_file.flush()
+                else:
+                    print(line, end='')
 
         subprocess.run(["docker", "container", "prune", "-f"], check=True)
         subprocess.run(["docker", "network", "prune", "-f"], check=True)
@@ -36,7 +42,10 @@ class StartupScript:
             bufsize=1
         )
 
-        threading.Thread(target=stream_logs, args=(self.process,), daemon=True).start()
+        if self.log_path:
+            self.log_file = self.log_path.open("w", encoding="utf-8")
+
+        threading.Thread(target=stream_logs, args=(self.process, self.log_file), daemon=True).start()
 
         if not self.wait_login_panel_up(self.wait_for_login_url, timeout=self.timeout):
             raise TimeoutError(f"Timeout reached while waiting for login panel {self.wait_for_login_url} to come up.")
@@ -62,6 +71,9 @@ class StartupScript:
             if self.process.poll() is None:
                 logger.warning("Process still running after kill attempts, forcing kill again.")
                 self.process.kill()
+
+        if self.log_file:
+            self.log_file.close()
 
     def wait_login_panel_up(self, url: str, timeout: int) -> bool:
         sb = sb_cdp.Chrome(url=None, headless=True)
@@ -89,7 +101,7 @@ class StartupScript:
 class RunDockerCompose(StartupScript):
     """Run a docker compose file from the test-network directory and wait for a port to respond."""
 
-    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 600):
+    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 600, log_path: Path | None = None):
         self.compose_file_path = self.find_docker_compose_file(compose_file_path)
 
         logger.info("Starting docker compose %s", self.compose_file_path)
@@ -97,7 +109,8 @@ class RunDockerCompose(StartupScript):
             cmd=["docker", "compose", "-f", self.compose_file_path ,"up"],
             cwd=self.compose_file_path.parent,
             wait_for_login_url=wait_for_login_url,
-            timeout=timeout
+            timeout=timeout,
+            log_path=log_path
         )
 
     def find_docker_compose_file(self, compose_file_path: str) -> Path:
