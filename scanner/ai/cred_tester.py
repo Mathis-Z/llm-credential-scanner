@@ -6,6 +6,7 @@ to find potential default credentials.
 import re
 import time
 import urllib.parse
+from pathlib import Path
 from threading import Thread, Event
 import logging
 from selenium import webdriver
@@ -20,6 +21,7 @@ from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import make_credential_testing_tools
 from scanner.db.models import Endpoint
 from scanner.db import DBConnectionMixin
+from scanner.settings import Settings
 
 
 PROMPT_TEMPLATE = """
@@ -108,12 +110,38 @@ class CredTester(DBConnectionMixin, Thread):
         wrong_username = f"invalid_user_{int(time.time())}"
         wrong_password = f"invalid_pass_{int(time.time())}"
         logger.debug("Capturing failed-login baseline on %s", endpoint.url())
-        baseline = self._perform_login_attempt(endpoint, wrong_username, wrong_password)
+        baseline = self._perform_login_attempt(endpoint, wrong_username, wrong_password, attempt_label="baseline")
         if baseline:
             self.failed_login_baselines[endpoint.pk] = baseline
         return baseline
 
-    def _perform_login_attempt(self, endpoint: Endpoint, username: str, password: str):
+    def _sanitize_for_filename(self, value: str) -> str:
+        safe = re.sub(r"[^A-Za-z0-9._-]+", "_", value or "")
+        return safe.strip("_-") or "na"
+
+    def _get_screenshot_dir(self) -> Path | None:
+        artifacts_dir = Settings().artifacts_dir
+        if not artifacts_dir:
+            return None
+        path = Path(artifacts_dir) / "screenshots"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    def _save_screenshot(self, driver, endpoint: Endpoint, username: str, attempt_label: str, phase: str):
+        screenshot_dir = self._get_screenshot_dir()
+        if not screenshot_dir:
+            return
+
+        parts = urllib.parse.urlparse(endpoint.url())
+        host = self._sanitize_for_filename(parts.hostname or "host")
+        path = self._sanitize_for_filename(parts.path.strip("/") or "root")
+        user = self._sanitize_for_filename(username)
+        label = self._sanitize_for_filename(attempt_label)
+        ts = int(time.time() * 1000)
+        filename = f"endpoint-{endpoint.pk}_{host}_{path}_{label}_user-{user}_{phase}_{ts}.png"
+        driver.save_screenshot(str(screenshot_dir / filename))
+
+    def _perform_login_attempt(self, endpoint: Endpoint, username: str, password: str, attempt_label: str = "attempt"):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
         driver = webdriver.Chrome(options=options)
@@ -150,6 +178,8 @@ class CredTester(DBConnectionMixin, Thread):
                         soup = BeautifulSoup(driver.page_source, "html.parser")
                         for script in soup.find_all("script"):
                             script.decompose()
+
+            self._save_screenshot(driver, endpoint, username, attempt_label, "before")
 
             # store page info to compare with after tool calls
             before_url = driver.current_url
@@ -217,6 +247,8 @@ class CredTester(DBConnectionMixin, Thread):
                 after_cookies = driver.get_cookies()
                 after_has_password = bool(soup.select("input[type=password]"))
 
+            self._save_screenshot(driver, endpoint, username, attempt_label, "after")
+
             return {
                 "before_url": before_url,
                 "before_path": before_path,
@@ -247,7 +279,7 @@ class CredTester(DBConnectionMixin, Thread):
             logger.debug("Testing credentials %s:%s on %s", username, password, endpoint.url())
 
             baseline = self._get_failed_login_baseline(endpoint)
-            attempt = self._perform_login_attempt(endpoint, username, password)
+            attempt = self._perform_login_attempt(endpoint, username, password, attempt_label="attempt")
             if not attempt:
                 endpoint.add_tested_credentials((username, password))
                 endpoint.save()

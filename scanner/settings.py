@@ -28,6 +28,7 @@ class Settings:
             self.nonreasoning_llm_name = os.getenv("NONREASONING_LLM_NAME", "gpt-4o-mini") # TODO: is there a non-reasoning model?
 
         self.db_path = os.getenv("DB_PATH", "scanner.db")
+        self.artifacts_dir = os.getenv("ARTIFACTS_DIR")
         self._initialized = True
 
     def _require_env_var(self, var_name: str) -> str:
@@ -38,3 +39,4 @@ class Settings:
 
     def configure_cli_arguments(self, **kwargs):
         self.db_path = kwargs.get("db_path", self.db_path)
+        self.artifacts_dir = kwargs.get("artifacts_dir", self.artifacts_dir)

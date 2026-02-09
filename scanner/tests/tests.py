@@ -28,7 +28,7 @@ class TestResult:
 class TemporaryScanArtifacts:
     def __init__(self):
         scan_id = random.randint(100000, 999999)
-        self.dir_path = Path(f"/tmp/scanner-test-{scan_id}")
+        self.dir_path = Path("/tmp/scanner_logs") / f"scanner-test-{scan_id}"
         self.db_path = self.dir_path / "scanner.db"
         self.scanner_log_path = self.dir_path / "scanner.log"
         self.docker_log_path = self.dir_path / "docker.log"
@@ -108,7 +108,7 @@ def print_results(results: dict[str, TestResult | None]):
 def emojify(value: bool):
     return "✅" if value else "❌"
 
-def run_scanner(port, log_path, extra_args=[]):
+def run_scanner(port, log_path, artifacts_dir, extra_args=[]):
     cmd = [
         "python",
         "-m",
@@ -119,7 +119,9 @@ def run_scanner(port, log_path, extra_args=[]):
         "-L",
         "DEBUG",
         "--log-file",
-        str(log_path)
+        str(log_path),
+        "--artifacts-dir",
+        str(artifacts_dir)
     ] + extra_args
     p = subprocess.Popen(cmd, text=True)
     p.wait()
@@ -136,6 +138,7 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
             run_scanner(
                 port,
                 artifacts.scanner_log_path,
+                artifacts.dir_path,
                 extra_args=["--db-path", str(artifacts.db_path)]
             )
             # Rebind our ORM to the same temporary DB used by the scanner run
