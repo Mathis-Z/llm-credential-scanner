@@ -39,22 +39,17 @@
             <span class="pill accent">{{ data.summary.found_credentials }}</span>
         </div>
         {% if data.found_credentials %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Endpoint</th>
-                        <th>Credentials</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <div class="cred-grid">
                 {% for item in data.found_credentials %}
-                    <tr>
-                        <td>{{ item.url or item.path }}</td>
-                        <td>{{ item.working_credentials }}</td>
-                    </tr>
+                    <div class="cred-card">
+                        <div class="cred-endpoint">{{ item.url or item.path }}</div>
+                        <div class="cred-pair">
+                            <span class="cred-label">Credentials</span>
+                            <span class="cred-value">{{ item.working_credentials }}</span>
+                        </div>
+                    </div>
                 {% endfor %}
-                </tbody>
-            </table>
+            </div>
         {% else %}
             <div class="empty">No working credentials found.</div>
         {% endif %}

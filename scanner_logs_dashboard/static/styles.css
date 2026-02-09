@@ -216,6 +216,48 @@ body {
     margin-bottom: 16px;
 }
 
+.cred-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.cred-card {
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: #fffefc;
+    display: grid;
+    gap: 10px;
+}
+
+.cred-endpoint {
+    font-weight: 600;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+.cred-pair {
+    display: grid;
+    gap: 4px;
+}
+
+.cred-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+}
+
+.cred-value {
+    font-size: 13px;
+    color: var(--ink);
+    background: #f3eadf;
+    padding: 6px 8px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
 .log-actions {
     margin-left: auto;
     margin-right: 10px;
