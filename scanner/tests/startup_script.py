@@ -20,15 +20,19 @@ class StartupScript:
         self.timeout = timeout
         self.log_path = log_path
         self.log_file = None
+        self.log_thread = None
 
     def __enter__(self):
         def stream_logs(process, log_file):
             for line in process.stdout:
-                if log_file:
-                    log_file.write(line)
-                    log_file.flush()
-                else:
-                    print(line, end='')
+                try:
+                    if log_file:
+                        log_file.write(line)
+                        log_file.flush()
+                    else:
+                        print(line, end='')
+                except ValueError:
+                    break
 
         subprocess.run(["docker", "container", "prune", "-f"], check=True)
         subprocess.run(["docker", "network", "prune", "-f"], check=True)
@@ -45,7 +49,8 @@ class StartupScript:
         if self.log_path:
             self.log_file = self.log_path.open("w", encoding="utf-8")
 
-        threading.Thread(target=stream_logs, args=(self.process, self.log_file), daemon=True).start()
+        self.log_thread = threading.Thread(target=stream_logs, args=(self.process, self.log_file), daemon=True)
+        self.log_thread.start()
 
         if not self.wait_login_panel_up(self.wait_for_login_url, timeout=self.timeout):
             raise TimeoutError(f"Timeout reached while waiting for login panel {self.wait_for_login_url} to come up.")
@@ -71,6 +76,9 @@ class StartupScript:
             if self.process.poll() is None:
                 logger.warning("Process still running after kill attempts, forcing kill again.")
                 self.process.kill()
+
+        if self.log_thread:
+            self.log_thread.join(timeout=5)
 
         if self.log_file:
             self.log_file.close()
