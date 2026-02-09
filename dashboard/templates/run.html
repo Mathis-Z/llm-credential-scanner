@@ -136,7 +136,7 @@
                     <div class="shot-header">
                         <div>
                             <div class="shot-title">{{ group.endpoint_url or group.host_path }}</div>
-                            <div class="shot-sub">Endpoint {{ group.endpoint_pk }} · {{ group.label }} · user {{ group.user }} · pass {{ group.password }}</div>
+                            <div class="shot-sub">Endpoint {{ group.endpoint_pk }} · {{ group.label }} · username: {{ group.user }} · password: {{ group.password }}</div>
                         </div>
                         <span class="pill">{{ (group.before | length) + (group.after | length) }}</span>
                     </div>
