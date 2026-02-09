@@ -1,3 +1,4 @@
+import ast
 import json
 import os
 import re
@@ -89,6 +90,36 @@ def _parse_screenshot_name(name: str):
         "phase": phase,
         "ts": ts
     }
+
+
+def _parse_keywords(raw_value):
+    if raw_value is None:
+        return []
+
+    if isinstance(raw_value, (list, tuple)):
+        return [str(item).strip() for item in raw_value if str(item).strip()]
+
+    try:
+        loaded = json.loads(raw_value)
+        if loaded is None:
+            return []
+        if isinstance(loaded, str):
+            return [loaded.strip()] if loaded.strip() else []
+        if isinstance(loaded, list):
+            return [str(item).strip() for item in loaded if str(item).strip()]
+    except json.JSONDecodeError:
+        pass
+
+    try:
+        loaded = ast.literal_eval(raw_value)
+        if isinstance(loaded, str):
+            return [loaded.strip()] if loaded.strip() else []
+        if isinstance(loaded, (list, tuple, set)):
+            return [str(item).strip() for item in loaded if str(item).strip()]
+    except (ValueError, SyntaxError):
+        return []
+
+    return []
 
 
 def _group_screenshots(shots, endpoint_map):
@@ -211,11 +242,7 @@ def _load_run_data(run_path: Path):
                 "url": endpoint_url,
                 "keywords": []
             }
-            if row["_keywords"]:
-                try:
-                    item["keywords"] = json.loads(row["_keywords"])
-                except json.JSONDecodeError:
-                    item["keywords"] = []
+            item["keywords"] = _parse_keywords(row["_keywords"])
 
             for keyword in item["keywords"]:
                 keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
