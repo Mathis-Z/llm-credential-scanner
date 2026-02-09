@@ -242,6 +242,7 @@
 <script>
 const modal = document.getElementById('shotModal');
 const modalImg = document.getElementById('shotModalImage');
+let lastState = null;
 
 function openModal(src) {
     modalImg.src = src;
@@ -270,5 +271,30 @@ document.addEventListener('keydown', (event) => {
         closeModal();
     }
 });
+
+async function pollRunState() {
+    try {
+        const response = await fetch('{{ url_for("run_poll", run_name=run_name) }}', {
+            cache: 'no-store'
+        });
+        if (!response.ok) {
+            return;
+        }
+        const state = await response.json();
+        if (lastState) {
+            const changed = JSON.stringify(state) !== JSON.stringify(lastState);
+            if (changed) {
+                window.location.reload();
+                return;
+            }
+        }
+        lastState = state;
+    } catch (error) {
+        return;
+    }
+}
+
+setInterval(pollRunState, 5000);
+pollRunState();
 </script>
 {% endblock %}

@@ -18,6 +18,32 @@ def _run_dir(run_name: str) -> Path:
     return BASE_DIR / run_name
 
 
+def _run_state(run_path: Path):
+    db_path = run_path / "scanner.db"
+    scanner_log_path = run_path / "scanner.log"
+    docker_log_path = run_path / "docker.log"
+    screenshot_dir = run_path / "screenshots"
+
+    def safe_stat(path: Path):
+        if not path.exists():
+            return {"mtime": 0, "size": 0}
+        stat = path.stat()
+        return {"mtime": stat.st_mtime, "size": stat.st_size}
+
+    screenshots = 0
+    if screenshot_dir.exists():
+        screenshots = len([p for p in screenshot_dir.iterdir() if p.is_file()])
+
+    return {
+        "run": run_path.name,
+        "db": safe_stat(db_path),
+        "scanner_log": safe_stat(scanner_log_path),
+        "docker_log": safe_stat(docker_log_path),
+        "screenshots": screenshots,
+        "run_mtime": run_path.stat().st_mtime if run_path.exists() else 0
+    }
+
+
 def _list_runs():
     if not BASE_DIR.exists():
         return []
@@ -347,6 +373,15 @@ def log_view(run_name: str, log_name: str):
         log_name=log_name,
         log_content=log_content
     )
+
+
+@app.route("/run/<run_name>/poll")
+def run_poll(run_name: str):
+    run_path = _run_dir(run_name)
+    if not run_path.exists() or not run_path.is_dir():
+        abort(404)
+
+    return _run_state(run_path)
 
 
 @app.route("/health")
