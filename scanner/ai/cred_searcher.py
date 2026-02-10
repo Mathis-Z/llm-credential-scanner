@@ -81,6 +81,7 @@ class CredSearcher(DBConnectionMixin, Thread):
                     )
                 )
             )
+            ready_services = [s for s in ready_services if not s.endpoint_with_working_creds_found()]
 
             if len(ready_services) == 0 and self.keyword_extractor_done_event.is_set():
                 break
