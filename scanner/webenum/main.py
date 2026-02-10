@@ -177,11 +177,15 @@ class WebEnumWorker(threading.Thread):
             logger.error("Error processing path %s on %s: %s", initial_path, self.service.url(), str(e))
 
     def query_url(self, url) -> None | tuple[int, str, str]:
-        """Query a URL and return (status_code, final_url, rendered_html) if status code is 2xx."""
+        """Query a URL and return (status_code, final_url, rendered_html) if status code is 2xx. Ignores anything with non-text content-type"""
         try:
             response = requests.get(url, timeout=5, verify=False, allow_redirects=True)
         except:
             return None
+
+        content_type = response.headers.get('content-type')
+        if content_type and not "text/" in content_type.lower():
+            return None # ignore images, videos, ...
 
         if response.status_code < 200 or response.status_code >= 300:
             return None
