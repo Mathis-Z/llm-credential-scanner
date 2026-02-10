@@ -154,11 +154,34 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
             )
             return r
 
+def running_containers() -> list[str]:
+    """Returns a list of running Docker container IDs."""
+    result = subprocess.run(["docker", "ps", "-q"], capture_output=True, text=True, check=True)
+    return [c for c in result.stdout.strip().split("\n") if c]
+
+def clean_docker_environment():
+    """Check for running containers and clean them up."""
+    containers = running_containers()
+    if not containers:
+        logger.info("No running Docker containers found.")
+        return
+
+    logger.info("Attempting graceful shutdown of all containers...")
+    subprocess.run(["docker", "stop", "-t", "5"] + containers, check=True)
+
+    containers = running_containers()
+    if containers:
+        logger.info("Force killing remaining containers...")
+        subprocess.run(["docker", "kill"] + containers, check=True)
+    logger.info("All Docker containers terminated.")
+
+
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary artifacts after tests complete")
 @click.option("--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
 @click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
-def run(keep, select, log_level):
+@click.option("--kill-containers", is_flag=True, help="Kill any running Docker containers before starting tests")
+def run(keep, select, log_level, kill_containers):
     configure_logging(log_level)
     start_time = time.time()
     init_db()
@@ -167,6 +190,9 @@ def run(keep, select, log_level):
 
     if select:
         selected_apps = set([app.strip() for app in select.split(",")])
+
+    if kill_containers:
+        clean_docker_environment()
 
     test_cases = [
         ("4gaBoards", 3000, "/login", "demo", "demo"),
