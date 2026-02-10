@@ -18,10 +18,10 @@ logger = logging.getLogger("scanner.tests")
 
 @dataclass
 class TestResult:
-    found_creds: bool | None # None for N/A
-    verified_creds: bool
-    verified_no_other_creds: bool
-    found_login_panel: bool
+    found_creds: bool | None
+    verified_creds: bool | None
+    verified_no_other_creds: bool | None
+    found_login_panel: bool | None
     endpoints_num: int
     artifacts_dir: str = ""
 
@@ -115,6 +115,9 @@ def print_results(results: dict[str, TestResult | None]):
         if result is None:
             table.append([service_name, "-", "-", "-", "-", "-", "-"])
             continue
+
+        if result.endpoints_num == 0:
+            return table.append(['?', '?', '?', '?', '?', result.endpoints_num, result.artifacts_dir])
 
         table.append([
             service_name,

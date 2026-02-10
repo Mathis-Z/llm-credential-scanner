@@ -65,6 +65,7 @@ class Endpoint(BaseModel):
     initial_path = pw.CharField() # the first path used to reach this endpoint (before redirects)
     is_login = pw.BooleanField(default=False)
     page_source = pw.TextField() # raw HTML of the page at this endpoint
+    md_hash = pw.CharField(max_length=32) # hash of whitespace-stripped, markdownified page source; for endpoint de-duplication
     # keywords from the page at this endpoint; None means not analyzed yet
     _keywords = pw.TextField(null=True, default=None)
     _tested_credentials = pw.TextField(default="[]") # for login panels only

@@ -6,6 +6,7 @@ for all urls returning a non-error status code.
 """
 
 import re
+import hashlib
 import threading
 import logging
 import time
@@ -17,6 +18,7 @@ from pubsub import pub
 import requests
 import simhash
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+from markdownify import markdownify
 
 from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
@@ -148,7 +150,12 @@ class WebEnumWorker(threading.Thread):
 
             status_code, final_url, page_source = result
             if self.is_404_response(status_code, page_source):
-                logger.warning("Weird: Path %s on %s returned 404", initial_path, self.service.url())
+                logging.debug("Path %s ignored because of soft 404 detection", initial_path)
+                return
+
+            md_hash = self.create_markdown_hash(page_source)
+            if Endpoint.select().where(Endpoint.md_hash == md_hash).count() > 0:
+                logging.debug("Path %s ignored because of md_hash deduplication", initial_path)
                 return
 
             final_path = self.normalize_path(final_url)
@@ -171,7 +178,8 @@ class WebEnumWorker(threading.Thread):
                 path=final_path,
                 initial_path=initial_path,
                 is_login=is_login,
-                page_source=page_source
+                page_source=page_source,
+                md_hash=md_hash
             )
         except Exception as e:
             logger.error("Error processing path %s on %s: %s", initial_path, self.service.url(), str(e))
@@ -217,20 +225,20 @@ class WebEnumWorker(threading.Thread):
             logger.error("Error parsing HTML from %s: %s", url, str(e))
             return False
 
-    def parse_links(self, url, content) -> list[str]:
+    def parse_links(self, url, content) -> set[str]:
         """Extracts links from the HTML for crawling."""
-        urls = []
-
+        urls = set()
         try:
             soup = BeautifulSoup(content, 'html.parser')
             for link in soup.find_all('a', href=True):
                 href = link['href']
-
                 if not href.startswith(('http://', 'https://', '//', 'mailto:', 'tel:')):
-                    urls.append(urllib.parse.urljoin(url, href))
+                    full_url = urllib.parse.urljoin(url, href)
+                    # Remove fragment (everything after #)
+                    full_url = full_url.split('#')[0]
+                    urls.add(full_url)
         except Exception as e:
             logger.error("Error parsing HTML from %s: %s", url, str(e))
-
         logger.debug("Extracted %d links from %s: %s", len(urls), url, urls)
         return urls
 
@@ -295,6 +303,11 @@ class WebEnumWorker(threading.Thread):
         # TODO: evaluate using just markdown content instead of full HTML
         cleaned_html = self.clean_html_for_simhash(html)
         return simhash.Simhash(cleaned_html)
+
+    def create_markdown_hash(self, html: str):
+        md = markdownify(html)
+        whitespace_free_md = re.sub(r'\s+', '', md)
+        return hashlib.md5(whitespace_free_md.encode()).hexdigest()
 
     def is_404_response(self, status_code: int, html: str) -> bool:
         """Determines if the response is a 404 based on simhash comparison."""
