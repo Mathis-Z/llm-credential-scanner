@@ -46,7 +46,7 @@ def init_db(path: str | None = None):
         DB.create_tables([Service, Endpoint], safe=True)
     except pw.OperationalError as e:
         logger.critical("Failed to initialize database at %s: %s", full_db_path, e)
-        exit()
+        raise e
 
 class BaseModel(pw.Model):
     class Meta:

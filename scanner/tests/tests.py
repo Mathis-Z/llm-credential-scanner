@@ -52,8 +52,6 @@ class TemporaryScanArtifacts:
 def found_creds(username, password):
     """Check if the given credentials were found (websearch) for any service."""
     for s in Service.select():
-        print(f"Checking service {s}")
-        # s.credentials may be stored as list of lists (JSON) or tuples; compare values robustly
         for u, p in (s.credentials or []):
             if u == username and p == password:
                 return True
@@ -120,7 +118,7 @@ def print_results(results: dict[str, TestResult | None]):
 
         table.append([
             service_name,
-            colorful_pass_or_fail(result.found_creds) if result.found_creds else 'N/A',
+            'N/A' if result.found_creds is None else colorful_pass_or_fail(result.found_creds),
             colorful_pass_or_fail(result.verified_creds),
             colorful_pass_or_fail(result.verified_no_other_creds),
             colorful_pass_or_fail(result.found_login_panel),
