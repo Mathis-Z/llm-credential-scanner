@@ -53,12 +53,16 @@ class StartupScript:
         self.log_thread.start()
 
         if not self.wait_login_panel_up(self.wait_for_login_url, timeout=self.timeout):
+            self.cleanup_process()
             raise TimeoutError(f"Timeout reached while waiting for login panel {self.wait_for_login_url} to come up.")
 
         logger.info("Startup command %s ran successfully.", self.cmd)
         return self.process
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.cleanup_process()
+
+    def cleanup_process(self):
         if self.process:
             self.process.terminate() # graceful shutdown
             try:
@@ -89,7 +93,7 @@ class StartupScript:
 
         wait = 1
         while timeout > 0:
-            sb.refresh()
+            sb.open(url)
             sb.sleep(wait)
             logger.info("Waiting for login panel at %s to come up.", url)
 
@@ -101,15 +105,17 @@ class StartupScript:
             timeout -= wait
             wait = min(wait * 2, 10)  # exponential backoff up to 10 seconds
 
+        html = sb.get_page_source()
         sb.driver.stop()
         logger.error("Login panel did not come up at %s within %i seconds.", url, timeout)
+        logger.debug("Final page source at %s:\n%s", url, html)
         return False
 
 
 class RunDockerCompose(StartupScript):
     """Run a docker compose file from the test-network directory and wait for a port to respond."""
 
-    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 600, log_path: Path | None = None):
+    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 120, log_path: Path | None = None):
         self.compose_file_path = self.find_docker_compose_file(compose_file_path)
 
         logger.info("Starting docker compose %s", self.compose_file_path)
@@ -132,15 +138,23 @@ class RunDockerCompose(StartupScript):
                     return file
             raise FileNotFoundError(f"No docker-compose.yaml or docker-compose.yml found in {full_path}")
 
+    def __enter__(self):
+        try:
+            return super().__enter__()
+        except Exception as e:
+            self.cleanup()
+            raise e
 
     def __exit__(self, exc_type, exc_value, traceback):
         logger.info("Stopping docker compose %s", self.compose_file_path)
 
         super().__exit__(exc_type, exc_value, traceback) # kills the docker compose up process
+        self.cleanup()
 
+    def cleanup(self):
         if not self.docker_compose_down() and not self.docker_compose_force_kill():
             logger.error("Failed to stop docker compose services for %s", self.compose_file_path)
- 
+
     def docker_compose_down(self) -> bool:
         try:
             down_proc = subprocess.Popen(

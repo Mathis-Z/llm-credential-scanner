@@ -151,33 +151,32 @@ def run_scanner(port, log_path, artifacts_dir, extra_args=None):
     p.wait()
 
 
-def run_app_test(app_dir_name, port, login_path, username, password) -> TestResult:
+def run_app_test(app_dir_name, artifacts, port, login_path, username, password) -> TestResult:
     trivial_creds = (username, password) in DEFAULT_CREDS
 
-    with TemporaryScanArtifacts() as artifacts:
-        wait_path = "/" if login_path == "*" else login_path
-        with RunDockerCompose(
-            app_dir_name,
-            wait_for_login_url=f"http://127.0.0.1:{port}{wait_path}",
-            log_path=artifacts.docker_log_path
-        ):
-            run_scanner(
-                port,
-                artifacts.scanner_log_path,
-                artifacts.dir_path
-            )
-            # Rebind our ORM to the same temporary DB used by the scanner run
-            Settings().configure_cli_arguments(artifacts_dir=artifacts.dir_path)
-            init_db()
-            r = TestResult(
-                found_creds=None if trivial_creds else found_creds(username, password), # show N/A for trivial creds
-                verified_creds=verified_creds(username, password, path=login_path),
-                verified_no_other_creds=verified_no_other_creds(username, password),
-                found_login_panel=found_login_panel(login_path),
-                endpoints_num=endpoints_num(),
-                artifacts_dir=str(artifacts.dir_path)
-            )
-            return r
+    wait_path = "/" if login_path == "*" else login_path
+    with RunDockerCompose(
+        app_dir_name,
+        wait_for_login_url=f"http://127.0.0.1:{port}{wait_path}",
+        log_path=artifacts.docker_log_path
+    ):
+        run_scanner(
+            port,
+            artifacts.scanner_log_path,
+            artifacts.dir_path
+        )
+        # Rebind our ORM to the same temporary DB used by the scanner run
+        Settings().configure_cli_arguments(artifacts_dir=artifacts.dir_path)
+        init_db()
+        r = TestResult(
+            found_creds=None if trivial_creds else found_creds(username, password), # show N/A for trivial creds
+            verified_creds=verified_creds(username, password, path=login_path),
+            verified_no_other_creds=verified_no_other_creds(username, password),
+            found_login_panel=found_login_panel(login_path),
+            endpoints_num=endpoints_num(),
+            artifacts_dir=str(artifacts.dir_path)
+        )
+        return r
 
 def running_containers() -> list[str]:
     """Returns a list of running Docker container IDs."""
@@ -247,11 +246,19 @@ def run(keep, select, log_level, kill_containers):
 
     results: dict[str, TestResult | None] = {}
     for (app_name, port, login_path, username, password) in test_cases:
-        try:
-            results[app_name] = run_app_test(app_name, port, login_path, username, password)
-        except Exception as exc:
-            logger.error("Test for %s failed: %s", app_name, exc)
-            results[app_name] = None
+        with TemporaryScanArtifacts() as artifacts:
+            try:
+                results[app_name] = run_app_test(app_name, artifacts, port, login_path, username, password)
+            except Exception as exc:
+                logger.error("Test for %s failed: %s", app_name, exc)
+                results[app_name] = TestResult(
+                    found_creds=False,
+                    verified_creds=False,
+                    verified_no_other_creds=False,
+                    found_login_panel=False,
+                    endpoints_num=0,
+                    artifacts_dir=str(artifacts.dir_path)
+                )
 
     print_results(results)
     logger.info("All tests completed in %.2f seconds.", time.time() - start_time)
