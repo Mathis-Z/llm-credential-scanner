@@ -1,5 +1,7 @@
 import subprocess
 import logging
+import time
+import requests
 import threading
 from pathlib import Path
 from seleniumbase import sb_cdp
@@ -100,6 +102,7 @@ class StartupScript:
             if sb.is_element_present('input[type="password"]'):
                 logger.info("Login panel is up at %s", url)
                 sb.driver.stop()
+                time.sleep(5) # idk why but Pyload is not reachable by the netscan module otherwise
                 return True
 
             timeout -= wait

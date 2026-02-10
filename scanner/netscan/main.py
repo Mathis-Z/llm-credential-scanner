@@ -10,6 +10,7 @@ import ipaddress
 import nmap3
 from pubsub import pub
 import requests
+import time
 
 from scanner.db.models import Service
 from scanner.db import DBConnectionMixin
@@ -72,7 +73,7 @@ class NetScanner(DBConnectionMixin, threading.Thread):
         """Test if an HTTP service is running on the given host:port service."""
 
         try:
-            requests.get(f"http://{host}:{port}/", timeout=5, allow_redirects=False, verify=False)
+            requests.get(f"http://{host}:{port}/", timeout=5, allow_redirects=True, verify=False)
             return True
         except Exception as e:
             logger.debug("Failed to connect to %s:%s - %s", host, port, str(e))
