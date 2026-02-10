@@ -25,7 +25,11 @@ from scanner.settings import Settings
 
 
 PROMPT_TEMPLATE = """
+<<<PAGE CONTENT>>>
+%s
+<<<END PAGE CONTENT>>>
 You are a blueteam pentester trying to test default credentials for a web application at "%s".
+The login page has the HTML content above.
 The default credentials you want to test are:
 - Username: "%s"
 - Password: "%s"
@@ -37,10 +41,6 @@ Follow these steps to test the credentials:
 
 You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
 After calling a tool, wait for the result before calling another tool.
-The login page has the following HTML content:
-<<<PAGE CONTENT>>>
-%s
-<<<END PAGE CONTENT>>>
 """
 
 logger = logging.getLogger('scanner.cred_tester')
@@ -107,8 +107,8 @@ class CredTester(DBConnectionMixin, Thread):
         if cached:
             return cached
 
-        wrong_username = f"invalid_user_{int(time.time())}"
-        wrong_password = f"invalid_pass_{int(time.time())}"
+        wrong_username = f"invalid_user_1770763107" # hardcoding to allow LLM response caching
+        wrong_password = f"invalid_pass_1770763107"
         logger.debug("Capturing failed-login baseline on %s", endpoint.url())
         baseline = self._perform_login_attempt(endpoint, wrong_username, wrong_password, attempt_label="baseline")
         if baseline:
@@ -199,7 +199,7 @@ class CredTester(DBConnectionMixin, Thread):
                 len(before_raw_page_source or "")
             )
 
-            full_prompt = PROMPT_TEMPLATE % (endpoint.url(), username, password, before_page_source)
+            full_prompt = PROMPT_TEMPLATE % (before_page_source, endpoint.url(), username, password)
             llm = get_chat_model(reasoning=False)
             tools = make_credential_testing_tools(driver)
             agent = create_agent(llm, tools=tools)

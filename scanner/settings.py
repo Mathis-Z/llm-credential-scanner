@@ -29,6 +29,7 @@ class Settings:
             self.nonreasoning_llm_name = os.getenv("NONREASONING_LLM_NAME", "gpt-4o-mini") # TODO: is there a non-reasoning model?
 
         self.artifacts_dir = Path(os.getcwd()) / os.getenv("ARTIFACTS_DIR", "scan_artifacts")
+        self.disable_llm_cache = os.getenv("DISABLE_LLM_CACHE", None) is not None
         self._initialized = True
 
     def _require_env_var(self, var_name: str) -> str:
@@ -39,6 +40,7 @@ class Settings:
 
     def configure_cli_arguments(self, **kwargs):
         self.artifacts_dir = Path(os.getcwd()) / kwargs.get("artifacts_dir", self.artifacts_dir)
+        self.disable_llm_cache = kwargs.get("disable_llm_cache", self.disable_llm_cache)
 
     @property
     def db_path(self) -> str:

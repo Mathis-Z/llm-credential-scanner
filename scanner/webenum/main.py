@@ -154,7 +154,7 @@ class WebEnumWorker(threading.Thread):
                 return
 
             md_hash = self.create_markdown_hash(page_source)
-            if Endpoint.select().where(Endpoint.md_hash == md_hash).count() > 0:
+            if self.md_hash_exists(md_hash):
                 logging.debug("Path %s ignored because of md_hash deduplication", initial_path)
                 return
 
@@ -244,7 +244,7 @@ class WebEnumWorker(threading.Thread):
 
     def get_404_simhash(self) -> simhash.Simhash:
         """Fetches a non-existent page to compute its simhash for soft 404 detection."""
-        path = f"/nonexistent_{int(time.time())}"
+        path = f"/nonexistent_1769471273" # hardcoding to allow LLM response caching
         before_url = f"{self.service.url()}{path}"
         try:
             after_url, html = fetch_url(before_url)
@@ -252,33 +252,37 @@ class WebEnumWorker(threading.Thread):
                 logger.warning("Failed to fetch HTML for 404 simhash from %s; disabling soft 404 detection", before_url)
                 return None
 
+            md_hash = self.create_markdown_hash(html)
+
             after_path = urllib.parse.urlparse(after_url).path
             if after_path != path:
                 # TODO: this is a rather lazy check for apps that redirect all or most requests to their login page
                 logger.debug("Soft 404 detection encountered redirect from %s to %s; disabling soft 404 detection", before_url, after_url)
                 if self.detect_password_input(after_url, html):
                     normalized_after_path = self.normalize_path(after_path)
-                    if not self.already_found(normalized_after_path):
+                    if not self.already_found(normalized_after_path) and not self.md_hash_exists(md_hash):
                         logger.info("Non-existent path redirected to login page %s; recording login endpoint", after_url)
                         Endpoint.create(
                             service=self.service,
                             path=normalized_after_path,
                             initial_path=self.normalize_path(path),
                             is_login=True,
-                            page_source=html
+                            page_source=html,
+                            md_hash=md_hash
                         )
                 return None
 
             if self.detect_password_input(after_url, html):
                 normalized_after_path = self.normalize_path(after_path)
-                if not self.already_found(normalized_after_path):
+                if not self.already_found(normalized_after_path) and not self.md_hash_exists(md_hash):
                     logger.info("Non-existent path returned login page %s; recording login endpoint", after_url)
                     Endpoint.create(
                         service=self.service,
                         path=normalized_after_path,
                         initial_path=self.normalize_path(path),
                         is_login=True,
-                        page_source=html
+                        page_source=html,
+                        md_hash=md_hash
                     )
 
             return self.simhash(html)
@@ -308,6 +312,9 @@ class WebEnumWorker(threading.Thread):
         md = markdownify(html)
         whitespace_free_md = re.sub(r'\s+', '', md)
         return hashlib.md5(whitespace_free_md.encode()).hexdigest()
+
+    def md_hash_exists(self, md_hash: str) -> bool:
+        return Endpoint.select().where(Endpoint.md_hash == md_hash).count() > 0
 
     def is_404_response(self, status_code: int, html: str) -> bool:
         """Determines if the response is a 404 based on simhash comparison."""

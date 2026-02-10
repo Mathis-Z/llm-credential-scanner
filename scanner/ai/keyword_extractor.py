@@ -15,11 +15,17 @@ from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
 
 PROMPT_TEMPLATE = """
-You are a pentester and have encountered an unknown web application. Your goal is to find documentation or source code for this application that might contain default credentials. Identify keywords or links for a web search. If an application name appears (title, logo text, headings), include it as a keyword even if it is the only one. The keywords/links must be specific to this application. Do not include keywords that are unspecific or not informative. The web page has the following content:
 <<<BEGIN CONTENT>>>
 %s
 <<<END CONTENT>>>
-Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line. If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+You are a pentester and have encountered an unknown web application.
+Your goal is to find documentation or source code for this application that might contain default credentials.
+Identify keywords or links for a web search. If an application name appears (title, logo text, headings),
+include it as a keyword even if it is the only one. The keywords/links must be specific to this application.
+Do not include keywords that are unspecific or not informative.
+The web page has the content given above.
+Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line.
+If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
 """
 
 logger = logging.getLogger('scanner.keyword_extractor')

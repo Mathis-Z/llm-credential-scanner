@@ -117,7 +117,7 @@ def print_results(results: dict[str, TestResult | None]):
             continue
 
         if result.endpoints_num == 0:
-            return table.append(['?', '?', '?', '?', '?', result.endpoints_num, result.artifacts_dir])
+            table.append(['?', '?', '?', '?', '?', result.endpoints_num, result.artifacts_dir])
 
         table.append([
             service_name,

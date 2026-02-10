@@ -2,17 +2,19 @@
 Abstraction over langchains ChatOpenAI and ChatOllama to easily switch between local and remote LLMs
 """
 import time
+import json
 import threading
 from typing import Any
 import logging
 import openai
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.language_models.base import LanguageModelInput
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 
 from scanner.settings import Settings
+from .llm_cache import LLMCache
 settings = Settings()
 
 logger = logging.getLogger('scanner.llm')
@@ -21,6 +23,47 @@ API_SERIALIZATION_LOCK = threading.Lock() # prevent concurrent invoke() calls
 
 class WrappedInvokeMixin:
     """Mixin to wrap the invoke method with custom error handling for rate limiting."""
+
+    def _make_cache_key(self, input, config, stop, kwargs):
+        """Create a cacheable representation of the invoke parameters."""
+        cache_dict = {}
+        
+        # Handle input (messages)
+        if isinstance(input, str):
+            cache_dict['input'] = input
+        elif isinstance(input, list):
+            cache_dict['input'] = [
+                {'type': msg.type, 'content': msg.content} if isinstance(msg, BaseMessage) else str(msg)
+                for msg in input
+            ]
+        else:
+            cache_dict['input'] = str(input)
+        
+        # Handle stop sequences
+        cache_dict['stop'] = stop
+        
+        # Handle kwargs - only cache relevant parameters
+        relevant_kwargs = {}
+        for key in ['temperature', 'max_tokens', 'top_p', 'frequency_penalty', 'presence_penalty', 'parallel_tool_calls']:
+            if key in kwargs:
+                relevant_kwargs[key] = kwargs[key]
+        
+        # Handle tools if present
+        if 'tools' in kwargs:
+            try:
+                # Try to serialize tools to JSON-compatible format
+                relevant_kwargs['tools'] = [
+                    {'type': t.get('type'), 'function': t.get('function', {}).get('name')}
+                    if isinstance(t, dict) else str(t)
+                    for t in kwargs.get('tools', [])
+                ]
+            except Exception:
+                relevant_kwargs['tools'] = str(kwargs['tools'])
+        
+        cache_dict['kwargs'] = relevant_kwargs
+        
+        # Convert to JSON string for consistent hashing
+        return json.dumps(cache_dict, sort_keys=True)
 
     def invoke(
         self,
@@ -33,6 +76,12 @@ class WrappedInvokeMixin:
         """
         Invoke the LLM and handle rate limiting by serializing calls.
         """
+        cache_key = self._make_cache_key(input, config, stop, kwargs)
+        result = LLMCache().get(cache_key)
+        if result:
+            logger.debug("Returning cached LLM response")
+            return result
+
         with API_SERIALIZATION_LOCK:
             result = None
             backoff_seconds = 60 # as per github docs, we should wait at least 60s before retrying after rate limit
@@ -57,6 +106,8 @@ class WrappedInvokeMixin:
                     logger.warning("LLM rate limit exceeded. Trying again after %s seconds...", backoff_seconds)
                     time.sleep(backoff_seconds)
                     backoff_seconds = min(backoff_seconds * 2, 600) # exponential backoff up to 10 minutes
+
+            LLMCache().store(cache_key, result)
             return result
 
     def bind_tools(
