@@ -9,7 +9,7 @@ from .db import BaseModel
 
 # list of credentials that should always be tested
 # TODO: this should probably be expanded and also moved out of this file
-DEFAULT_CREDS = [('admin', 'admin')]
+DEFAULT_CREDS = [('admin', 'admin'), ('admin', 'password'), ('username', 'password')]
 
 class Service(BaseModel):
     """A discovered service with host, port and https true/false"""

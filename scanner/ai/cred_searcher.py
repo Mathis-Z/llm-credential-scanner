@@ -96,6 +96,10 @@ class CredSearcher(DBConnectionMixin, Thread):
     def _on_abort(self):
         self.termination_event.set()
 
+    def can_early_abort(self, service: Service):
+        service = Service.get_by_id(service.id)
+        return service.credentials is not None and len(service.credentials) > 0
+
     def search_service(self, service: Service):
         """Search default credentials for a service using its keywords"""
         try:
@@ -137,5 +141,9 @@ class CredSearcher(DBConnectionMixin, Thread):
                         logger.debug("AI: [Calling tools: %s]", stringified_tool_calls)
                     else:
                         logger.debug("AI: %s", latest_message.content)
+
+                if self.can_early_abort(service):
+                    logger.info("CredSearcher aborts early because working credentials have been found for the service.")
+                    return
         except Exception as e:
             logger.error("Error in CredSearcher for service %s: %s", service.url(), str(e))
