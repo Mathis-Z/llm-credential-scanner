@@ -15,6 +15,8 @@ from scanner.main import configure_logging
 KEEP_DB_FILES = True
 logger = logging.getLogger("scanner.tests")
 
+DEFAULT_CREDS.append(('invalid', 'invalid'))
+
 
 @dataclass
 class TestResult:
