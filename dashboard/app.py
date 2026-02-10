@@ -8,7 +8,7 @@ from datetime import datetime
 from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for
 
 APP_ROOT = Path(__file__).parent
-DEFAULT_BASE_DIR = Path("/tmp/scanner_logs")
+DEFAULT_BASE_DIR = Path("/tmp/scan_artifacts")
 BASE_DIR = Path(os.getenv("SCANNER_LOGS_DIR", DEFAULT_BASE_DIR))
 
 app = Flask(__name__)

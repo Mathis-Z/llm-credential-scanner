@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 
@@ -27,8 +28,7 @@ class Settings:
             self.reasoning_llm_name = os.getenv("REASONING_LLM_NAME", "gpt-4o-mini")
             self.nonreasoning_llm_name = os.getenv("NONREASONING_LLM_NAME", "gpt-4o-mini") # TODO: is there a non-reasoning model?
 
-        self.db_path = os.getenv("DB_PATH", "scanner.db")
-        self.artifacts_dir = os.getenv("ARTIFACTS_DIR")
+        self.artifacts_dir = Path(os.getcwd()) / os.getenv("ARTIFACTS_DIR", "scan_artifacts")
         self._initialized = True
 
     def _require_env_var(self, var_name: str) -> str:
@@ -38,5 +38,8 @@ class Settings:
         return value
 
     def configure_cli_arguments(self, **kwargs):
-        self.db_path = kwargs.get("db_path", self.db_path)
-        self.artifacts_dir = kwargs.get("artifacts_dir", self.artifacts_dir)
+        self.artifacts_dir = Path(os.getcwd()) / kwargs.get("artifacts_dir", self.artifacts_dir)
+
+    @property
+    def db_path(self) -> str:
+        return self.artifacts_dir / "scanner.db"

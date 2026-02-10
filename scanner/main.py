@@ -62,14 +62,12 @@ logger = logging.getLogger("scanner.main")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--log-file", default=None, help="Path to the log file")
 @click.option("--max-webdrivers", default=1, help="Maximum number of concurrent WebDriver instances for credential testing")
-@click.option("--db-path", default=None, help="Path to the SQLite database file")
-@click.option("--artifacts-dir", default=None, help="Base directory for scan artifacts (screenshots, logs)")
-def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, db_path, artifacts_dir):
-    run(subnets, ports, log_level, log_file, max_webdrivers, db_path, artifacts_dir)
+@click.option("--artifacts-dir", default=None, help="Base directory for scan artifacts (DB, screenshots, logs)")
+def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir):
+    run(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir)
 
-def run(subnets, ports, log_level, log_file, max_webdrivers, db_path, artifacts_dir):
+def run(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir):
     Settings().configure_cli_arguments(
-        db_path=db_path,
         max_webdrivers=max_webdrivers,
         artifacts_dir=artifacts_dir
     )

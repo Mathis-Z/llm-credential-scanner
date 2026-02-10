@@ -1,6 +1,6 @@
 # Scanner Logs Dashboard
 
-Small Flask dashboard to browse scan runs in `/tmp/scanner_logs` (scanner.db, logs, screenshots).
+Small Flask dashboard to browse scan runs in `/tmp/scan_artifacts` (scanner.db, logs, screenshots).
 
 ## Start
 
@@ -23,7 +23,7 @@ By default it listens on `http://127.0.0.1:8089`.
 Set `SCANNER_LOGS_DIR` before launching if your logs live elsewhere:
 
 ```bash
-export SCANNER_LOGS_DIR=/tmp/scanner_logs
+export SCANNER_LOGS_DIR=/tmp/scan_artifacts
 python dashboard/app.py
 ```
 
