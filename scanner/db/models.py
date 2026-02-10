@@ -53,6 +53,9 @@ class Service(BaseModel):
             keywords = keywords.union(set(endpoint.keywords or []))
         return list(keywords)
 
+    def endpoint_with_working_creds_found(self):
+        return self.endpoints.where(Endpoint.working_credentials != '').count() > 0
+
 
 class Endpoint(BaseModel):
     """A path on a service that responded with a non-error status code"""

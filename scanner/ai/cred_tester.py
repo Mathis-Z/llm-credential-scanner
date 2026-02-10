@@ -56,16 +56,16 @@ class CredTester(DBConnectionMixin, Thread):
 
     def run(self):
         while not self.termination_event.is_set():
-            unresolved_login_panels: list[Endpoint] = list(
-                Endpoint.select()
+            # aborts early for a service if any endpoint is found with working creds
+            unresolved_login_panels: list[Endpoint] = [panel for panel in Endpoint.select()
                 .where((Endpoint.is_login == True) & (Endpoint.working_credentials == ''))
-            )
-            panels_with_untested_creds = [panel for panel in unresolved_login_panels if len(panel.untested_credentials()) > 0]
+                if len(panel.untested_credentials()) > 0 and not panel.service.endpoint_with_working_creds_found()
+            ]
 
-            if len(panels_with_untested_creds) == 0 and self.cred_searcher_done_event.is_set():
+            if len(unresolved_login_panels) == 0 and self.cred_searcher_done_event.is_set():
                 break
 
-            for login_panel in panels_with_untested_creds:
+            for login_panel in unresolved_login_panels:
                 for (username, password) in login_panel.untested_credentials():
                     self.test_credentials(login_panel, username, password)
 
