@@ -4,9 +4,8 @@ Uses the LLM to extract keywords from page source.
 """
 
 from threading import Thread, Event
-from typing import Any
 import logging
-import queue
+import random
 import time
 from peewee import fn, Case
 from pubsub import pub
@@ -79,7 +78,14 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         """
         Extract keywords for all endpoints of the given service that do not yet have keywords.
         """
-        for endpoint in service.endpoints:
+        # TODO: make the selection of endpoints smarter
+        # e.g. convert all endpoints to markdown, generate simhashes and then find the most
+        # unique endpoints or something like that
+        eps = list(service.endpoints)
+        random.shuffle(eps)
+        eps = eps[:10] # limit to 10 endpoints to avoid excessive API cost
+
+        for endpoint in eps:
             if self.termination_event.is_set():
                 return
             self.extract_keywords(endpoint)
