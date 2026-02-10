@@ -8,6 +8,7 @@ from tabulate import tabulate
 import click
 from scanner.tests.startup_script import RunDockerCompose
 from scanner.db import Endpoint, Service, init_db
+from scanner.db.models import DEFAULT_CREDS
 from scanner.settings import Settings
 from scanner.main import configure_logging
 
@@ -17,8 +18,9 @@ logger = logging.getLogger("scanner.tests")
 
 @dataclass
 class TestResult:
-    found_creds: bool
+    found_creds: bool | None # None for N/A
     verified_creds: bool
+    verified_no_other_creds: bool
     found_login_panel: bool
     endpoints_num: int
     artifacts_dir: str = ""
@@ -48,6 +50,7 @@ class TemporaryScanArtifacts:
 
 
 def found_creds(username, password):
+    """Check if the given credentials were found (websearch) for any service."""
     for s in Service.select():
         print(f"Checking service {s}")
         # s.credentials may be stored as list of lists (JSON) or tuples; compare values robustly
@@ -56,12 +59,34 @@ def found_creds(username, password):
                 return True
     return False
 
-def verified_creds(path, username, password):
+
+def verified_creds(username: str, password: str, path: str|None = None) -> bool:
+    """Verify that the expected credentials were found for the given path. If path is None or '*', check all endpoints."""
+    path_cred_pairs = get_verified_creds(path)
+    for creds in path_cred_pairs:
+        if creds == f"{username}:{password}":
+            return True
+    return False
+
+
+def get_verified_creds(path: str|None = None) -> set[str]:
+    """Returns a list of (path, creds) pairs for all endpoints that have working credentials, optionally filtered by path."""
     if path and path != "*":
-        e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.working_credentials == f"{username}:{password}"))
+        endpoints = Endpoint.select().where((Endpoint.path == path) & (Endpoint.working_credentials != ""))
     else:
-        e = Endpoint.get_or_none(Endpoint.working_credentials == f"{username}:{password}")
-    return e is not None
+        endpoints = Endpoint.select().where(Endpoint.working_credentials != "")
+    return {e.working_credentials for e in endpoints}
+
+
+def verified_no_other_creds(username: str, password: str, path: str|None = None) -> bool:
+    """Verify that no credentials other than the expected one were found for this endpoint"""
+    path_cred_pairs = get_verified_creds(path)
+    expected_creds = f"{username}:{password}"
+    for creds in path_cred_pairs:
+        if creds != expected_creds:
+            return False
+    return True
+
 
 def found_login_panel(path):
     if path and path != "*":
@@ -70,6 +95,7 @@ def found_login_panel(path):
         e = Endpoint.get_or_none(Endpoint.is_login == True)
     return e is not None
 
+
 def endpoints_num():
     return Endpoint.select().count()
 
@@ -77,11 +103,12 @@ def endpoints_num():
 def print_results(results: dict[str, TestResult | None]):
     """Prints the test results in a tabular format."""
     headers = [
-        "Service Name",
-        "Found Credentials",
-        "Verified Credentials",
-        "Found Login Panel",
-        "Endpoints Detected",
+        "Service\nName",
+        "Found\nCredentials",
+        "Verified\nCredentials",
+        "Verified No\nOther Creds",
+        "Found Login\nPanel",
+        "Endpoints\nDetected",
         "Artifacts Dir"
     ]
     table = []
@@ -93,19 +120,21 @@ def print_results(results: dict[str, TestResult | None]):
 
         table.append([
             service_name,
-            emojify(result.found_creds),
-            emojify(result.verified_creds),
-            emojify(result.found_login_panel),
+            colorful_pass_or_fail(result.found_creds) if result.found_creds else 'N/A',
+            colorful_pass_or_fail(result.verified_creds),
+            colorful_pass_or_fail(result.verified_no_other_creds),
+            colorful_pass_or_fail(result.found_login_panel),
             result.endpoints_num,
             result.artifacts_dir
         ])
 
-    print(tabulate(table, headers=headers, tablefmt="grid"))
+    print(tabulate(table, headers=headers, tablefmt="simple_grid"))
 
-def emojify(value: bool):
-    return "✅" if value else "❌"
+def colorful_pass_or_fail(value: bool):
+    return click.style("PASS", fg="green") if value else click.style("FAIL", fg="red")
 
-def run_scanner(port, log_path, artifacts_dir, extra_args=[]):
+def run_scanner(port, log_path, artifacts_dir, extra_args=None):
+    """Run the scanner as a subprocess with the given arguments. Waits for it to complete before returning."""
     cmd = [
         "python",
         "-m",
@@ -119,12 +148,14 @@ def run_scanner(port, log_path, artifacts_dir, extra_args=[]):
         str(log_path),
         "--artifacts-dir",
         str(artifacts_dir)
-    ] + extra_args
+    ] + (extra_args or [])
     p = subprocess.Popen(cmd, text=True)
     p.wait()
 
 
 def run_app_test(app_dir_name, port, login_path, username, password) -> TestResult:
+    trivial_creds = (username, password) in DEFAULT_CREDS
+
     with TemporaryScanArtifacts() as artifacts:
         wait_path = "/" if login_path == "*" else login_path
         with RunDockerCompose(
@@ -141,8 +172,9 @@ def run_app_test(app_dir_name, port, login_path, username, password) -> TestResu
             Settings().configure_cli_arguments(artifacts_dir=artifacts.dir_path)
             init_db()
             r = TestResult(
-                found_creds=found_creds(username, password),
-                verified_creds=verified_creds(login_path, username, password),
+                found_creds=None if trivial_creds else found_creds(username, password), # show N/A for trivial creds
+                verified_creds=verified_creds(username, password, path=login_path),
+                verified_no_other_creds=verified_no_other_creds(username, password),
                 found_login_panel=found_login_panel(login_path),
                 endpoints_num=endpoints_num(),
                 artifacts_dir=str(artifacts.dir_path)

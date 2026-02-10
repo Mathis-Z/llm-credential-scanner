@@ -16,10 +16,10 @@ logger = logging.getLogger("scanner.db")
 # this is required for the tests because I want temporary DBs for each test
 DB = pw.DatabaseProxy()
 
-def init_db():
+def init_db(path: str | None = None):
     """Initialize database connection and tables. Call after Settings is configured."""
     try:
-        full_db_path = Path(os.getcwd()) / Settings().db_path
+        full_db_path = Path(os.getcwd()) / (path if path else Settings().db_path)
         # creating the directory here is suboptimal but future work I guess
         db_dir = full_db_path.parent
         if not db_dir.exists():

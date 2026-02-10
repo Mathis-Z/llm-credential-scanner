@@ -7,7 +7,9 @@ import peewee as pw
 
 from .db import BaseModel
 
-DEFAULT_CREDS = [('admin', 'admin')] # list of credentials that should always be tested
+# list of credentials that should always be tested
+# TODO: this should probably be expanded and also moved out of this file
+DEFAULT_CREDS = [('admin', 'admin')]
 
 class Service(BaseModel):
     """A discovered service with host, port and https true/false"""
