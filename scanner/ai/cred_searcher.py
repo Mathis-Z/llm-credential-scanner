@@ -97,8 +97,8 @@ class CredSearcher(DBConnectionMixin, Thread):
         self.termination_event.set()
 
     def can_early_abort(self, service: Service):
-        service = Service.get_by_id(service.id)
-        return service.credentials is not None and len(service.credentials) > 0
+        service = Service.get(Service.pk == service.pk)
+        return service.endpoint_with_working_creds_found()
 
     def search_service(self, service: Service):
         """Search default credentials for a service using its keywords"""
