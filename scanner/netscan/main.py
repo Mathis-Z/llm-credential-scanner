@@ -44,9 +44,6 @@ class NetScanner(DBConnectionMixin, threading.Thread):
             if h in ['runtime', 'stats', 'task_results'] or data['state']['state'] != 'up':
                 continue
 
-            if h == "127.0.0.1":
-                h = "localhost" # some services have a problem with 127.0.0.1 (CORS etc.)
-
             for port_info in data.get('ports', []):
                 port = int(port_info['portid'])
                 logger.debug("Testing %s:%s", h, port)
