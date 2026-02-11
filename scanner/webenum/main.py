@@ -109,6 +109,10 @@ class WebEnumWorker(threading.Thread):
                 logger.debug("WebEnumWorker tested %d paths on %s", paths_tested, self.service.url())
                 last_log_time = time.time()
 
+            if paths_tested > 1000:
+                logging.warning("WebEnumWorker reached 1000 paths tested on %s; stopping to avoid excessive load", self.service.url())
+                break
+
             self.process_path(path)
 
         logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())

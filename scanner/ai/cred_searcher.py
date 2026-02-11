@@ -45,6 +45,8 @@ class CredSearcher(DBConnectionMixin, Thread):
         pub.subscribe(self.keyword_extractor_done_event.set, 'keyword_extractor.done')
 
     def run(self):
+        services_search_count = {}
+
         while not self.termination_event.is_set():
             # Only select services for which *all* endpoints have non-NULL keywords.
             # i.e. there must be at least one endpoint with keywords, and zero endpoints with NULL keywords.
@@ -81,13 +83,21 @@ class CredSearcher(DBConnectionMixin, Thread):
                     )
                 )
             )
-            ready_services = [s for s in ready_services if not s.endpoint_with_working_creds_found()]
+            ready_services = [s for s in ready_services
+                              if not s.endpoint_with_working_creds_found()
+                              and services_search_count.get(s.pk, 0) < 3
+            ]
 
             if len(ready_services) == 0 and self.keyword_extractor_done_event.is_set():
                 break
 
             for service in ready_services:
                 self.search_service(service)
+                services_search_count[service.pk] = services_search_count.get(service.pk, 0) + 1
+                if services_search_count[service.pk] >= 3:
+                    logger.info("CredSearcher giving up on service %s after %d attempts", service.url(), services_search_count[service.pk])
+                    service.credentials = []
+                    service.save()
 
             time.sleep(2)
 

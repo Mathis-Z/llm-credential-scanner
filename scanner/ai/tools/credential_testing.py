@@ -50,14 +50,6 @@ def make_credential_testing_tools(driver: Any):
                 return "Error: Selector matched multiple elements:\n" + formatted_elements
 
             element = elements[0]
-            logger.debug(
-                "Element info: tag=%s id=%s name=%s type=%s form_action=%s",
-                element.tag_name,
-                element.get_attribute("id"),
-                element.get_attribute("name"),
-                element.get_attribute("type"),
-                element.get_attribute("formaction")
-            )
             element.clear()
             element.send_keys(text)
         except Exception as e:
@@ -69,8 +61,6 @@ def make_credential_testing_tools(driver: Any):
         time.sleep(2)
         logger.debug("Clicking button with selector: %s", selector)
         try:
-            before_url = driver.current_url
-            before_title = driver.title
             elements = driver.find_elements(By.CSS_SELECTOR, selector)
             if len(elements) == 0:
                 return "error: no elements found"
@@ -95,13 +85,6 @@ def make_credential_testing_tools(driver: Any):
             )
             element.click()
             time.sleep(1)
-            logger.debug(
-                "After click: url=%s title=%s (before url=%s title=%s)",
-                driver.current_url,
-                driver.title,
-                before_url,
-                before_title,
-            )
         except Exception as e:
             return f"error: {str(e)}"
         return "ok"

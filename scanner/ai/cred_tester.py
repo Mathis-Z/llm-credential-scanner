@@ -6,9 +6,11 @@ to find potential default credentials.
 import re
 import time
 import urllib.parse
+from contextlib import contextmanager
 from pathlib import Path
 from threading import Thread, Event
 import logging
+from dataclasses import dataclass
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException, WebDriverException
@@ -47,6 +49,48 @@ After calling a tool, wait for the result before calling another tool.
 
 logger = logging.getLogger('scanner.cred_tester')
 
+
+@dataclass
+class PageState:
+    # relevant page state for comparison pre and post credential submission, to determine if login was successful
+    url: str
+    page_source: str
+    title: str
+    cookies: list[dict]
+
+    def cleaned_page_source(self):
+        soup = BeautifulSoup(self.page_source, "html.parser")
+        for script in soup.find_all("script"):
+            script.decompose()
+        return str(soup)
+
+    def path(self, ignore_params=True):
+        parts = urllib.parse.urlparse(self.url)
+        if ignore_params:
+            return parts.path
+        if parts.query or parts.fragment:
+            return f"{parts.path}?{parts.query}#{parts.fragment}"
+        return parts.path
+
+    def simhash(self):
+        return md_simhash(self.page_source)
+
+    def has_password_input(self):
+        soup = BeautifulSoup(self.page_source, "html.parser")
+        return bool(soup.select("input[type=password]"))
+
+    def __str__(self):
+        return f"PageState(url={self.url}, title={self.title}, cookies={[c.get('name') for c in self.cookies]}, page_len={len(self.page_source)})"
+
+
+def md_simhash(html: str) -> simhash.Simhash:
+    """Computes the simhash of cleaned HTML content."""
+    # TODO: evaluate other simhash techniques like tlsh
+    md = markdownify(html)
+    cleaned_md = re.sub(r'\s+', ' ', md)
+    return simhash.Simhash(cleaned_md)
+
+
 class CredTester(DBConnectionMixin, Thread):
     def __init__(self):
         super().__init__()
@@ -79,20 +123,11 @@ class CredTester(DBConnectionMixin, Thread):
     def _on_abort(self):
         self.termination_event.set()
 
-    def simhash(self, html: str) -> simhash.Simhash:
-        """Computes the simhash of cleaned HTML content."""
-        # TODO: evaluate other simhash techniques like tlsh
-        md = markdownify(html)
-        cleaned_md = re.sub(r'\s+', ' ', md)
-        return simhash.Simhash(cleaned_md)
-
-    def _url_signature(self, url: str) -> str:
-        parts = urllib.parse.urlparse(url)
-        if parts.query or parts.fragment:
-            return f"{parts.path}?{parts.query}#{parts.fragment}"
-        return parts.path
-
-    def _get_failed_login_baseline(self, endpoint: Endpoint):
+    def run_baseline_test(self, endpoint: Endpoint) -> tuple[PageState, PageState]:
+        """
+        Runs a baseline test with known wrong credentials to establish a reference point for failed login attempts,
+        to compare against when testing real credentials. Caches the result per endpoint to avoid redundant tests.
+        """
         cached = self.failed_login_baselines.get(endpoint.pk)
         if cached:
             return cached
@@ -100,9 +135,9 @@ class CredTester(DBConnectionMixin, Thread):
         wrong_username = "invalid_user_1770763107" # hardcoding to allow LLM response caching
         wrong_password = "invalid_pass_1770763107"
         logger.debug("Capturing failed-login baseline on %s", endpoint.url())
-        baseline = self._perform_login_attempt(endpoint, wrong_username, wrong_password, attempt_label="baseline")
-        if baseline:
-            self.failed_login_baselines[endpoint.pk] = baseline
+        baseline = self.run_llm_login(endpoint, wrong_username, wrong_password, attempt_label="baseline")
+
+        self.failed_login_baselines[endpoint.pk] = baseline
         return baseline
 
     def _sanitize_for_filename(self, value: str) -> str:
@@ -117,7 +152,8 @@ class CredTester(DBConnectionMixin, Thread):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _save_screenshot(self, driver, endpoint: Endpoint, username: str, password: str, attempt_label: str, phase: str):
+    def save_screenshot(self, driver, endpoint: Endpoint, username: str, password: str, attempt_label: str, phase: str):
+        """Saves a screenshot of the current page state with a filename containing the endpoint, credentials, attempt label, and phase (before/after)."""
         screenshot_dir = self._get_screenshot_dir()
         if not screenshot_dir:
             return
@@ -132,7 +168,17 @@ class CredTester(DBConnectionMixin, Thread):
         filename = f"endpoint-{endpoint.pk}_{host}_{path}_{label}_user-{user}_pass-{pwd}_{phase}_{ts}.png"
         driver.save_screenshot(str(screenshot_dir / filename))
 
+    def record_page_state(self, driver) -> PageState:
+        """Records relevant page state for comparison pre and post credential submission, to determine if login was successful."""
+        return PageState(
+            url=driver.current_url,
+            page_source=driver.page_source,
+            title=driver.title,
+            cookies=driver.get_cookies()
+        )
+
     def wait_for_element(self, driver, selector: str):
+        """Waits for an element matching the given CSS selector to be present in the DOM, up to a timeout."""
         try:
             WebDriverWait(driver, 10).until(
                 lambda d: d.find_elements(By.CSS_SELECTOR, selector)
@@ -140,66 +186,55 @@ class CredTester(DBConnectionMixin, Thread):
         except TimeoutException:
             pass
 
-    def _perform_login_attempt(self, endpoint: Endpoint, username: str, password: str, attempt_label: str = "attempt"):
+    def visit_login_panel(self, driver, url: str):
+        """Navigates to the login panel URL and waits for it to load, handling potential host mismatches between the initial URL and the form action URL."""
+        try:
+            driver.get(url)
+            self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
+        except WebDriverException as exc:
+            logger.warning("WebDriver navigation failed for %s: %s", url, str(exc))
+            return None
+
+        # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        for script in soup.find_all("script"):
+            script.decompose()
+
+        # If the form action host differs (localhost vs 127.0.0.1), re-open on the action host
+        current_url = driver.current_url
+        current_parts = urllib.parse.urlparse(current_url)
+        form = soup.find("form")
+        form_action = form.get("action") if form else None
+        if form_action:
+            action_url = urllib.parse.urljoin(current_url, form_action)
+            action_parts = urllib.parse.urlparse(action_url)
+            if action_parts.hostname and action_parts.hostname != current_parts.hostname:
+                host_pair = {action_parts.hostname, current_parts.hostname}
+                if host_pair == {"localhost", "127.0.0.1"} and action_parts.port == current_parts.port:
+                    logger.debug(
+                        "Form action host mismatch (current=%s action=%s). Re-opening on action host.",
+                        current_url,
+                        action_url,
+                    )
+                    driver.get(action_url)
+                    self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
+
+
+    def run_llm_login(self, endpoint: Endpoint, username: str, password: str, attempt_label: str = "attempt") -> tuple[PageState, PageState]:
+        """
+        Performs a login attempt on the given endpoint with the given credentials, using the LLM to interact with the page.
+        Returns the page state before and after the login attempt, for comparison to determine if the login was successful.
+        """
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
-        driver = webdriver.Chrome(options=options)
 
-        try:
-            try:
-                driver.get(endpoint.url())
-                self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
-            except WebDriverException as exc:
-                logger.warning("WebDriver navigation failed for %s: %s", endpoint.url(), str(exc))
-                return None
+        with webdriver.Chrome(options=options) as driver:
+            self.visit_login_panel(driver, endpoint.url())
 
-            # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
-            soup = BeautifulSoup(driver.page_source, "html.parser")
-            for script in soup.find_all("script"):
-                script.decompose()
-
-            # If the form action host differs (localhost vs 127.0.0.1), re-open on the action host
-            current_url = driver.current_url
-            current_parts = urllib.parse.urlparse(current_url)
-            form = soup.find("form")
-            form_action = form.get("action") if form else None
-            if form_action:
-                action_url = urllib.parse.urljoin(current_url, form_action)
-                action_parts = urllib.parse.urlparse(action_url)
-                if action_parts.hostname and action_parts.hostname != current_parts.hostname:
-                    host_pair = {action_parts.hostname, current_parts.hostname}
-                    if host_pair == {"localhost", "127.0.0.1"} and action_parts.port == current_parts.port:
-                        logger.debug(
-                            "Form action host mismatch (current=%s action=%s). Re-opening on action host.",
-                            current_url,
-                            action_url,
-                        )
-                        driver.get(action_url)
-                        self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
-                        soup = BeautifulSoup(driver.page_source, "html.parser")
-                        for script in soup.find_all("script"):
-                            script.decompose()
-
-            self._save_screenshot(driver, endpoint, username, password, attempt_label, "before")
-
-            # store page info to compare with after tool calls
-            before_url = driver.current_url
-            before_raw_page_source = driver.page_source
-            before_page_source = str(soup)
-            before_path = urllib.parse.urlparse(driver.current_url).path
-            before_title = driver.title
-            before_cookies = driver.get_cookies()
-            before_has_password = bool(soup.select("input[type=password]"))
-            logger.debug(
-                "Before submit: url=%s path=%s title=%s cookies=%s page_len=%s",
-                before_url,
-                before_path,
-                before_title,
-                [c.get("name") for c in before_cookies],
-                len(before_raw_page_source or "")
-            )
-
-            full_prompt = PROMPT_TEMPLATE % (before_page_source, endpoint.url(), username, password)
+            self.save_screenshot(driver, endpoint, username, password, attempt_label, "before")
+            pre_login_state = self.record_page_state(driver)
+            
+            full_prompt = PROMPT_TEMPLATE % (pre_login_state.cleaned_page_source(), pre_login_state.url, username, password)
             llm = get_chat_model(reasoning=False)
             tools = make_credential_testing_tools(driver)
             agent = create_agent(llm, tools=tools)
@@ -223,53 +258,23 @@ class CredTester(DBConnectionMixin, Thread):
                             logger.debug("AI: [Calling tools: %s]", stringified_tool_calls)
                         else:
                             logger.debug("AI: %s", latest_message.content)
-            except WebDriverException as exc:
-                logger.warning("WebDriver failed during credential test for %s: %s", endpoint.url(), str(exc))
-                return None
-            finally:
+
                 # wait for potential redirects or DOM updates triggered by form submission
                 try:
                     WebDriverWait(driver, 10).until(
-                        lambda d: urllib.parse.urlparse(d.current_url).path != before_path
-                        or d.page_source != before_raw_page_source
+                        lambda d: urllib.parse.urlparse(d.current_url).path != pre_login_state.path()
+                        or d.page_source != pre_login_state.page_source
                     )
                 except TimeoutException:
                     pass
-                time.sleep(20)
-                # to compare with before_page_source need to remove script tags again
-                soup = BeautifulSoup(driver.page_source, "html.parser")
-                for script in soup.find_all("script"):
-                    script.decompose()
-                after_page_source = str(soup)
-                after_path = urllib.parse.urlparse(driver.current_url).path
-                after_url = driver.current_url
-                after_title = driver.title
-                after_raw_page_source = driver.page_source
-                after_cookies = driver.get_cookies()
-                after_has_password = bool(soup.select("input[type=password]"))
+            except WebDriverException as exc:
+                logger.error("WebDriver failed during credential test for %s: %s", pre_login_state.url, str(exc))
+                raise exc
 
-            self._save_screenshot(driver, endpoint, username, password, attempt_label, "after")
+            post_login_state = self.record_page_state(driver)
+            self.save_screenshot(driver, endpoint, username, password, attempt_label, "after")
 
-            return {
-                "before_url": before_url,
-                "before_path": before_path,
-                "before_title": before_title,
-                "before_page_source": before_page_source,
-                "before_raw_page_source": before_raw_page_source,
-                "before_cookies": before_cookies,
-                "before_has_password": before_has_password,
-                "after_url": after_url,
-                "after_url_sig": self._url_signature(after_url),
-                "after_path": after_path,
-                "after_title": after_title,
-                "after_page_source": after_page_source,
-                "after_raw_page_source": after_raw_page_source,
-                "after_cookies": after_cookies,
-                "after_has_password": after_has_password,
-                "after_simhash": self.simhash(after_page_source),
-            }
-        finally:
-            driver.quit()
+            return (pre_login_state, post_login_state)
 
     def test_credentials(self, endpoint: Endpoint, username: str, password: str):
         """
@@ -279,83 +284,61 @@ class CredTester(DBConnectionMixin, Thread):
         try:
             logger.debug("Testing credentials %s:%s on %s", username, password, endpoint.url())
 
-            baseline = self._get_failed_login_baseline(endpoint)
-            attempt = self._perform_login_attempt(endpoint, username, password, attempt_label="attempt")
-            if not attempt:
-                endpoint.add_tested_credentials((username, password))
-                endpoint.save(only=[Endpoint._tested_credentials])
-                return
+            baseline_pre_state, baseline_post_state = self.run_baseline_test(endpoint)
+            pre_state, post_state = self.run_llm_login(endpoint, username, password, attempt_label="attempt")
 
-            before_cookie_names = {c.get("name") for c in attempt["before_cookies"]}
-            after_cookie_names = {c.get("name") for c in attempt["after_cookies"]}
-            logger.debug(
-                "After submit: url=%s path=%s title=%s cookies=%s page_len=%s new_cookies=%s removed_cookies=%s",
-                attempt["after_url"],
-                attempt["after_path"],
-                attempt["after_title"],
-                [c.get("name") for c in attempt["after_cookies"]],
-                len(attempt["after_raw_page_source"] or ""),
-                sorted(after_cookie_names - before_cookie_names),
-                sorted(before_cookie_names - after_cookie_names),
+            logger.debug("Testing credentials with states:\nBaseline pre-login: %s\nBaseline post-login: %s\nAttempt pre-login: %s\nAttempt post-login: %s",
+                        baseline_pre_state,
+                        baseline_post_state,
+                        pre_state,
+                        post_state
             )
 
-            if baseline:
-                baseline_distance = baseline["after_simhash"].distance(attempt["after_simhash"])
-                baseline_cookie_names = {c.get("name") for c in baseline["after_cookies"]}
-                attempt_cookie_names = {c.get("name") for c in attempt["after_cookies"]}
-                cookie_name_delta = baseline_cookie_names != attempt_cookie_names
-                title_changed = (baseline["after_title"] or "") != (attempt["after_title"] or "")
-                url_changed = baseline.get("after_url_sig") != attempt["after_url_sig"]
-                password_gone = baseline.get("after_has_password", True) and not attempt["after_has_password"]
-                login_successful = (
-                    (attempt["after_path"] != baseline["after_path"]) or
-                    url_changed or
-                    password_gone or
-                    (baseline_distance > 7) or
-                    title_changed or
-                    cookie_name_delta
-                )
-                logger.debug(
-                    "Baseline compare: baseline_path=%s attempt_path=%s simhash_distance=%s title_changed=%s cookie_name_delta=%s url_changed=%s password_gone=%s",
-                    baseline["after_path"],
-                    attempt["after_path"],
-                    baseline_distance,
-                    title_changed,
-                    cookie_name_delta,
-                    url_changed,
-                    password_gone
-                )
-            else:
-                simhash_distance = self.simhash(attempt["before_page_source"]).distance(attempt["after_simhash"])
-                url_changed = self._url_signature(attempt["before_url"]) != attempt["after_url_sig"]
-                password_gone = attempt.get("before_has_password", True) and not attempt["after_has_password"]
-                login_successful = (
-                    (attempt["before_path"] != attempt["after_path"]) or
-                    url_changed or
-                    password_gone or
-                    (simhash_distance > 7) # experimental threshold
-                )
-                logger.debug(
-                    "Login %s: before_path=%s after_path=%s simhash_distance=%s url_changed=%s password_gone=%s",
-                    "successful" if login_successful else "failed",
-                    attempt["before_path"],
-                    attempt["after_path"],
-                    simhash_distance,
-                    url_changed,
-                    password_gone
-                )
+            # Calculate a success score based on multiple signals comparing the attempt states to the baseline states,
+            # to determine if the login was successful. This is more robust than relying on a single signal like simhash distance, which can be noisy.
+            # All thresholds and weights are selected completely arbitrary with no reasoning whatsoever.
+            # Ideally, a small ML model or something similar could be used.
+            # TODO: if success is unclear, use LLM for final judgement
+            success_score = 0
 
+            # Part 1: if the simhash distance increased significantly compared to the baseline, it's a strong success signal
+            baseline_simhash_distance = baseline_pre_state.simhash().distance(baseline_post_state.simhash())
+            attempt_simhash_distance = pre_state.simhash().distance(post_state.simhash())
+            logger.debug("Simhash distances - Baseline: %s, Attempt: %s", baseline_simhash_distance, attempt_simhash_distance)
+            success_score += max(0, attempt_simhash_distance - baseline_simhash_distance) * 3
+
+            # Part 2: if new cookies are set after the login attempt that were not set in the baseline failed login, it's a strong success signal
+            baseline_post_cookies = {c.get("name") for c in baseline_post_state.cookies}
+            attempt_post_cookies = {c.get("name") for c in post_state.cookies}
+            if len(attempt_post_cookies - baseline_post_cookies) > 0:
+                success_score += 15
+
+            # Part 3: if the title is different from both attempt pre-state and baseline post-state, it's a moderate success signal
+            if post_state.title != pre_state.title and post_state.title != baseline_post_state.title:
+                success_score += 7
+
+            # Part 4: if the path is different from both attempt pre-state and baseline post-state, it's a moderate success signal
+            if post_state.path() != pre_state.path() and post_state.path() != baseline_post_state.path():
+                success_score += 7
+
+            # Part 5: if there are no password inputs in the post-login page but there are in the baseline post-login, it's a moderate success signal
+            if not post_state.has_password_input() and baseline_post_state.has_password_input():
+                success_score += 7
+
+            logger.debug("Calculated success score for credentials %s:%s on %s: %s", username, password, endpoint.url(), success_score)
+            login_successful = success_score >= 20
+
+            endpoint.add_tested_credentials((username, password))
             creds_str = f"{username}:{password}"
             if login_successful:
-                logger.info("Found working credentials for %s: %s", endpoint.url(), creds_str)
+                logger.info("LOGIN SUCCESS on %s with creds %s", endpoint.url(), creds_str)
                 endpoint.working_credentials = creds_str
-            else:
-                logger.info("Credentials %s do not work on %s", creds_str, endpoint.url())
-                endpoint.add_tested_credentials((username, password))
-
-            if login_successful:
                 endpoint.save(only=[Endpoint.working_credentials])
             else:
-                endpoint.save(only=[Endpoint._tested_credentials])
+                logger.info("LOGIN FAILURE on %s with creds %s", creds_str, endpoint.url())
+
         except Exception as exc:
             logger.error("Error testing credentials %s:%s on %s: %s", username, password, endpoint.url(), str(exc))
+            endpoint.add_tested_credentials((username, password))
+        finally:
+            endpoint.save(only=[Endpoint._tested_credentials])
