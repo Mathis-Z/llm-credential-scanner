@@ -68,10 +68,7 @@ class PageState:
     cookies: list[dict]
 
     def cleaned_page_source(self):
-        soup = BeautifulSoup(self.page_source, "html.parser")
-        for script in soup.find_all("script"):
-            script.decompose()
-        return str(soup)
+        return clean_page_source(self.page_source)
 
     def path(self, ignore_params=True):
         parts = urllib.parse.urlparse(self.url)
@@ -105,6 +102,15 @@ def md_simhash(html: str) -> simhash.Simhash:
     md = markdownify(html)
     cleaned_md = re.sub(r'\s+', ' ', md)
     return simhash.Simhash(cleaned_md)
+
+def clean_page_source(html: str) -> str:
+    return str(cleaned_soup(html))
+
+def cleaned_soup(html: str):
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup.find_all(["script", "style", "video", "svg", "object", "embed", "iframe", "audio"]):
+        tag.decompose()
+    return soup
 
 
 class CredTester(DBConnectionMixin, Thread):
@@ -214,9 +220,7 @@ class CredTester(DBConnectionMixin, Thread):
             return None
 
         # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        for script in soup.find_all("script"):
-            script.decompose()
+        soup = cleaned_soup(driver.page_source)
 
         # If the form action host differs (localhost vs 127.0.0.1), re-open on the action host
         current_url = driver.current_url
