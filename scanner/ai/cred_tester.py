@@ -325,7 +325,7 @@ class CredTester(DBConnectionMixin, Thread):
             if not post_state.has_password_input() and baseline_post_state.has_password_input():
                 success_score += 7
 
-            logger.debug("Calculated success score for credentials %s:%s on %s: %s", username, password, endpoint.url(), success_score)
+            logger.debug("Calculated success score %s for credentials %s:%s on %s", success_score, username, password, endpoint.url())
             login_successful = success_score >= 20
 
             endpoint.add_tested_credentials((username, password))
@@ -335,7 +335,7 @@ class CredTester(DBConnectionMixin, Thread):
                 endpoint.working_credentials = creds_str
                 endpoint.save(only=[Endpoint.working_credentials])
             else:
-                logger.info("LOGIN FAILURE on %s with creds %s", creds_str, endpoint.url())
+                logger.info("LOGIN FAILURE on %s with creds %s", endpoint.url(), creds_str)
 
         except Exception as exc:
             logger.error("Error testing credentials %s:%s on %s: %s", username, password, endpoint.url(), str(exc))

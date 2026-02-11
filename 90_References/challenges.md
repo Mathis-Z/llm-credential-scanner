@@ -15,6 +15,10 @@
     => need to use full browser
         - challenge: how to determine when rendering is finished?
         - can have race conditions
+- Multiple valid credentials in online search
+    - some apps have different sets of default creds in different deployment modes
+    - current cred search aborts on first found creds
+    - potential solution: after testing all creds, start cred search for second chance
 - login detection
   - baseline approach works well
     - include many attributes (e.g. cookies, password fields, etc.)
