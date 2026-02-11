@@ -15,6 +15,7 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 import simhash
 from pubsub import pub
 from bs4 import BeautifulSoup
+from markdownify import markdownify
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
 from scanner.ai.llm import get_chat_model
@@ -77,24 +78,12 @@ class CredTester(DBConnectionMixin, Thread):
     def _on_abort(self):
         self.termination_event.set()
 
-    # TODO: code duplication with webenum module
-    def clean_html_for_simhash(self, html: str) -> str:
-        """Cleans HTML content to improve simhash accuracy."""
-        # Remove scripts and styles
-        soup = BeautifulSoup(html, 'html.parser')
-        for script_or_style in soup(['script', 'style', 'link']):
-            script_or_style.decompose()
-        text = soup.get_text()
-        # Normalize whitespace
-        text = re.sub(r'\s+', ' ', text)
-        return text
-
     def simhash(self, html: str) -> simhash.Simhash:
         """Computes the simhash of cleaned HTML content."""
         # TODO: evaluate other simhash techniques like tlsh
-        # TODO: evaluate using just markdown content instead of full HTML
-        cleaned_html = self.clean_html_for_simhash(html)
-        return simhash.Simhash(cleaned_html)
+        md = markdownify(html)
+        cleaned_md = re.sub(r'\s+', ' ', md)
+        return simhash.Simhash(cleaned_md)
 
     def _url_signature(self, url: str) -> str:
         parts = urllib.parse.urlparse(url)
@@ -107,8 +96,8 @@ class CredTester(DBConnectionMixin, Thread):
         if cached:
             return cached
 
-        wrong_username = f"invalid_user_1770763107" # hardcoding to allow LLM response caching
-        wrong_password = f"invalid_pass_1770763107"
+        wrong_username = "invalid_user_1770763107" # hardcoding to allow LLM response caching
+        wrong_password = "invalid_pass_1770763107"
         logger.debug("Capturing failed-login baseline on %s", endpoint.url())
         baseline = self._perform_login_attempt(endpoint, wrong_username, wrong_password, attempt_label="baseline")
         if baseline:

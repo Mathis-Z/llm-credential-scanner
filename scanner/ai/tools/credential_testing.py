@@ -7,6 +7,31 @@ from selenium.webdriver.common.by import By
 
 logger = logging.getLogger('scanner.cred_tester.tools')
 
+def _format_html_element(element) -> str:
+    """Format a Selenium WebElement for logging, showing tag and key attributes."""
+    try:
+        outer_html = element.get_attribute('outerHTML')
+        # Extract just the opening tag by finding the first '>'
+        if '>' in outer_html:
+            # Find the opening tag
+            first_tag_end = outer_html.index('>')
+            # Check if it's a self-closing tag
+            if outer_html[first_tag_end-1] == '/':
+                opening_tag = outer_html[:first_tag_end+1]
+            else:
+                # For non-self-closing tags, extract just the opening tag
+                opening_tag = outer_html[:first_tag_end+1]
+                # Add closing tag
+                tag_name = element.tag_name
+                opening_tag = f"{opening_tag}...</{tag_name}>"
+        else:
+            opening_tag = outer_html
+
+        return opening_tag
+    except Exception as e:
+        logger.debug("Failed to format HTML element: %s", str(e))
+        return f"<{element.tag_name} ...>"
+
 def make_credential_testing_tools(driver: Any):
     """Create LangChain tools bound to a shared Selenium WebDriver session.
 
@@ -19,9 +44,11 @@ def make_credential_testing_tools(driver: Any):
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, selector)
             if len(elements) == 0:
-                return "error: no elements found"
+                return "Error: No elements found"
             if len(elements) > 1:
-                logger.debug("Selector matched %d elements; using first", len(elements))
+                formatted_elements = "\n".join([_format_html_element(el) for el in elements])
+                return "Error: Selector matched multiple elements:\n" + formatted_elements
+
             element = elements[0]
             logger.debug(
                 "Element info: tag=%s id=%s name=%s type=%s form_action=%s",
@@ -48,7 +75,9 @@ def make_credential_testing_tools(driver: Any):
             if len(elements) == 0:
                 return "error: no elements found"
             if len(elements) > 1:
-                logger.debug("Selector matched %d elements; using first", len(elements))
+                formatted_elements = "\n".join([_format_html_element(el) for el in elements])
+                return "Error: Selector matched multiple elements:\n" + formatted_elements
+
             element = elements[0]
             form = None
             try:

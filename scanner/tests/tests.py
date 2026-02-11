@@ -24,6 +24,7 @@ class TestResult:
     found_login_panel: bool | None
     endpoints_num: int
     artifacts_dir: str = ""
+    creds_are_trivial: bool = False
 
 
 class TemporaryScanArtifacts:
@@ -104,7 +105,7 @@ def print_results(results: dict[str, TestResult | None]):
         "Service\nName",
         "Found\nCredentials",
         "Verified\nCredentials",
-        "Verified No\nOther Creds",
+        "Verified No\nInvalid Creds",
         "Found Login\nPanel",
         "Endpoints\nDetected",
         "Artifacts Dir"
@@ -117,11 +118,12 @@ def print_results(results: dict[str, TestResult | None]):
             continue
 
         if result.endpoints_num == 0:
-            table.append(['?', '?', '?', '?', '?', result.endpoints_num, result.artifacts_dir])
+            table.append([service_name, '?', '?', '?', '?', result.endpoints_num, result.artifacts_dir])
+            continue
 
         table.append([
             service_name,
-            'N/A' if result.found_creds is None else colorful_pass_or_fail(result.found_creds),
+            colorful_pass_or_fail(True, annotation="*") if result.creds_are_trivial else colorful_pass_or_fail(result.found_creds),
             colorful_pass_or_fail(result.verified_creds),
             colorful_pass_or_fail(result.verified_no_other_creds),
             colorful_pass_or_fail(result.found_login_panel),
@@ -130,9 +132,10 @@ def print_results(results: dict[str, TestResult | None]):
         ])
 
     print(tabulate(table, headers=headers, tablefmt="simple_grid"))
+    print("* - Credentials are part of default credential lists, so PASS is not fully indicative of success in this case.\n")
 
-def colorful_pass_or_fail(value: bool):
-    return click.style("PASS", fg="green") if value else click.style("FAIL", fg="red")
+def colorful_pass_or_fail(value: bool, annotation: str = '') -> str:
+    return click.style(f"PASS{annotation}", fg="green") if value else click.style(f"FAIL{annotation}", fg="red")
 
 def run_scanner(port, log_path, artifacts_dir, extra_args=None):
     """Run the scanner as a subprocess with the given arguments. Waits for it to complete before returning."""
@@ -155,8 +158,6 @@ def run_scanner(port, log_path, artifacts_dir, extra_args=None):
 
 
 def run_app_test(app_dir_name, artifacts, port, login_path, username, password) -> TestResult:
-    trivial_creds = (username, password) in DEFAULT_CREDS
-
     wait_path = "/" if login_path == "*" else login_path
     with RunDockerCompose(
         app_dir_name,
@@ -172,7 +173,8 @@ def run_app_test(app_dir_name, artifacts, port, login_path, username, password) 
         Settings().configure_cli_arguments(artifacts_dir=artifacts.dir_path)
         init_db()
         r = TestResult(
-            found_creds=None if trivial_creds else found_creds(username, password), # show N/A for trivial creds
+            found_creds=found_creds(username, password),
+            creds_are_trivial=(username, password) in DEFAULT_CREDS,
             verified_creds=verified_creds(username, password, path=login_path),
             verified_no_other_creds=verified_no_other_creds(username, password),
             found_login_panel=found_login_panel(login_path),

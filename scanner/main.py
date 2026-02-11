@@ -1,14 +1,15 @@
 import logging
-import time
 import logging.config
+import time
 import click
+from tabulate import tabulate
 
 from scanner.netscan import NetScanner
 from scanner.webenum import WebEnumerator
 from scanner.ai import CredSearcher, CredTester, KeywordExtractor
 from scanner.settings import Settings
 from scanner.db import init_db, Endpoint, Service
-from tabulate import tabulate
+from scanner.ai.llm_cache import LLMCache
 
 
 def configure_logging(log_level="INFO", log_file: str | None = None):
@@ -129,6 +130,8 @@ def print_scan_summary(start_time):
         tablefmt='grid'
     ) + "\n"
 
+    cache_hit_rate = (LLMCache().cached_requests / LLMCache().total_requests * 100) if LLMCache().total_requests > 0 else 0
+    summary += f"Total number of LLM requests: {LLMCache().total_requests}; cached: {LLMCache().cached_requests} ({cache_hit_rate:.2f}%)\n"
     summary += f"Total scan duration: {time.time() - start_time:.2f} seconds\n"
     logger.info(summary)
 

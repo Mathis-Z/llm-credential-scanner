@@ -9,6 +9,8 @@ from scanner.settings import Settings
 
 class LLMCache:
     _instance = None
+    total_requests = 0
+    cached_requests = 0
 
     def __new__(cls, cache_file: str = "/tmp/llm_cache.json", max_entries: int = 1000):
         if cls._instance is None:
@@ -64,14 +66,18 @@ class LLMCache:
 
     def get(self, inputs: Any) -> Any | None:
         """Retrieve a cached result, or None if not found. Updates timestamp on hit."""
+        self.total_requests += 1
+
         if Settings().disable_llm_cache:
             return None
-        
+
         cache = self._load_cache()
         key = self._hash_inputs(inputs)
-        
+
         if key not in cache:
             return None
+        else:
+            self.cached_requests += 1
 
         cache[key]["timestamp"] = time.time()
         self._save_cache(cache)
