@@ -131,6 +131,14 @@ class CredTester(DBConnectionMixin, Thread):
         filename = f"endpoint-{endpoint.pk}_{host}_{path}_{label}_user-{user}_pass-{pwd}_{phase}_{ts}.png"
         driver.save_screenshot(str(screenshot_dir / filename))
 
+    def wait_for_element(self, driver, selector: str):
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda d: d.find_elements_by_css_selector(selector)
+            )
+        except TimeoutException:
+            pass
+
     def _perform_login_attempt(self, endpoint: Endpoint, username: str, password: str, attempt_label: str = "attempt"):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
@@ -139,6 +147,7 @@ class CredTester(DBConnectionMixin, Thread):
         try:
             try:
                 driver.get(endpoint.url())
+                self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
             except WebDriverException as exc:
                 logger.warning("WebDriver navigation failed for %s: %s", endpoint.url(), str(exc))
                 return None
@@ -165,6 +174,7 @@ class CredTester(DBConnectionMixin, Thread):
                             action_url,
                         )
                         driver.get(action_url)
+                        self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
                         soup = BeautifulSoup(driver.page_source, "html.parser")
                         for script in soup.find_all("script"):
                             script.decompose()
