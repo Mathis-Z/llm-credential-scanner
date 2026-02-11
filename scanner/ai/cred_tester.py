@@ -49,6 +49,15 @@ After calling a tool, wait for the result before calling another tool.
 
 logger = logging.getLogger('scanner.cred_tester')
 
+# set of messages that might indicate a login failure
+NEGATIVE_MESSAGES = ["invalid username", "invalid password", "user does not exist",
+                     "incorrect username", "incorrect password", "login failed",
+                     "authentication failed", "invalid credentials", "wrong username"
+                     "wrong password", "unable to log in", "user not found"
+                     "username not found", "email not found", "password is incorrect",
+                     "no account found with this username", "invalid email",
+                     "login unsuccessful"]
+
 
 @dataclass
 class PageState:
@@ -78,6 +87,13 @@ class PageState:
     def has_password_input(self):
         soup = BeautifulSoup(self.page_source, "html.parser")
         return bool(soup.select("input[type=password]"))
+
+    def common_failure_messages(self, ignore=set()):
+        md = markdownify(self.page_source).lower()
+        return [msg for msg in NEGATIVE_MESSAGES if msg.lower() in md and msg not in ignore]
+
+    def has_common_failure_messages(self, ignore=set()):
+        return len(self.common_failure_messages(ignore)) > 0
 
     def __str__(self):
         return f"PageState(url={self.url}, title={self.title}, cookies={[c.get('name') for c in self.cookies]}, page_len={len(self.page_source)})"
@@ -132,8 +148,10 @@ class CredTester(DBConnectionMixin, Thread):
         if cached:
             return cached
 
-        wrong_username = "invalid_user_1770763107" # hardcoding to allow LLM response caching
-        wrong_password = "invalid_pass_1770763107"
+        # hardcoding to allow LLM response caching
+        # should not be too long to avoid length-errors
+        wrong_username = "invalid_user"
+        wrong_password = "invalid_pass"
         logger.debug("Capturing failed-login baseline on %s", endpoint.url())
         baseline = self.run_llm_login(endpoint, wrong_username, wrong_password, attempt_label="baseline")
 
@@ -287,45 +305,8 @@ class CredTester(DBConnectionMixin, Thread):
             baseline_pre_state, baseline_post_state = self.run_baseline_test(endpoint)
             pre_state, post_state = self.run_llm_login(endpoint, username, password, attempt_label="attempt")
 
-            logger.debug("Testing credentials with states:\nBaseline pre-login: %s\nBaseline post-login: %s\nAttempt pre-login: %s\nAttempt post-login: %s",
-                        baseline_pre_state,
-                        baseline_post_state,
-                        pre_state,
-                        post_state
-            )
-
-            # Calculate a success score based on multiple signals comparing the attempt states to the baseline states,
-            # to determine if the login was successful. This is more robust than relying on a single signal like simhash distance, which can be noisy.
-            # All thresholds and weights are selected completely arbitrary with no reasoning whatsoever.
-            # Ideally, a small ML model or something similar could be used.
-            # TODO: if success is unclear, use LLM for final judgement
-            success_score = 0
-
-            # Part 1: if the simhash distance increased significantly compared to the baseline, it's a strong success signal
-            baseline_simhash_distance = baseline_pre_state.simhash().distance(baseline_post_state.simhash())
-            attempt_simhash_distance = pre_state.simhash().distance(post_state.simhash())
-            logger.debug("Simhash distances - Baseline: %s, Attempt: %s", baseline_simhash_distance, attempt_simhash_distance)
-            success_score += max(0, attempt_simhash_distance - baseline_simhash_distance) * 3
-
-            # Part 2: if new cookies are set after the login attempt that were not set in the baseline failed login, it's a strong success signal
-            baseline_post_cookies = {c.get("name") for c in baseline_post_state.cookies}
-            attempt_post_cookies = {c.get("name") for c in post_state.cookies}
-            if len(attempt_post_cookies - baseline_post_cookies) > 0:
-                success_score += 15
-
-            # Part 3: if the title is different from both attempt pre-state and baseline post-state, it's a moderate success signal
-            if post_state.title != pre_state.title and post_state.title != baseline_post_state.title:
-                success_score += 7
-
-            # Part 4: if the path is different from both attempt pre-state and baseline post-state, it's a moderate success signal
-            if post_state.path() != pre_state.path() and post_state.path() != baseline_post_state.path():
-                success_score += 7
-
-            # Part 5: if there are no password inputs in the post-login page but there are in the baseline post-login, it's a moderate success signal
-            if not post_state.has_password_input() and baseline_post_state.has_password_input():
-                success_score += 7
-
-            logger.debug("Calculated success score %s for credentials %s:%s on %s", success_score, username, password, endpoint.url())
+            success_score = self.calculate_login_success_score(baseline_pre_state, baseline_post_state, pre_state, post_state)
+            logger.debug("Calculated success score for credentials %s:%s on %s: %s", username, password, endpoint.url(), success_score)
             login_successful = success_score >= 20
 
             endpoint.add_tested_credentials((username, password))
@@ -342,3 +323,53 @@ class CredTester(DBConnectionMixin, Thread):
             endpoint.add_tested_credentials((username, password))
         finally:
             endpoint.save(only=[Endpoint._tested_credentials])
+
+    def calculate_login_success_score(self,  baseline_pre_state, baseline_post_state, pre_state, post_state):
+        logger.debug("Testing credentials with states:\nBaseline pre-login: %s\nBaseline post-login: %s\nAttempt pre-login: %s\nAttempt post-login: %s",
+                    baseline_pre_state,
+                    baseline_post_state,
+                    pre_state,
+                    post_state
+        )
+
+        # Calculate a success score based on multiple signals comparing the attempt states to the baseline states,
+        # to determine if the login was successful. This is more robust than relying on a single signal like simhash distance, which can be noisy.
+        # All thresholds and weights are selected completely arbitrary with no reasoning whatsoever.
+        # Ideally, a small ML model or something similar could be used.
+        # TODO: if success is unclear, use LLM for final judgement
+        success_score = 0
+
+        # Part 1: if the simhash distance increased significantly compared to the baseline, it's a strong success signal
+        baseline_simhash_distance = baseline_pre_state.simhash().distance(baseline_post_state.simhash())
+        attempt_simhash_distance = pre_state.simhash().distance(post_state.simhash())
+        logger.debug("Simhash distances - Baseline: %s, Attempt: %s", baseline_simhash_distance, attempt_simhash_distance)
+        success_score += max(0, attempt_simhash_distance - baseline_simhash_distance) * 2
+
+        # Part 2: if new cookies are set after the login attempt that were not set in the baseline failed login, it's a strong success signal
+        baseline_post_cookies = {c.get("name") for c in baseline_post_state.cookies}
+        attempt_post_cookies = {c.get("name") for c in post_state.cookies}
+        if len(attempt_post_cookies - baseline_post_cookies) > 0:
+            success_score += 15
+        else:
+            success_score -= 7
+
+        # Part 3: if the title is different from both attempt pre-state and baseline post-state, it's a moderate success signal
+        if post_state.title != pre_state.title and post_state.title != baseline_post_state.title:
+            success_score += 7
+
+        # Part 4: if the path is different from both attempt pre-state and baseline post-state, it's a moderate success signal
+        if post_state.path() != pre_state.path() and post_state.path() != baseline_post_state.path():
+            success_score += 7
+
+        # Part 5: if there are no password inputs in the post-login page but there are in the baseline post-login, it's a moderate success signal
+        if not post_state.has_password_input() and baseline_post_state.has_password_input():
+            success_score += 7
+
+        # Part 6: if the baseline post-login page has negative messages but the attempt post-login does not, that's another success signal
+        ignore = set(pre_state.common_failure_messages()) | set(baseline_pre_state.common_failure_messages())
+        if baseline_post_state.has_common_failure_messages(ignore) and not post_state.has_common_failure_messages(ignore):
+            success_score += 7
+        if post_state.has_common_failure_messages(ignore):
+            success_score -= 7
+
+        return success_score
