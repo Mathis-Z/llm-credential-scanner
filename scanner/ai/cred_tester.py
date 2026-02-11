@@ -12,6 +12,7 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.common.by import By
 import simhash
 from pubsub import pub
 from bs4 import BeautifulSoup
@@ -134,7 +135,7 @@ class CredTester(DBConnectionMixin, Thread):
     def wait_for_element(self, driver, selector: str):
         try:
             WebDriverWait(driver, 10).until(
-                lambda d: d.find_elements_by_css_selector(selector)
+                lambda d: d.find_elements(By.CSS_SELECTOR, selector)
             )
         except TimeoutException:
             pass
