@@ -31,4 +31,6 @@
 - pages sometimes contain huge amounts of CSS (style tags), blowing up even 256K context windows
 - login can have multiple steps
     - after the first button click, we might need to wait for the next form to appear
-    
+- wrong certificates
+    - local apps can have invalid certificates, causing cred tester and similar that user selected to fail
+    - easy fix is to just ignore certifcates and skip all warning sites
