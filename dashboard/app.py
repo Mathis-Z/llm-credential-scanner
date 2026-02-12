@@ -52,8 +52,8 @@ def _list_runs():
     for run_path in BASE_DIR.iterdir():
         if not run_path.is_dir():
             continue
-        if not run_path.name.startswith("scanner-test-"):
-            continue
+        # if not run_path.name.startswith("scanner-test-"):
+        #     continue
         db_path = run_path / "scanner.db"
         stat = run_path.stat()
         runs.append({
