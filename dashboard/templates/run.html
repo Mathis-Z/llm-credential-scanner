@@ -146,7 +146,7 @@
     {% if data.service_screenshots %}
         <div class="service-shot-groups">
             {% for service in data.service_screenshots %}
-                <details class="service-collapse" open>
+                <details class="service-collapse" data-service-key="{{ service.service_id if service.service_id is not none else loop.index0 }}" open>
                     <summary class="service-collapse-summary">
                         <div>
                             <div class="shot-title">{{ service.service_url }}</div>
@@ -272,6 +272,7 @@ const pollUrl = '{{ url_for("run_poll", run_name=run_name) }}';
 const scannerTailUrl = '{{ url_for("log_tail", run_name=run_name, log_name="scanner") }}';
 const dockerTailUrl = '{{ url_for("log_tail", run_name=run_name, log_name="docker") }}';
 const reloadKey = 'runReloadState';
+const collapseKey = `runCollapseState:${{ run_name | tojson }}`;
 
 function openModal(src) {
     modalImg.src = src;
@@ -369,6 +370,35 @@ function storeScrollState() {
     sessionStorage.setItem(reloadKey, JSON.stringify(state));
 }
 
+function storeCollapseState() {
+    const states = {};
+    document.querySelectorAll('.service-collapse').forEach((details) => {
+        const key = details.dataset.serviceKey;
+        if (key) {
+            states[key] = details.open;
+        }
+    });
+    sessionStorage.setItem(collapseKey, JSON.stringify(states));
+}
+
+function restoreCollapseState() {
+    const raw = sessionStorage.getItem(collapseKey);
+    if (!raw) {
+        return;
+    }
+    try {
+        const states = JSON.parse(raw);
+        document.querySelectorAll('.service-collapse').forEach((details) => {
+            const key = details.dataset.serviceKey;
+            if (key && Object.prototype.hasOwnProperty.call(states, key)) {
+                details.open = !!states[key];
+            }
+        });
+    } catch (error) {
+        return;
+    }
+}
+
 function restoreScrollState() {
     const raw = sessionStorage.getItem(reloadKey);
     if (!raw) {
@@ -392,6 +422,13 @@ function restoreScrollState() {
 }
 
 restoreScrollState();
+restoreCollapseState();
+
+document.querySelectorAll('.service-collapse').forEach((details) => {
+    details.addEventListener('toggle', () => {
+        storeCollapseState();
+    });
+});
 
 async function pollRunState() {
     try {
@@ -413,6 +450,7 @@ async function pollRunState() {
             }
 
             if (dbChanged || shotsChanged) {
+                storeCollapseState();
                 storeScrollState();
                 window.location.reload();
                 return;
