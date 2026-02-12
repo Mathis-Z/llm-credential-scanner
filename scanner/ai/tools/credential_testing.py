@@ -38,6 +38,22 @@ def make_credential_testing_tools(driver: Any):
     The returned tool callables close over the provided ``driver`` so the agent
     can reuse a single browser session across multiple tool calls.
     """
+    def _prepare_element(element) -> None:
+        try:
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+                element,
+            )
+            time.sleep(0.2)
+        except Exception as exc:
+            logger.debug("Failed to scroll element into view: %s", exc)
+
+        try:
+            if element.is_displayed() and element.is_enabled():
+                element.click()
+        except Exception as exc:
+            logger.debug("Failed to focus element before input: %s", exc)
+
     @tool(description="Insert text into a field specified by a CSS selector in the shared browser session")
     def insert_text_into_field(selector: str, text: str) -> str:
         logger.debug("Inserting text into field with selector: %s", selector)
@@ -50,6 +66,7 @@ def make_credential_testing_tools(driver: Any):
                 return "Error: Selector matched multiple elements:\n" + formatted_elements
 
             element = elements[0]
+            _prepare_element(element)
             element.clear()
             element.send_keys(text)
         except Exception as e:
@@ -69,6 +86,7 @@ def make_credential_testing_tools(driver: Any):
                 return "Error: Selector matched multiple elements:\n" + formatted_elements
 
             element = elements[0]
+            _prepare_element(element)
             form = None
             try:
                 form = element.find_element(By.XPATH, "ancestor::form[1]")
@@ -83,7 +101,10 @@ def make_credential_testing_tools(driver: Any):
                 form.get_attribute("action") if form else None,
                 form.get_attribute("method") if form else None,
             )
-            element.click()
+            try:
+                element.click()
+            except Exception:
+                driver.execute_script("arguments[0].click();", element)
             time.sleep(1)
         except Exception as e:
             return f"error: {str(e)}"
