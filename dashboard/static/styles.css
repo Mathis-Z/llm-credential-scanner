@@ -308,6 +308,27 @@ body {
     gap: 10px;
 }
 
+.service-keyword-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.service-keyword-card {
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: #fffefc;
+    display: grid;
+    gap: 12px;
+}
+
+.service-keyword-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
 .keyword-pill {
     display: inline-flex;
     align-items: center;
@@ -340,6 +361,42 @@ body {
 .shot-groups {
     display: grid;
     gap: 20px;
+}
+
+.service-shot-groups {
+    display: grid;
+    gap: 18px;
+}
+
+.service-collapse {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: #fffefc;
+    overflow: hidden;
+}
+
+.service-collapse-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.service-collapse-summary::-webkit-details-marker {
+    display: none;
+}
+
+.service-collapse[open] .service-collapse-summary {
+    border-bottom: 1px solid var(--border);
+}
+
+.service-collapse-body {
+    padding: 16px;
+    display: grid;
+    gap: 16px;
 }
 
 .shot-group {

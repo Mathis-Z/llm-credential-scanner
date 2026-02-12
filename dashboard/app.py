@@ -176,6 +176,8 @@ def _group_screenshots(shots, endpoint_map):
             {
                 "endpoint_pk": meta["endpoint_pk"],
                 "endpoint_url": endpoint.get("url"),
+            "service_id": endpoint.get("service_id"),
+            "service_url": endpoint.get("service_url"),
                 "host_path": meta["host_path"],
                 "label": meta["label"],
                 "user": meta["user"],
@@ -215,6 +217,8 @@ def _load_run_data(run_path: Path):
         "screenshots": [],
         "screenshot_groups": [],
         "screenshot_unparsed": [],
+        "service_keywords": [],
+        "service_screenshots": [],
         "services": [],
         "endpoints": [],
         "found_credentials": [],
@@ -265,6 +269,7 @@ def _load_run_data(run_path: Path):
         found_credentials = []
         login_panels = []
         keyword_counts = {}
+        service_keyword_map = {}
         for row in endpoints:
             service = service_map.get(row["service_id"])
             endpoint_url = None
@@ -273,6 +278,7 @@ def _load_run_data(run_path: Path):
             item = {
                 "pk": row["pk"],
                 "service_id": row["service_id"],
+                "service_url": service["url"] if service else None,
                 "path": row["path"],
                 "is_login": bool(row["is_login"]),
                 "working_credentials": row["working_credentials"] or "",
@@ -283,6 +289,12 @@ def _load_run_data(run_path: Path):
 
             for keyword in item["keywords"]:
                 keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+                if service:
+                    service_entry = service_keyword_map.setdefault(
+                        service["pk"],
+                        {"service_id": service["pk"], "service_url": service["url"], "counts": {}}
+                    )
+                    service_entry["counts"][keyword] = service_entry["counts"].get(keyword, 0) + 1
 
             endpoint_list.append(item)
 
@@ -300,11 +312,55 @@ def _load_run_data(run_path: Path):
             for key, count in sorted(keyword_counts.items(), key=lambda kv: (-kv[1], kv[0]))
         ]
 
+        service_keywords = []
+        for service in data["services"]:
+            entry = service_keyword_map.get(service["pk"], {"counts": {}})
+            keywords = [
+                {"keyword": key, "count": count}
+                for key, count in sorted(entry["counts"].items(), key=lambda kv: (-kv[1], kv[0]))
+            ]
+            service_keywords.append({
+                "service_id": service["pk"],
+                "service_url": service["url"],
+                "keyword_total": len(keywords),
+                "keywords": keywords
+            })
+        service_keywords.sort(key=lambda s: s["service_url"])
+        data["service_keywords"] = service_keywords
+
         endpoint_map = {item["pk"]: item for item in endpoint_list}
         if data["screenshots"]:
             groups, unparsed = _group_screenshots(data["screenshots"], endpoint_map)
             data["screenshot_groups"] = groups
             data["screenshot_unparsed"] = unparsed
+
+            service_shots = {}
+            for group in groups:
+                service_id = group.get("service_id")
+                service_url = group.get("service_url") or "Unknown service"
+                key = service_id if service_id is not None else f"unknown:{group.get('endpoint_pk')}"
+                entry = service_shots.setdefault(
+                    key,
+                    {
+                        "service_id": service_id,
+                        "service_url": service_url,
+                        "groups": [],
+                        "screenshot_count": 0
+                    }
+                )
+                entry["groups"].append(group)
+                entry["screenshot_count"] += len(group.get("before", [])) + len(group.get("after", []))
+
+            for entry in service_shots.values():
+                entry["group_count"] = len(entry["groups"])
+                entry["groups"].sort(
+                    key=lambda g: (g.get("endpoint_url") or g.get("host_path") or "")
+                )
+
+            data["service_screenshots"] = sorted(
+                service_shots.values(),
+                key=lambda s: s["service_url"]
+            )
 
         data["summary"]["services"] = len(data["services"])
         data["summary"]["endpoints"] = len(endpoint_list)

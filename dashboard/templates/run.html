@@ -110,12 +110,26 @@
         <h3>Extracted keywords</h3>
         <span class="pill">{{ data.summary.keywords }}</span>
     </div>
-    {% if data.keywords %}
-        <div class="keyword-grid">
-            {% for item in data.keywords %}
-                <div class="keyword-pill">
-                    <span class="keyword-text">{{ item.keyword }}</span>
-                    <span class="keyword-count">{{ item.count }}</span>
+    {% if data.service_keywords %}
+        <div class="service-keyword-grid">
+            {% for service in data.service_keywords %}
+                <div class="service-keyword-card">
+                    <div class="service-keyword-header">
+                        <div class="service-url">{{ service.service_url }}</div>
+                        <span class="pill">{{ service.keyword_total }}</span>
+                    </div>
+                    {% if service.keywords %}
+                        <div class="keyword-grid">
+                            {% for item in service.keywords %}
+                                <div class="keyword-pill">
+                                    <span class="keyword-text">{{ item.keyword }}</span>
+                                    <span class="keyword-count">{{ item.count }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty">No keywords extracted for this service.</div>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
@@ -129,50 +143,65 @@
         <h3>Screenshots</h3>
         <span class="pill">{{ data.summary.screenshots }}</span>
     </div>
-    {% if data.screenshot_groups %}
-        <div class="shot-groups">
-            {% for group in data.screenshot_groups %}
-                <div class="shot-group">
-                    <div class="shot-header">
+    {% if data.service_screenshots %}
+        <div class="service-shot-groups">
+            {% for service in data.service_screenshots %}
+                <details class="service-collapse" open>
+                    <summary class="service-collapse-summary">
                         <div>
-                            <div class="shot-title">{{ group.endpoint_url or group.host_path }}</div>
-                            <div class="shot-sub">Endpoint {{ group.endpoint_pk }} · {{ group.label }} · username: {{ group.user }} · password: {{ group.password }}</div>
+                            <div class="shot-title">{{ service.service_url }}</div>
+                            <div class="shot-sub">{{ service.group_count }} groups · {{ service.screenshot_count }} shots</div>
                         </div>
-                        <span class="pill">{{ (group.before | length) + (group.after | length) }}</span>
-                    </div>
-                    <div class="shot-row">
-                        <div class="shot-stage">
-                            <div class="shot-stage-title">Before</div>
-                            <div class="shots-grid">
-                                {% for shot in group.before %}
-                                    <div class="shot-card">
-                                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
-                                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
-                                        </button>
-                                        <div class="shot-label">{{ shot.name }}</div>
+                        <span class="pill">{{ service.screenshot_count }}</span>
+                    </summary>
+                    <div class="service-collapse-body">
+                        <div class="shot-groups">
+                            {% for group in service.groups %}
+                                <div class="shot-group">
+                                    <div class="shot-header">
+                                        <div>
+                                            <div class="shot-title">{{ group.endpoint_url or group.host_path }}</div>
+                                            <div class="shot-sub">Endpoint {{ group.endpoint_pk }} · {{ group.label }} · username: {{ group.user }} · password: {{ group.password }}</div>
+                                        </div>
+                                        <span class="pill">{{ (group.before | length) + (group.after | length) }}</span>
                                     </div>
-                                {% else %}
-                                    <div class="empty">No before screenshots.</div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="shot-stage">
-                            <div class="shot-stage-title">After</div>
-                            <div class="shots-grid">
-                                {% for shot in group.after %}
-                                    <div class="shot-card">
-                                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
-                                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
-                                        </button>
-                                        <div class="shot-label">{{ shot.name }}</div>
+                                    <div class="shot-row">
+                                        <div class="shot-stage">
+                                            <div class="shot-stage-title">Before</div>
+                                            <div class="shots-grid">
+                                                {% for shot in group.before %}
+                                                    <div class="shot-card">
+                                                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
+                                                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                                        </button>
+                                                        <div class="shot-label">{{ shot.name }}</div>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="empty">No before screenshots.</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="shot-stage">
+                                            <div class="shot-stage-title">After</div>
+                                            <div class="shots-grid">
+                                                {% for shot in group.after %}
+                                                    <div class="shot-card">
+                                                        <button class="shot-button" data-full="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" aria-label="Open screenshot {{ shot.name }}">
+                                                            <img src="{{ url_for('screenshot', run_name=run_name, filename=shot.name) }}" alt="{{ shot.name }}">
+                                                        </button>
+                                                        <div class="shot-label">{{ shot.name }}</div>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="empty">No after screenshots.</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
                                     </div>
-                                {% else %}
-                                    <div class="empty">No after screenshots.</div>
-                                {% endfor %}
-                            </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
-                </div>
+                </details>
             {% endfor %}
         </div>
     {% else %}
