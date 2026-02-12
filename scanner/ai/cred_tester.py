@@ -254,10 +254,10 @@ class CredTester(DBConnectionMixin, Thread):
             cookies=driver.get_cookies()
         )
 
-    def wait_for_element(self, driver, selector: str):
+    def wait_for_element(self, driver, selector: str, timeout_seconds: int = 10):
         """Waits for an element matching the given CSS selector to be present in the DOM, up to a timeout."""
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, timeout_seconds).until(
                 lambda d: d.find_elements(By.CSS_SELECTOR, selector)
             )
         except TimeoutException:
@@ -270,6 +270,13 @@ class CredTester(DBConnectionMixin, Thread):
             self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
         except TimeoutException as exc:
             logger.warning("WebDriver navigation timed out for %s: %s", url, str(exc))
+            try:
+                driver.execute_script("window.stop();")
+            except Exception:
+                pass
+            self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]", timeout_seconds=3)
+            if driver.find_elements(By.CSS_SELECTOR, "input[type=password], input[type=text], input[type=email]"):
+                return True
             return False
         except WebDriverException as exc:
             logger.warning("WebDriver navigation failed for %s: %s", url, str(exc))
@@ -299,6 +306,13 @@ class CredTester(DBConnectionMixin, Thread):
                         self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
                     except TimeoutException as exc:
                         logger.warning("WebDriver navigation timed out for %s: %s", action_url, str(exc))
+                        try:
+                            driver.execute_script("window.stop();")
+                        except Exception:
+                            pass
+                        self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]", timeout_seconds=3)
+                        if driver.find_elements(By.CSS_SELECTOR, "input[type=password], input[type=text], input[type=email]"):
+                            return True
                         return False
                     except WebDriverException as exc:
                         logger.warning("WebDriver navigation failed for %s: %s", action_url, str(exc))

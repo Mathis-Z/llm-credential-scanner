@@ -67,8 +67,14 @@ def make_credential_testing_tools(driver: Any):
 
             element = elements[0]
             _prepare_element(element)
-            element.clear()
-            element.send_keys(text)
+            try:
+                element.clear()
+                element.send_keys(text)
+            except Exception:
+                driver.execute_script("arguments[0].value = '';", element)
+                driver.execute_script("arguments[0].value = arguments[1];", element, text)
+                driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", element)
+                driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", element)
         except Exception as e:
             return f"error: {str(e)}"
         return "ok"
