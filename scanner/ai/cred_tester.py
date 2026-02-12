@@ -263,14 +263,17 @@ class CredTester(DBConnectionMixin, Thread):
         except TimeoutException:
             pass
 
-    def visit_login_panel(self, driver, url: str):
+    def visit_login_panel(self, driver, url: str) -> bool:
         """Navigates to the login panel URL and waits for it to load, handling potential host mismatches between the initial URL and the form action URL."""
         try:
             driver.get(url)
             self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
+        except TimeoutException as exc:
+            logger.warning("WebDriver navigation timed out for %s: %s", url, str(exc))
+            return False
         except WebDriverException as exc:
             logger.warning("WebDriver navigation failed for %s: %s", url, str(exc))
-            return None
+            return False
 
         # Remove all script tags and their contents from the HTML source (to prevent overloading LLM)
         soup = cleaned_soup(driver.page_source)
@@ -291,8 +294,17 @@ class CredTester(DBConnectionMixin, Thread):
                         current_url,
                         action_url,
                     )
-                    driver.get(action_url)
-                    self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
+                    try:
+                        driver.get(action_url)
+                        self.wait_for_element(driver, "input[type=password], input[type=text], input[type=email]")
+                    except TimeoutException as exc:
+                        logger.warning("WebDriver navigation timed out for %s: %s", action_url, str(exc))
+                        return False
+                    except WebDriverException as exc:
+                        logger.warning("WebDriver navigation failed for %s: %s", action_url, str(exc))
+                        return False
+
+        return True
 
 
     def run_llm_login(self, endpoint: Endpoint, username: str, password: str, attempt_label: str = "attempt") -> tuple[PageState, PageState]:
@@ -305,9 +317,14 @@ class CredTester(DBConnectionMixin, Thread):
         options.add_argument("--ignore-certificate-errors")
         options.add_argument("--allow-insecure-localhost")
         options.add_argument("--allow-running-insecure-content")
+        options.page_load_strategy = "eager"
 
         with webdriver.Chrome(options=options) as driver:
-            self.visit_login_panel(driver, endpoint.url())
+            driver.set_page_load_timeout(30)
+            driver.set_script_timeout(30)
+
+            if not self.visit_login_panel(driver, endpoint.url()):
+                raise RuntimeError(f"Failed to load login panel: {endpoint.url()}")
 
             self.save_screenshot(driver, endpoint, username, password, attempt_label, "before")
             pre_login_state = self.record_page_state(driver)
