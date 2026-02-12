@@ -4,6 +4,9 @@ Provides common BaseModel and DB connection.
 """
 import os
 import logging
+import threading
+import queue
+from dataclasses import dataclass
 from pathlib import Path
 from playhouse.pool import PooledSqliteDatabase
 import peewee as pw
@@ -15,6 +18,63 @@ logger = logging.getLogger("scanner.db")
 # Create a DatabaseProxy that will be bound later
 # this is required for the tests because I want temporary DBs for each test
 DB = pw.DatabaseProxy()
+
+DB_WRITE_TIMEOUT_SECONDS = 60
+
+
+@dataclass
+class _DBWriteTask:
+    func: callable
+    done_event: threading.Event
+    result: object | None = None
+    error: Exception | None = None
+
+
+class DBWriteQueue:
+    def __init__(self):
+        self._queue: queue.Queue[_DBWriteTask | None] = queue.Queue()
+        self._thread: threading.Thread | None = None
+        self._lock = threading.Lock()
+
+    def start(self):
+        with self._lock:
+            if self._thread and self._thread.is_alive():
+                return
+            self._thread = threading.Thread(target=self._run, name="db-writer", daemon=True)
+            self._thread.start()
+
+    def submit(self, func: callable, timeout: int | None = None):
+        self.start()
+        task = _DBWriteTask(func=func, done_event=threading.Event())
+        self._queue.put(task)
+
+        wait_timeout = timeout if timeout is not None else DB_WRITE_TIMEOUT_SECONDS
+        if not task.done_event.wait(wait_timeout):
+            raise TimeoutError(f"Database operation timed out after {wait_timeout} seconds")
+        if task.error:
+            raise task.error
+        return task.result
+
+    def _run(self):
+        while True:
+            task = self._queue.get()
+            if task is None:
+                break
+            try:
+                with DB.connection_context():
+                    task.result = task.func()
+            except Exception as exc:
+                logger.error("Error in DB operation: %s", exc)
+                task.error = exc
+            finally:
+                task.done_event.set()
+
+
+DB_WRITE_QUEUE = DBWriteQueue()
+
+
+def submit_db_write(func: callable, timeout: int | None = None):
+    return DB_WRITE_QUEUE.submit(func, timeout=timeout)
 
 def init_db(path: str | None = None):
     """Initialize database connection and tables. Call after Settings is configured."""
@@ -41,6 +101,8 @@ def init_db(path: str | None = None):
         # Bind the proxy to the real database
         DB.initialize(real_db)
 
+        DB_WRITE_QUEUE.start()
+
         # Now create tables
         from scanner.db.models import Service, Endpoint
         DB.create_tables([Service, Endpoint], safe=True)
@@ -54,10 +116,39 @@ class BaseModel(pw.Model):
 
     @classmethod
     def create(cls, **query):
-        with DB.atomic():
-            record = super().create(**query)
-        pub.sendMessage(f'{cls.__name__}.created', record=record)
+        def _create():
+            with DB.atomic():
+                return super(BaseModel, cls).create(**query)
+
+        record = submit_db_write(_create)
+        pub.sendMessage(f"{cls.__name__}.created", record=record)
         return record
+
+    @classmethod
+    def get_or_create(cls, **query):
+        defaults = query.pop("defaults", None)
+
+        def _get_or_create():
+            with DB.atomic():
+                try:
+                    return super(BaseModel, cls).get(**query), False
+                except cls.DoesNotExist:
+                    create_data = dict(query)
+                    if defaults:
+                        create_data.update(defaults)
+                    return super(BaseModel, cls).create(**create_data), True
+
+        record, created = submit_db_write(_get_or_create)
+        if created:
+            pub.sendMessage(f"{cls.__name__}.created", record=record)
+        return record, created
+
+    def save(self, *args, **kwargs):
+        def _save():
+            with DB.atomic():
+                return super().save(*args, **kwargs)
+
+        return submit_db_write(_save)
 
 
 class DBConnectionMixin:

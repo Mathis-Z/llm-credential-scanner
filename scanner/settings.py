@@ -30,6 +30,8 @@ class Settings:
 
         self.artifacts_dir = Path(os.getcwd()) / os.getenv("ARTIFACTS_DIR", "scan_artifacts")
         self.disable_llm_cache = os.getenv("DISABLE_LLM_CACHE", None) is not None
+        self.max_webdrivers = int(os.getenv("MAX_WEBDRIVERS", "1"))
+        self.max_webenum_workers = int(os.getenv("MAX_WEBENUM_WORKERS", "4"))
         self._initialized = True
 
     def _require_env_var(self, var_name: str) -> str:
@@ -41,6 +43,12 @@ class Settings:
     def configure_cli_arguments(self, **kwargs):
         self.artifacts_dir = Path(os.getcwd()) / kwargs.get("artifacts_dir", self.artifacts_dir)
         self.disable_llm_cache = kwargs.get("disable_llm_cache", self.disable_llm_cache)
+        max_webdrivers = kwargs.get("max_webdrivers")
+        if max_webdrivers is not None:
+            self.max_webdrivers = int(max_webdrivers)
+        max_webenum_workers = kwargs.get("max_webenum_workers")
+        if max_webenum_workers is not None:
+            self.max_webenum_workers = int(max_webenum_workers)
 
     @property
     def db_path(self) -> str:

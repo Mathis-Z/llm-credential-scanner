@@ -6,6 +6,8 @@ to find potential default credentials.
 import re
 import time
 import urllib.parse
+import queue
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 from threading import Thread, Event
@@ -119,10 +121,22 @@ class CredTester(DBConnectionMixin, Thread):
         self.termination_event = Event()
         self.cred_searcher_done_event = Event()
         self.failed_login_baselines = {}
+        self.task_queue: queue.Queue[tuple[int, str, str] | None] = queue.Queue()
+        self.in_flight: set[tuple[int, str, str]] = set()
+        self.in_flight_lock = threading.Lock()
+        self.max_workers = max(1, Settings().max_webdrivers)
+        self.workers: list[Thread] = []
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.cred_searcher_done_event.set, 'cred_searcher.done')
 
     def run(self):
+        self.workers = [
+            Thread(target=self._worker, name=f"cred-tester-{i}", daemon=True)
+            for i in range(self.max_workers)
+        ]
+        for worker in self.workers:
+            worker.start()
+
         while not self.termination_event.is_set():
             # aborts early for a service if any endpoint is found with working creds
             unresolved_login_panels: list[Endpoint] = [panel for panel in Endpoint.select()
@@ -130,17 +144,56 @@ class CredTester(DBConnectionMixin, Thread):
                 if len(panel.untested_credentials()) > 0 and not panel.service.endpoint_with_working_creds_found()
             ]
 
-            if len(unresolved_login_panels) == 0 and self.cred_searcher_done_event.is_set():
-                break
-
             for login_panel in unresolved_login_panels:
                 for (username, password) in login_panel.untested_credentials():
-                    self.test_credentials(login_panel, username, password)
+                    key = (login_panel.pk, username, password)
+                    with self.in_flight_lock:
+                        if key in self.in_flight:
+                            continue
+                        self.in_flight.add(key)
+                    self.task_queue.put(key)
+            with self.in_flight_lock:
+                in_flight_empty = not self.in_flight
 
-            self.termination_event.wait(3)
+            if (
+                len(unresolved_login_panels) == 0
+                and self.cred_searcher_done_event.is_set()
+                and self.task_queue.empty()
+                and in_flight_empty
+            ):
+                break
+
+            self.termination_event.wait(2)
+
+        self.termination_event.set()
+        for _ in self.workers:
+            self.task_queue.put(None)
+        for worker in self.workers:
+            worker.join()
 
         pub.sendMessage('cred_tester.done')
         logger.info("CredTester exited")
+
+    def _worker(self):
+        while not self.termination_event.is_set():
+            try:
+                item = self.task_queue.get(timeout=1)
+            except queue.Empty:
+                continue
+
+            if item is None:
+                break
+
+            endpoint_id, username, password = item
+            try:
+                endpoint = Endpoint.get_by_id(endpoint_id)
+                if endpoint.service.endpoint_with_working_creds_found():
+                    continue
+                self.test_credentials(endpoint, username, password)
+            finally:
+                with self.in_flight_lock:
+                    self.in_flight.discard(item)
+                self.task_queue.task_done()
 
     def _on_abort(self):
         self.termination_event.set()

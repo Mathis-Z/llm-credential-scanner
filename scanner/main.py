@@ -64,14 +64,16 @@ logger = logging.getLogger("scanner.main")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--log-file", default=None, help="Path to the log file")
 @click.option("--max-webdrivers", default=1, help="Maximum number of concurrent WebDriver instances for credential testing")
+@click.option("--max-webenum-workers", default=4, help="Maximum number of concurrent web enumeration workers")
 @click.option("--artifacts-dir", default=None, help="Base directory for scan artifacts (DB, screenshots, logs)")
 @click.option("--disable_llm_cache", is_flag=True, help="Do not cache LLM responses")
-def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir, disable_llm_cache):
-    run(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir, disable_llm_cache)
+def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache):
+    run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache)
 
-def run(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir, disable_llm_cache):
+def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache):
     Settings().configure_cli_arguments(
         max_webdrivers=max_webdrivers,
+        max_webenum_workers=max_webenum_workers,
         artifacts_dir=artifacts_dir,
         disable_llm_cache=disable_llm_cache
     )

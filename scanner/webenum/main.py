@@ -23,6 +23,7 @@ from markdownify import markdownify
 from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
 from scanner.ai.tools.url_fetching import fetch_url
+from scanner.settings import Settings
 
 # relative to this file
 WORDLIST_RELATIVE_PATH = 'wordlist.txt'
@@ -35,13 +36,26 @@ class WebEnumerator(threading.Thread):
     def __init__(self):
         super().__init__()
         self.workers = []
+        self.pending_services: queue.Queue[Service] = queue.Queue()
+        self.max_workers = max(1, Settings().max_webenum_workers)
+        self.worker_semaphore = threading.BoundedSemaphore(self.max_workers)
+        self.dispatcher_thread: threading.Thread | None = None
         self.netscan_done = threading.Event()
         pub.subscribe(self._on_service_created, 'Service.created')
         pub.subscribe(self._on_netscan_done, 'netscanner.done')
         pub.subscribe(self._on_netscan_done, 'abort')
 
     def run(self):
+        self.dispatcher_thread = threading.Thread(
+            target=self._dispatch_services,
+            name="webenum-dispatcher",
+            daemon=True
+        )
+        self.dispatcher_thread.start()
         self.netscan_done.wait()
+
+        if self.dispatcher_thread:
+            self.dispatcher_thread.join()
 
         for worker in self.workers:
             worker.join()
@@ -50,18 +64,31 @@ class WebEnumerator(threading.Thread):
         logger.info("WebEnumerator done.")
 
     def _on_service_created(self, record: Service):
-        new_worker = WebEnumWorker(record)
-        new_worker.start()
-        self.workers.append(new_worker)
+        self.pending_services.put(record)
 
     def _on_netscan_done(self):
         self.netscan_done.set()
 
+    def _dispatch_services(self):
+        while True:
+            try:
+                service = self.pending_services.get(timeout=1)
+            except queue.Empty:
+                if self.netscan_done.is_set():
+                    break
+                continue
+
+            self.worker_semaphore.acquire()
+            new_worker = WebEnumWorker(service, self.worker_semaphore)
+            new_worker.start()
+            self.workers.append(new_worker)
+
 
 class WebEnumWorker(DBConnectionMixin, threading.Thread):
     """Worker thread that enumerates directories and detects login panels on a given web service."""
-    def __init__(self, service: Service):
+    def __init__(self, service: Service, semaphore: threading.BoundedSemaphore):
         super().__init__()
+        self.semaphore = semaphore
         service.enum_in_progress = True
         service.save()
         self.service = service
@@ -93,31 +120,34 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
             logger.error("Wordlist file not found: %s", wordlist_path)
 
     def run(self) -> list[str]:
-        paths_tested = 0
-        last_log_time = 0
+        try:
+            paths_tested = 0
+            last_log_time = 0
 
-        while True:
-            try:
-                path = self.path_queue.get_nowait()
-                if not path.startswith('/'):
-                    path = '/' + path
-            except (queue.ShutDown, queue.Empty):
-                break
+            while True:
+                try:
+                    path = self.path_queue.get_nowait()
+                    if not path.startswith('/'):
+                        path = '/' + path
+                except (queue.ShutDown, queue.Empty):
+                    break
 
-            paths_tested += 1
-            if time.time() - last_log_time > 5:
-                logger.debug("WebEnumWorker tested %d paths on %s", paths_tested, self.service.url())
-                last_log_time = time.time()
+                paths_tested += 1
+                if time.time() - last_log_time > 5:
+                    logger.debug("WebEnumWorker tested %d paths on %s", paths_tested, self.service.url())
+                    last_log_time = time.time()
 
-            if paths_tested > 1000:
-                logging.warning("WebEnumWorker reached 1000 paths tested on %s; stopping to avoid excessive load", self.service.url())
-                break
+                if paths_tested > 1000:
+                    logging.warning("WebEnumWorker reached 1000 paths tested on %s; stopping to avoid excessive load", self.service.url())
+                    break
 
-            self.process_path(path)
+                self.process_path(path)
 
-        logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())
-        self.service.enum_in_progress = False
-        self.service.save()
+            logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())
+            self.service.enum_in_progress = False
+            self.service.save()
+        finally:
+            self.semaphore.release()
 
     def normalize_path(self, raw_path: str) -> str:
         if not raw_path:
