@@ -319,12 +319,13 @@ def _load_run_data(run_path: Path):
                 {"keyword": key, "count": count}
                 for key, count in sorted(entry["counts"].items(), key=lambda kv: (-kv[1], kv[0]))
             ]
-            service_keywords.append({
-                "service_id": service["pk"],
-                "service_url": service["url"],
-                "keyword_total": len(keywords),
-                "keywords": keywords
-            })
+            if keywords:
+                service_keywords.append({
+                    "service_id": service["pk"],
+                    "service_url": service["url"],
+                    "keyword_total": len(keywords),
+                    "keywords": keywords
+                })
         service_keywords.sort(key=lambda s: s["service_url"])
         data["service_keywords"] = service_keywords
 
