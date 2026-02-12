@@ -32,6 +32,7 @@ class Settings:
         self.disable_llm_cache = os.getenv("DISABLE_LLM_CACHE", None) is not None
         self.max_webdrivers = int(os.getenv("MAX_WEBDRIVERS", "1"))
         self.max_webenum_workers = int(os.getenv("MAX_WEBENUM_WORKERS", "4"))
+        self.db_max_connections = int(os.getenv("DB_MAX_CONNECTIONS", "32"))
         self._initialized = True
 
     def _require_env_var(self, var_name: str) -> str:

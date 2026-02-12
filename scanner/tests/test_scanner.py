@@ -11,7 +11,7 @@ class TestScanner(DBConnectionMixin):
         self.scanner_args = args
         self.run()
 
-    def run(self):
+    def run_with_db(self):
         logging.debug("Running TestScanner with args: %s", self.scanner_args)
         scanner.main.run(
             args=self.scanner_args,

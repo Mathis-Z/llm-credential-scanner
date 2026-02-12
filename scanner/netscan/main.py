@@ -23,7 +23,7 @@ class NetScanner(DBConnectionMixin, threading.Thread):
         self.ports = ports
         # TODO: implement abort mechanism
 
-    def run(self):
+    def run_with_db(self):
         pub.sendMessage('netscanner.started')
         for subnet_or_ip in self.subnets_or_ips:
             self.scan_subnet_or_ip(subnet_or_ip)

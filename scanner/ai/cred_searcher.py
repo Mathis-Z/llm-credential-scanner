@@ -44,7 +44,7 @@ class CredSearcher(DBConnectionMixin, Thread):
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.keyword_extractor_done_event.set, 'keyword_extractor.done')
 
-    def run(self):
+    def run_with_db(self):
         services_search_count = {}
 
         while not self.termination_event.is_set():

@@ -42,7 +42,7 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.webenum_done_event.set, 'webenum.done')
 
-    def run(self):
+    def run_with_db(self):
         while not self.termination_event.is_set():
             unfinished_services = (
                 Service

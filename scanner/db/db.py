@@ -88,7 +88,7 @@ def init_db(path: str | None = None):
 
         real_db = PooledSqliteDatabase(
             full_db_path,
-            max_connections=16,
+            max_connections=Settings().db_max_connections,
             stale_timeout=300,
             pragmas={
                 "journal_mode": "wal",
@@ -153,8 +153,9 @@ class BaseModel(pw.Model):
 
 class DBConnectionMixin:
     def run(self):
-        DB.connect(reuse_if_open=True)
-        try:
-            super().run()
-        finally:
-            DB.close()
+        run_with_db = getattr(self, "run_with_db", None)
+        if not callable(run_with_db):
+            raise NotImplementedError("run_with_db must be implemented by DBConnectionMixin subclasses")
+
+        with DB.connection_context():
+            return run_with_db()

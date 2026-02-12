@@ -119,7 +119,7 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
         except FileNotFoundError:
             logger.error("Wordlist file not found: %s", wordlist_path)
 
-    def run(self) -> list[str]:
+    def run_with_db(self) -> list[str]:
         try:
             paths_tested = 0
             last_log_time = 0

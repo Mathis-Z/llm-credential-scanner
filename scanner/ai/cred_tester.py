@@ -129,7 +129,7 @@ class CredTester(DBConnectionMixin, Thread):
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.cred_searcher_done_event.set, 'cred_searcher.done')
 
-    def run(self):
+    def run_with_db(self):
         self.workers = [
             Thread(target=self._worker, name=f"cred-tester-{i}", daemon=True)
             for i in range(self.max_workers)
