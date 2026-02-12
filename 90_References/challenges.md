@@ -34,3 +34,5 @@
 - wrong certificates
     - local apps can have invalid certificates, causing cred tester and similar that user selected to fail
     - easy fix is to just ignore certifcates and skip all warning sites
+- we potentially detect signup screens as login screens, which could cause generating accounts on the target app, which is not ideal
+    - we could try to detect signup screens and skip them, but this is not trivial
