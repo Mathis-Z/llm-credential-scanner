@@ -302,6 +302,9 @@ class CredTester(DBConnectionMixin, Thread):
         """
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
+        options.add_argument("--ignore-certificate-errors")
+        options.add_argument("--allow-insecure-localhost")
+        options.add_argument("--allow-running-insecure-content")
 
         with webdriver.Chrome(options=options) as driver:
             self.visit_login_panel(driver, endpoint.url())
