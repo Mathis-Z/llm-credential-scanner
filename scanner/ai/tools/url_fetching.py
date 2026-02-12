@@ -39,7 +39,16 @@ def fetch_url(start_url: str) -> tuple[str, str]:
     """
     try:
         logger.debug("Fetching URL: %s", start_url)
-        with SB(uc=True, headless=True, chromium_arg="--disable-dev-shm-usage") as sb:
+        with SB(
+            uc=True,
+            headless=True,
+            chromium_arg=[
+                "--disable-dev-shm-usage",
+                "--ignore-certificate-errors",
+                "--allow-insecure-localhost",
+                "--allow-running-insecure-content",
+            ],
+        ) as sb:
             sb.open(start_url)
             sb.sleep(1)  # Initial wait for page load
             _wait_for_dom_settle(sb)
