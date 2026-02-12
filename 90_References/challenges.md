@@ -29,3 +29,6 @@
     - take screenshots of browser to see why logins work or not (helps a lot for debugging)
     - create a dashboard to see all results in a structured way (e.g. found creds, endpoints, screenshots, etc.)
 - pages sometimes contain huge amounts of CSS (style tags), blowing up even 256K context windows
+- login can have multiple steps
+    - after the first button click, we might need to wait for the next form to appear
+    
