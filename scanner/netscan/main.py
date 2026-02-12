@@ -10,7 +10,6 @@ import ipaddress
 import nmap3
 from pubsub import pub
 import requests
-import time
 
 from scanner.db.models import Service
 from scanner.db import DBConnectionMixin
@@ -69,11 +68,12 @@ class NetScanner(DBConnectionMixin, threading.Thread):
     def test_http_service(self, host: str, port: int) -> bool:
         """Test if an HTTP service is running on the given host:port service."""
 
+        url = f"http://{host}:{port}/"
         try:
-            requests.get(f"http://{host}:{port}/", timeout=5, allow_redirects=True, verify=False)
+            requests.get(url, timeout=5, allow_redirects=True, verify=False)
             return True
         except Exception as e:
-            logger.debug("Failed to connect to %s:%s - %s", host, port, str(e))
+            logger.debug("Failed to connect to %s", url)
             return False
 
     def test_https_service(self, host: str, port: int) -> bool:
@@ -81,10 +81,11 @@ class NetScanner(DBConnectionMixin, threading.Thread):
         Test if an HTTPS service is running on the given host:port service,
         ignoring certificate errors.
         """
+        url = f"https://{host}:{port}/"
         try:
-            response = requests.get(f"https://{host}:{port}/", timeout=5, allow_redirects=False, verify=False)
+            response = requests.get(url, timeout=5, allow_redirects=False, verify=False)
             logger.debug("Detected HTTPS on %s:%s - %s", host, port, response.status_code)
             return True
         except Exception as e:
-            logger.debug("Failed to connect to %s:%s - %s", host, port, str(e))
+            logger.debug("Failed to connect to %s", url)
             return False

@@ -1,6 +1,6 @@
 import time
 import logging
-from seleniumbase import sb_cdp
+from seleniumbase import SB
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.tools import tool
 from markdownify import markdownify
@@ -37,25 +37,18 @@ def fetch_url(start_url: str) -> tuple[str, str]:
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
     and returns the final URL and raw HTML content.
     """
-    sb = None
     try:
         logger.debug("Fetching URL: %s", start_url)
-        sb = sb_cdp.Chrome(url=None, headless=True)
-        sb.open(start_url)
-        sb.sleep(1)  # Initial wait for page load
-        _wait_for_dom_settle(sb)
-        raw = sb.get_page_source()
-        current_url = sb.get_current_url()
-        return current_url, raw
+        with SB(uc=True, headless=True, chromium_arg="--disable-dev-shm-usage") as sb:
+            sb.open(start_url)
+            sb.sleep(1)  # Initial wait for page load
+            _wait_for_dom_settle(sb)
+            raw = sb.get_page_source()
+            current_url = sb.get_current_url()
+            return current_url, raw
     except Exception as e:
         logger.error("Failed to fetch URL %s via Chromium: %s", start_url, str(e))
         return start_url, ""
-    finally:
-        try:
-            if sb is not None:
-                sb.driver.stop()
-        except Exception:
-            pass
 
 
 def _wait_for_dom_settle(sb, timeout_ms=2000, stable_ms=300):

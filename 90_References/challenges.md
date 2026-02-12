@@ -28,3 +28,4 @@
     - seperated logs (docker and scanner)
     - take screenshots of browser to see why logins work or not (helps a lot for debugging)
     - create a dashboard to see all results in a structured way (e.g. found creds, endpoints, screenshots, etc.)
+- pages sometimes contain huge amounts of CSS (style tags), blowing up even 256K context windows

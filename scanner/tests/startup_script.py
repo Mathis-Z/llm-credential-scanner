@@ -1,10 +1,9 @@
 import subprocess
 import logging
 import time
-import requests
 import threading
 from pathlib import Path
-from seleniumbase import sb_cdp
+from seleniumbase import SB
 
 logger = logging.getLogger('scanner.tests.startup_script')
 
@@ -90,29 +89,29 @@ class StartupScript:
             self.log_file.close()
 
     def wait_login_panel_up(self, url: str, timeout: int) -> bool:
-        sb = sb_cdp.Chrome(url=None, headless=True)
-        sb.open(url)
+        try:
+            with SB(uc=True, headless=True, chromium_arg="--disable-dev-shm-usage") as sb:
+                wait = 1
+                while timeout > 0:
+                    sb.open(url)
+                    sb.sleep(wait)
+                    logger.info("Waiting for login panel at %s to come up.", url)
 
-        wait = 1
-        while timeout > 0:
-            sb.open(url)
-            sb.sleep(wait)
-            logger.info("Waiting for login panel at %s to come up.", url)
+                    if sb.is_element_present('input[type="password"]'):
+                        logger.info("Login panel is up at %s", url)
+                        time.sleep(5) # idk why but Pyload is not reachable by the netscan module otherwise
+                        return True
 
-            if sb.is_element_present('input[type="password"]'):
-                logger.info("Login panel is up at %s", url)
-                sb.driver.stop()
-                time.sleep(5) # idk why but Pyload is not reachable by the netscan module otherwise
-                return True
+                    timeout -= wait
+                    wait = min(wait * 2, 10)  # exponential backoff up to 10 seconds
 
-            timeout -= wait
-            wait = min(wait * 2, 10)  # exponential backoff up to 10 seconds
-
-        html = sb.get_page_source()
-        sb.driver.stop()
-        logger.error("Login panel did not come up at %s within %i seconds.", url, timeout)
-        logger.debug("Final page source at %s:\n%s", url, html)
-        return False
+                html = sb.get_page_source()
+                logger.error("Login panel did not come up at %s within %i seconds.", url, timeout)
+                logger.debug("Final page source at %s:\n%s", url, html)
+                return False
+        except Exception as e:
+            logger.error("Error waiting for login panel at %s: %s", url, e)
+            return False
 
 
 class RunDockerCompose(StartupScript):

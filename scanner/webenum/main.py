@@ -30,7 +30,7 @@ WORDLIST_RELATIVE_PATH = 'wordlist.txt'
 logger = logging.getLogger('scanner.webenum')
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-class WebEnumerator(DBConnectionMixin, threading.Thread):
+class WebEnumerator(threading.Thread):
     """WebEnumerator module. Spawns a worker thread for each discovered web service."""
     def __init__(self):
         super().__init__()
@@ -58,7 +58,7 @@ class WebEnumerator(DBConnectionMixin, threading.Thread):
         self.netscan_done.set()
 
 
-class WebEnumWorker(threading.Thread):
+class WebEnumWorker(DBConnectionMixin, threading.Thread):
     """Worker thread that enumerates directories and detects login panels on a given web service."""
     def __init__(self, service: Service):
         super().__init__()
@@ -240,7 +240,8 @@ class WebEnumWorker(threading.Thread):
                     full_url = urllib.parse.urljoin(url, href)
                     # Remove fragment (everything after #)
                     full_url = full_url.split('#')[0]
-                    urls.add(full_url)
+                    if full_url:
+                        urls.add(full_url)
         except Exception as e:
             logger.error("Error parsing HTML from %s: %s", url, str(e))
         logger.debug("Extracted %d links from %s: %s", len(urls), url, urls)

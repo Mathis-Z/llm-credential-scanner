@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import time
+import threading
 import click
 from tabulate import tabulate
 
@@ -90,16 +91,40 @@ def run(subnets, ports, log_level, log_file, max_webdrivers, artifacts_dir, disa
         CredTester(),
     ]
 
-    for module in modules:
-        module.start()
+    # Start status monitoring thread
+    stop_event = threading.Event()
+    status_thread = threading.Thread(
+        target=status_monitor,
+        args=(stop_event,),
+        daemon=True
+    )
+    status_thread.start()
 
-    logger.info("All modules started.")
+    try:
+        for module in modules:
+            module.start()
 
-    for module in modules:
-        module.join()
+        logger.info("All modules started.")
 
-    logger.info("All modules completed.")
+        for module in modules:
+            module.join()
+
+        logger.info("All modules completed.")
+    finally:
+        # Stop the status monitoring thread
+        stop_event.set()
+        status_thread.join(timeout=1)
+
     print_scan_summary(start_time)
+
+
+def status_monitor(stop_event):
+    """Monitor and print status every 180 seconds until stop_event is set"""
+    while not stop_event.is_set():
+        # Wait for 180 seconds or until stop_event is set
+        if stop_event.wait(timeout=180):
+            break
+        print_status_summary()
 
 
 def print_scan_summary(start_time):
@@ -134,6 +159,64 @@ def print_scan_summary(start_time):
     summary += f"Total number of LLM requests: {LLMCache().total_requests}; cached: {LLMCache().cached_requests} ({cache_hit_rate:.2f}%)\n"
     summary += f"Total scan duration: {time.time() - start_time:.2f} seconds\n"
     logger.info(summary)
+
+
+
+def print_status_summary():
+    """Print a real-time summary of the current scan status"""
+    services = Service.select()
+    endpoints = Endpoint.select()
+    login_endpoints = Endpoint.select().where(Endpoint.is_login == True)
+    endpoints_with_creds = Endpoint.select().where(Endpoint.working_credentials != '')
+
+    # Count endpoints by analysis status
+    endpoints_with_keywords = Endpoint.select().where(Endpoint._keywords != None)
+    endpoints_pending_analysis = Endpoint.select().where(Endpoint._keywords == None)
+
+    # Services enumeration status
+    services_in_progress = Service.select().where(Service.enum_in_progress == True)
+    services_completed = Service.select().where(Service.enum_in_progress == False)
+
+    status = "\n" + "=" * 30 + " Current Status " + "=" * 30 + "\n"
+    status += f"Services discovered: {services.count()}\n"
+    status += f"  - Enumeration in progress: {services_in_progress.count()}\n"
+    status += f"  - Enumeration completed: {services_completed.count()}\n"
+    status += f"\nEndpoints discovered: {endpoints.count()}\n"
+    status += f"  - Login pages identified: {login_endpoints.count()}\n"
+    status += f"  - Analyzed for keywords: {endpoints_with_keywords.count()}\n"
+    status += f"  - Pending analysis: {endpoints_pending_analysis.count()}\n"
+    status += f"\nCredentials testing:\n"
+    status += f"  - Endpoints with working credentials: {endpoints_with_creds.count()}\n"
+
+    # Calculate total credentials tested
+    total_tested = sum(len(ep.tested_credentials) for ep in login_endpoints)
+    status += f"  - Total credential pairs tested: {total_tested}\n"
+
+    # LLM cache statistics
+    cache_hit_rate = (LLMCache().cached_requests / LLMCache().total_requests * 100) if LLMCache().total_requests > 0 else 0
+    status += f"\nLLM requests: {LLMCache().total_requests} (cached: {LLMCache().cached_requests}, {cache_hit_rate:.2f}%)\n"
+
+    # Display services with their first 10 endpoints
+    status += "\n" + "=" * 30 + " Services & Endpoints " + "=" * 30 + "\n"
+    for service in services:
+        status += f"\n{service.url()}\n"
+        status += f"  Credentials found: {service.credentials if service.credentials else 'None'}\n"
+        status += f"  Total endpoints: {len(service.endpoints)}\n"
+
+        if len(service.endpoints) > 0:
+            status += "  Endpoints (showing first 10):\n"
+            for i, endpoint in enumerate(service.endpoints[:10]):
+                login_marker = " [LOGIN]" if endpoint.is_login else ""
+                creds_marker = f" [CREDS: {endpoint.working_credentials}]" if endpoint.working_credentials else ""
+                status += f"    {i+1}. {endpoint.path}{login_marker}{creds_marker}\n"
+
+            if len(service.endpoints) > 10:
+                status += f"    ... and {len(service.endpoints) - 10} more\n"
+
+    status += "\n" + "=" * 76 + "\n"
+
+    logger.info(status)
+
 
 
 if __name__ == '__main__':
