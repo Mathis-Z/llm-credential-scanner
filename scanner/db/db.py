@@ -20,6 +20,7 @@ logger = logging.getLogger("scanner.db")
 DB = pw.DatabaseProxy()
 
 DB_WRITE_TIMEOUT_SECONDS = 60
+_DB_WRITE_CONTEXT = threading.local()
 
 
 @dataclass
@@ -61,12 +62,14 @@ class DBWriteQueue:
             if task is None:
                 break
             try:
+                _DB_WRITE_CONTEXT.in_writer = True
                 with DB.connection_context():
                     task.result = task.func()
             except Exception as exc:
                 logger.error("Error in DB operation: %s", exc)
                 task.error = exc
             finally:
+                _DB_WRITE_CONTEXT.in_writer = False
                 task.done_event.set()
 
 
@@ -74,6 +77,8 @@ DB_WRITE_QUEUE = DBWriteQueue()
 
 
 def submit_db_write(func: callable, timeout: int | None = None):
+    if getattr(_DB_WRITE_CONTEXT, "in_writer", False):
+        return func()
     return DB_WRITE_QUEUE.submit(func, timeout=timeout)
 
 def init_db(path: str | None = None):
@@ -146,7 +151,7 @@ class BaseModel(pw.Model):
     def save(self, *args, **kwargs):
         def _save():
             with DB.atomic():
-                return super().save(*args, **kwargs)
+                return super(BaseModel, self).save(*args, **kwargs)
 
         return submit_db_write(_save)
 
