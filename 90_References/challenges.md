@@ -36,3 +36,6 @@
     - easy fix is to just ignore certifcates and skip all warning sites
 - we potentially detect signup screens as login screens, which could cause generating accounts on the target app, which is not ideal
     - we could try to detect signup screens and skip them, but this is not trivial
+- some buttons or fields are sometimes not interactable when doing the cred test
+    - we try scroll into view, but this does not always work
+    - we also try using js native events as a fallback
