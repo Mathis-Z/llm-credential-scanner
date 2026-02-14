@@ -1,0 +1,9 @@
+# Nmap 7.95 scan initiated Sat Feb 14 19:11:56 2026 as: /snap/nmap/4171/usr/bin/nmap -sV --script auth -p 6875 -o BookStack.txt localhost
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.00026s latency).
+
+PORT     STATE SERVICE VERSION
+6875/tcp open  http    nginx
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sat Feb 14 19:12:09 2026 -- 1 IP address (1 host up) scanned in 13.17 seconds
