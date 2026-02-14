@@ -6,7 +6,13 @@
         <h2>{{ run_name }}</h2>
         <p>Artifacts folder: {{ base_dir }}/{{ run_name }}</p>
     </div>
-    <div class="badge">Scanner run</div>
+    <div class="header-actions">
+        <form class="rename-form" action="{{ url_for('rename_run', run_name=run_name) }}" method="post">
+            <input class="rename-input" type="text" name="new_name" placeholder="Rename run" aria-label="Rename run" required>
+            <button class="rename-button" type="submit">Rename</button>
+        </form>
+        <div class="badge">Scanner run</div>
+    </div>
 </section>
 
 <section class="metrics-grid">

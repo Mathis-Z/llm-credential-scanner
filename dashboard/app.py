@@ -14,6 +14,16 @@ BASE_DIR = Path(os.getenv("SCANNER_LOGS_DIR", DEFAULT_BASE_DIR))
 app = Flask(__name__)
 
 
+def _is_safe_run_name(value: str) -> bool:
+    if not value:
+        return False
+    if value in {".", ".."}:
+        return False
+    if any(sep in value for sep in ("/", "\\")):
+        return False
+    return bool(re.match(r"^[A-Za-z0-9._-]+$", value))
+
+
 def _run_dir(run_name: str) -> Path:
     return BASE_DIR / run_name
 
@@ -403,6 +413,24 @@ def run_view(run_name: str):
         base_dir=str(BASE_DIR),
         data=data
     )
+
+
+@app.route("/run/<run_name>/rename", methods=["POST"])
+def rename_run(run_name: str):
+    run_path = _run_dir(run_name)
+    if not run_path.exists() or not run_path.is_dir():
+        abort(404)
+
+    new_name = request.form.get("new_name", "").strip()
+    if not _is_safe_run_name(new_name):
+        abort(400)
+
+    new_path = _run_dir(new_name)
+    if new_path.exists():
+        abort(409)
+
+    run_path.rename(new_path)
+    return redirect(url_for("run_view", run_name=new_name))
 
 
 @app.route("/run/<run_name>/screenshots/<path:filename>")
