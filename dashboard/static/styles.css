@@ -70,6 +70,34 @@ body {
     color: #c2b7ad;
 }
 
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.sort-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.sort-button {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: #f3efe9;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.sort-button.is-active {
+    background: #e2725b;
+    color: #141414;
+    border-color: transparent;
+}
+
 .run-list {
     display: flex;
     flex-direction: column;

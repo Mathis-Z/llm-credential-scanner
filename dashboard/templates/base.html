@@ -17,7 +17,13 @@
                 </div>
             </div>
             <div class="sidebar-section">
-                <h2>Runs</h2>
+                <div class="sidebar-header">
+                    <h2>Runs</h2>
+                    <div class="sort-controls">
+                        <button type="button" class="sort-button" data-sort="time" aria-label="Sort by time">Time</button>
+                        <button type="button" class="sort-button" data-sort="alpha" aria-label="Sort alphabetically">A-Z</button>
+                    </div>
+                </div>
                 <div class="run-list" id="runList">
                     {% for run in runs %}
                         <a class="run-item" href="{{ url_for('run_view', run_name=run.name) }}">
@@ -45,6 +51,25 @@
     <script>
     const runsUrl = '{{ url_for("runs_poll") }}';
     const runList = document.getElementById('runList');
+    const sortButtons = document.querySelectorAll('.sort-button');
+    const sortKey = 'runSortMode';
+    let currentSort = localStorage.getItem(sortKey) || 'time';
+
+    function applySortState() {
+        sortButtons.forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.sort === currentSort);
+        });
+    }
+
+    function sortRuns(runs) {
+        const sorted = [...runs];
+        if (currentSort === 'alpha') {
+            sorted.sort((a, b) => a.name.localeCompare(b.name));
+        } else {
+            sorted.sort((a, b) => b.mtime - a.mtime);
+        }
+        return sorted;
+    }
 
     function renderRuns(runs) {
         if (!runList) {
@@ -55,7 +80,8 @@
             return;
         }
 
-        runList.innerHTML = runs.map((run) => {
+        const sortedRuns = sortRuns(runs);
+        runList.innerHTML = sortedRuns.map((run) => {
             const badge = run.db_exists
                 ? '<span class="pill ok">db ok</span>'
                 : '<span class="pill warn">no db</span>';
@@ -83,6 +109,17 @@
             return;
         }
     }
+
+    sortButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            currentSort = button.dataset.sort || 'time';
+            localStorage.setItem(sortKey, currentSort);
+            applySortState();
+            pollRuns();
+        });
+    });
+
+    applySortState();
 
     setInterval(pollRuns, 8000);
     pollRuns();

@@ -58,6 +58,17 @@ def _list_runs():
     if not BASE_DIR.exists():
         return []
 
+    def run_mtime(run_path: Path, db_path: Path) -> float:
+        if db_path.exists():
+            return db_path.stat().st_mtime
+        scanner_log = run_path / "scanner.log"
+        if scanner_log.exists():
+            return scanner_log.stat().st_mtime
+        docker_log = run_path / "docker.log"
+        if docker_log.exists():
+            return docker_log.stat().st_mtime
+        return run_path.stat().st_mtime
+
     runs = []
     for run_path in BASE_DIR.iterdir():
         if not run_path.is_dir():
@@ -65,13 +76,13 @@ def _list_runs():
         # if not run_path.name.startswith("scanner-test-"):
         #     continue
         db_path = run_path / "scanner.db"
-        stat = run_path.stat()
+        mtime = run_mtime(run_path, db_path)
         runs.append({
             "name": run_path.name,
             "path": run_path,
             "db_exists": db_path.exists(),
-            "mtime": stat.st_mtime,
-            "mtime_human": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+            "mtime": mtime,
+            "mtime_human": datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
         })
 
     runs.sort(key=lambda r: r["mtime"], reverse=True)
