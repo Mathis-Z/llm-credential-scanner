@@ -1,0 +1,152 @@
+# Configuration for telegraf agent
+[agent]
+  ## Default data collection interval for all inputs
+  interval = "10s"
+  ## Rounds collection interval to 'interval'
+  ## ie, if interval="10s" then always collect on :00, :10, :20, etc.
+  round_interval = true
+
+  ## Telegraf will send metrics to outputs in batches of at most
+  ## metric_batch_size metrics.
+  ## This controls the size of writes that Telegraf sends to output plugins.
+  metric_batch_size = 1000
+
+  ## For failed writes, telegraf will cache metric_buffer_limit metrics for each
+  ## output, and will flush this buffer on a successful write. Oldest metrics
+  ## are dropped first when this buffer fills.
+  ## This buffer only fills when writes fail to output plugin(s).
+  metric_buffer_limit = 10000
+
+  ## Collection jitter is used to jitter the collection by a random amount.
+  ## Each plugin will sleep for a random time within jitter before collecting.
+  ## This can be used to avoid many plugins querying things like sysfs at the
+  ## same time, which can have a measurable effect on the system.
+  collection_jitter = "0s"
+
+  ## Default flushing interval for all outputs. Maximum flush_interval will be
+  ## flush_interval + flush_jitter
+  flush_interval = "10s"
+  ## Jitter the flush interval by a random amount. This is primarily to avoid
+  ## large write spikes for users running a large number of telegraf instances.
+  ## ie, a jitter of 5s and interval 10s means flushes will happen every 10-15s
+  flush_jitter = "0s"
+
+  ## By default or when set to "0s", precision will be set to the same
+  ## timestamp order as the collection interval, with the maximum being 1s.
+  ##   ie, when interval = "10s", precision will be "1s"
+  ##       when interval = "250ms", precision will be "1ms"
+  ## Precision will NOT be used for service inputs. It is up to each individual
+  ## service input to set the timestamp at the appropriate precision.
+  ## Valid time units are "ns", "us" (or "µs"), "ms", "s".
+  precision = ""
+
+  ## Logging configuration:
+  ## Run telegraf with debug log messages.
+  debug = false
+  ## Run telegraf in quiet mode (error log messages only).
+  quiet = false
+  ## Specify the log file name. The empty string means to log to stderr.
+  logfile = ""
+
+  ## Override default hostname, if empty use os.Hostname()
+  hostname = ""
+  ## If set to true, do no set the "host" tag in the telegraf agent.
+  omit_hostname = false
+[[outputs.influxdb_v2]]	
+  ## The URLs of the InfluxDB cluster nodes.
+  ##
+  ## Multiple URLs can be specified for a single cluster, only ONE of the
+  ## urls will be written to each interval.
+  ## urls exp: http://127.0.0.1:8086
+  urls = ["http://172.20.8.51:8086"]
+
+  ## Token for authentication.
+  token = "$INFLUX_TOKEN"
+
+  ## Organization is the name of the organization you wish to write to; must exist.
+  organization = "deep-learning-group"
+
+  ## Destination bucket to write into.
+  bucket = "Monitor"
+[[inputs.cpu]]
+  ## Whether to report per-cpu stats or not
+  percpu = true
+  ## Whether to report total system cpu stats or not
+  totalcpu = true
+  ## If true, collect raw CPU time metrics.
+  collect_cpu_time = false
+  ## If true, compute and report the sum of all non-idle CPU states.
+  report_active = false
+[[inputs.disk]]
+  ## By default stats will be gathered for all mount points.
+  ## Set mount_points will restrict the stats to only the specified mount points.
+  # mount_points = ["/"]
+  ## Ignore mount points by filesystem type.
+  ignore_fs = ["tmpfs", "devtmpfs", "devfs", "overlay", "aufs", "squashfs"]
+[[inputs.diskio]]
+[[inputs.mem]]
+[[inputs.net]]
+[[inputs.processes]]
+[[inputs.swap]]
+[[inputs.system]]
+
+[[inputs.nvidia_smi]]
+
+# Read metrics from the bare metal servers via IPMI
+[[inputs.ipmi_sensor]]
+  ## Sudo must be configured to allow the telegraf user to run ipmitool
+  ## without a password.
+  use_sudo = true
+  ##
+  ## optionally force session privilege level. Can be CALLBACK, USER, OPERATOR, ADMINISTRATOR
+  # privilege = "ADMINISTRATOR"
+  ##
+
+  ## Recommended: use metric 'interval' that is a multiple of 'timeout' to avoid
+  ## gaps or overlap in pulled data
+  interval = "30s"
+
+  ## Timeout for the ipmitool command to complete. Default is 20 seconds.
+  timeout = "20s"
+
+  ## Schema Version: (Optional, defaults to version 1)
+  metric_version = 2
+
+  ## Optionally provide the hex key for the IMPI connection.
+  # hex_key = ""
+
+# Read metrics from storage devices supporting S.M.A.R.T.
+[[inputs.smart]]  
+    ## Optionally specify if vendor specific attributes should be propagated for NVMe disk case
+    ## ["auto-on"] - automatically find and enable additional vendor specific disk info
+    ## ["vendor1", "vendor2", ...] - e.g. "Intel" enable additional Intel specific disk info
+    # enable_extensions = ["auto-on"]
+  
+    ## On most platforms used cli utilities requires root access.
+    ## Setting 'use_sudo' to true will make use of sudo to run smartctl or nvme-cli.
+    ## Sudo must be configured to allow the telegraf user to run smartctl or nvme-cli
+    ## without a password.
+    use_sudo = true
+  
+    ## Skip checking disks in this power mode. Defaults to
+    ## "standby" to not wake up disks that have stopped rotating.
+    ## See --nocheck in the man pages for smartctl.
+    ## smartctl version 5.41 and 5.42 have faulty detection of
+    ## power mode and might require changing this value to
+    ## "never" depending on your disks.
+    # nocheck = "standby"
+  
+    ## Gather all returned S.M.A.R.T. attribute metrics and the detailed
+    ## information from each drive into the 'smart_attribute' measurement.
+    # attributes = false
+  
+    ## Optionally specify devices to exclude from reporting if disks auto-discovery is performed.
+    # excludes = [ "/dev/pass6" ]
+  
+    ## Optionally specify devices and device type, if unset
+    ## a scan (smartctl --scan and smartctl --scan -d nvme) for S.M.A.R.T. devices will be done
+    ## and all found will be included except for the excluded in excludes.
+    # devices = [ "/dev/ada0 -d atacam", "/dev/nvme0"]
+  
+    ## Timeout for the cli command to complete.
+    # timeout = "30s"
