@@ -123,6 +123,19 @@ def make_credential_testing_tools(driver: Any):
                     raise
             time.sleep(1)
         except Exception as e:
+            try:
+                driver.execute_script(
+                    "var el = document.querySelector(arguments[0]);"
+                    "if (el) {"
+                    "  if (el.form) { el.form.submit(); return; }"
+                    "  el.click();"
+                    "}",
+                    selector,
+                )
+                time.sleep(1)
+                return "ok"
+            except Exception as exc:
+                return f"error: {str(exc)}"
             return f"error: {str(e)}"
         return "ok"
 
