@@ -4,6 +4,7 @@ from typing import Any
 
 from langchain.tools import tool
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import StaleElementReferenceException
 
 logger = logging.getLogger('scanner.cred_tester.tools')
 
@@ -84,33 +85,42 @@ def make_credential_testing_tools(driver: Any):
         time.sleep(2)
         logger.debug("Clicking button with selector: %s", selector)
         try:
-            elements = driver.find_elements(By.CSS_SELECTOR, selector)
-            if len(elements) == 0:
-                return "error: no elements found"
-            if len(elements) > 1:
-                formatted_elements = "\n".join([_format_html_element(el) for el in elements])
-                return "Error: Selector matched multiple elements:\n" + formatted_elements
+            element = None
+            for attempt in range(2):
+                elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                if len(elements) == 0:
+                    return "error: no elements found"
+                if len(elements) > 1:
+                    formatted_elements = "\n".join([_format_html_element(el) for el in elements])
+                    return "Error: Selector matched multiple elements:\n" + formatted_elements
 
-            element = elements[0]
-            _prepare_element(element)
-            form = None
-            try:
-                form = element.find_element(By.XPATH, "ancestor::form[1]")
-            except Exception:
-                form = None
-            logger.debug(
-                "Element info: tag=%s id=%s name=%s type=%s form_action=%s form_method=%s",
-                element.tag_name,
-                element.get_attribute("id"),
-                element.get_attribute("name"),
-                element.get_attribute("type"),
-                form.get_attribute("action") if form else None,
-                form.get_attribute("method") if form else None,
-            )
-            try:
-                element.click()
-            except Exception:
-                driver.execute_script("arguments[0].click();", element)
+                element = elements[0]
+                try:
+                    _prepare_element(element)
+                    form = None
+                    try:
+                        form = element.find_element(By.XPATH, "ancestor::form[1]")
+                    except Exception:
+                        form = None
+                    logger.debug(
+                        "Element info: tag=%s id=%s name=%s type=%s form_action=%s form_method=%s",
+                        element.tag_name,
+                        element.get_attribute("id"),
+                        element.get_attribute("name"),
+                        element.get_attribute("type"),
+                        form.get_attribute("action") if form else None,
+                        form.get_attribute("method") if form else None,
+                    )
+                    try:
+                        element.click()
+                    except Exception:
+                        driver.execute_script("arguments[0].click();", element)
+                    break
+                except StaleElementReferenceException:
+                    if attempt == 0:
+                        time.sleep(0.2)
+                        continue
+                    raise
             time.sleep(1)
         except Exception as e:
             return f"error: {str(e)}"
