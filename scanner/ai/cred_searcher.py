@@ -10,10 +10,9 @@ from pubsub import pub
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
-from peewee import fn, Case
 from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import search_web, fetch_url_as_markdown
-from scanner.db.models import Service, Endpoint
+from scanner.db.models import Service
 from scanner.db import DBConnectionMixin
 
 
@@ -48,39 +47,12 @@ class CredSearcher(DBConnectionMixin, Thread):
         services_search_count = {}
 
         while not self.termination_event.is_set():
-            # Only select services for which *all* endpoints have non-NULL keywords.
-            # i.e. there must be at least one endpoint with keywords, and zero endpoints with NULL keywords.
-            # LLM-generated tbh
-
-            ready_services = (
+            ready_services = list(
                 Service
                 .select()
                 .where(
-                    (~Service.enum_in_progress)
+                    Service.keyword_extraction_done == True
                     & Service._credentials.is_null()
-                    & Service.pk.in_(
-                        Endpoint
-                        .select(Endpoint.service_id)
-                        .group_by(Endpoint.service_id)
-                        .having(
-                            fn.COUNT(
-                                Case(
-                                    None,
-                                    ((Endpoint._keywords.is_null(False), 1),),
-                                    None
-                                )
-                            ) > 0
-                        )
-                        .having(
-                            fn.COUNT(
-                                Case(
-                                    None,
-                                    ((Endpoint._keywords.is_null(True), 1),),
-                                    None
-                                )
-                            ) == 0
-                        )
-                    )
                 )
             )
             ready_services = [s for s in ready_services

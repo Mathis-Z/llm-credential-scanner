@@ -17,7 +17,8 @@ class Service(BaseModel):
     host = pw.CharField(max_length=64)
     port = pw.IntegerField()
     https = pw.BooleanField()
-    enum_in_progress = pw.BooleanField(default=False)
+    webenum_done = pw.BooleanField(default=False)
+    keyword_extraction_done = pw.BooleanField(default=False)
     _credentials = pw.TextField(null=True, default=None) # None means not searched yet
 
     class Meta:

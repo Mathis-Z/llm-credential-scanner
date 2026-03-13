@@ -176,8 +176,8 @@ def print_status_summary():
     endpoints_pending_analysis = Endpoint.select().where(Endpoint._keywords == None)
 
     # Services enumeration status
-    services_in_progress = Service.select().where(Service.enum_in_progress == True)
-    services_completed = Service.select().where(Service.enum_in_progress == False)
+    services_in_progress = Service.select().where(Service.webenum_done == False)
+    services_completed = Service.select().where(Service.webenum_done == True)
 
     status = "\n" + "=" * 30 + " Current Status " + "=" * 30 + "\n"
     status += f"Services discovered: {services.count()}\n"

@@ -44,26 +44,11 @@ class KeywordExtractor(DBConnectionMixin, Thread):
 
     def run_with_db(self):
         while not self.termination_event.is_set():
-            unfinished_services = (
+            unfinished_services = list(
                 Service
                 .select()
-                .where(
-                    (~Service.enum_in_progress)
-                    & Service._credentials.is_null()
-                    & Service.pk.in_(
-                        Endpoint
-                        .select(Endpoint.service_id)
-                        .group_by(Endpoint.service_id)
-                        .having(
-                            fn.COUNT(
-                                Case(
-                                    None,
-                                    ((Endpoint._keywords.is_null(), 1),),
-                                    None
-                                )
-                            ) > 0
-                        )
-                    )
+                .where((Service.webenum_done == True)
+                       & (Service.keyword_extraction_done == False)
                 )
             )
 
@@ -74,6 +59,8 @@ class KeywordExtractor(DBConnectionMixin, Thread):
                 if self.termination_event.is_set():
                     break
                 self.extract_keywords_for_service(service)
+                service.keyword_extraction_done = True
+                service.save(only=[Service.keyword_extraction_done])
 
             time.sleep(2)
 
@@ -84,17 +71,19 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         """
         Extract keywords for all endpoints of the given service that do not yet have keywords.
         """
-        # TODO: make the selection of endpoints smarter
-        # e.g. convert all endpoints to markdown, generate simhashes and then find the most
-        # unique endpoints or something like that
-        eps = list(service.endpoints)
-        random.shuffle(eps)
-        eps = eps[:10] # limit to 10 endpoints to avoid excessive API cost
-
-        for endpoint in eps:
+        for endpoint in self.select_relevant_endpoints(service):
             if self.termination_event.is_set():
                 return
             self.extract_keywords(endpoint)
+
+    def select_relevant_endpoints(self, service: Service) -> list[Endpoint]:
+        """
+        Selects some hopefully relevant endpoints for keyword extraction.
+        Currently just selects the 10 endpoints with the shallowest path, as they are more likely to contain informative content.
+        """
+        all_endpoints = list(service.endpoints.where(Endpoint._keywords.is_null(True)))
+        depth_sorted = sorted(all_endpoints, key=lambda ep: ep.path.strip('/').count('/'))
+        return depth_sorted[:10]
 
     def extract_keywords(self, endpoint: Endpoint):
         """

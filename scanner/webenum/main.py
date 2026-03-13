@@ -89,8 +89,6 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
     def __init__(self, service: Service, semaphore: threading.BoundedSemaphore):
         super().__init__()
         self.semaphore = semaphore
-        service.enum_in_progress = True
-        service.save()
         self.service = service
         self.render_cache: dict[str, str] = {}
         self.not_found_simhash = self.get_404_simhash() # for soft 404 detection
@@ -144,8 +142,8 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
                 self.process_path(path)
 
             logger.info("WebEnumWorker finished testing %d paths on %s", paths_tested, self.service.url())
-            self.service.enum_in_progress = False
-            self.service.save()
+            self.service.webenum_done = True
+            self.service.save(only=[Service.webenum_done])
         finally:
             self.semaphore.release()
 
