@@ -279,7 +279,7 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
 
     def get_404_simhash(self) -> simhash.Simhash:
         """Fetches a non-existent page to compute its simhash for soft 404 detection."""
-        path = f"/nonexistent_1769471273" # hardcoding to allow LLM response caching
+        path = "/nonexistent_1769471273" # hardcoding to allow LLM response caching
         before_url = f"{self.service.url()}{path}"
         try:
             after_url, html = fetch_url(before_url)

@@ -72,7 +72,7 @@ class NetScanner(DBConnectionMixin, threading.Thread):
         try:
             requests.get(url, timeout=5, allow_redirects=True, verify=False)
             return True
-        except Exception as e:
+        except Exception:
             logger.debug("Failed to connect to %s", url)
             return False
 
@@ -86,6 +86,6 @@ class NetScanner(DBConnectionMixin, threading.Thread):
             response = requests.get(url, timeout=5, allow_redirects=False, verify=False)
             logger.debug("Detected HTTPS on %s:%s - %s", host, port, response.status_code)
             return True
-        except Exception as e:
+        except Exception:
             logger.debug("Failed to connect to %s", url)
             return False

@@ -1,5 +1,3 @@
-import logging
-
 from ddgs import DDGS
 from langchain.tools import tool
 
@@ -13,5 +11,4 @@ def search_web(query: str):
 
 @tool(description="Submit credentials (username & password)")
 def submit_credentials(username: str, password: str):
-    logging.info("LLM submitted credentials %s:%s", username, password)
     return {"message": f"Credentials for {username} submitted successfully."}

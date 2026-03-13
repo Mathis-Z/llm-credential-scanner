@@ -8,7 +8,6 @@ import time
 import urllib.parse
 import queue
 import threading
-from contextlib import contextmanager
 from pathlib import Path
 from threading import Thread, Event
 import logging
