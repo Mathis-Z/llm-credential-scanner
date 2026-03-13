@@ -22,7 +22,7 @@ from markdownify import markdownify
 
 from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
-from scanner.ai.tools.url_fetching import fetch_url
+from scanner.ai.tools.url_fetching import fetch_url_with_browser
 from scanner.settings import Settings
 
 # relative to this file
@@ -241,7 +241,7 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
         if response.url in self.render_cache:
             return response.status_code, response.url, self.render_cache[response.url]
 
-        final_url, rendered_html = fetch_url(response.url)
+        final_url, rendered_html = fetch_url_with_browser(response.url)
         if not rendered_html:
             logger.warning("Failed to render HTML for %s", response.url)
             return None
@@ -280,7 +280,7 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
         path = "/nonexistent_1769471273" # hardcoding to allow LLM response caching
         before_url = f"{self.service.url()}{path}"
         try:
-            after_url, html = fetch_url(before_url)
+            after_url, html = fetch_url_with_browser(before_url)
             if not html:
                 logger.warning("Failed to fetch HTML for 404 simhash from %s; disabling soft 404 detection", before_url)
                 return None

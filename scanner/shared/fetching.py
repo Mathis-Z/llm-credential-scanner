@@ -7,7 +7,11 @@ from scanner.shared.browser_pool import BrowserPool
 logger = logging.getLogger("scanner.shared.fetching")
 
 
-def fetch_url(start_url: str, acquire_timeout: float = 60.0) -> tuple[str, str]:
+def fetch_url_with_browser(
+        start_url: str,
+        acquire_timeout: float = 60,
+        page_load_timeout: float = 10
+    ) -> tuple[str, str]:
     """
     Fetch a URL using a pooled SeleniumBase browser.
 
@@ -17,6 +21,7 @@ def fetch_url(start_url: str, acquire_timeout: float = 60.0) -> tuple[str, str]:
     logger.debug("Fetching URL: %s", start_url)
     try:
         with BrowserPool().acquire(timeout=acquire_timeout) as sb:
+            sb.driver.set_page_load_timeout(page_load_timeout)
             sb.driver.get(start_url)
             sb.sleep(1)
             _wait_for_dom_settle(sb)

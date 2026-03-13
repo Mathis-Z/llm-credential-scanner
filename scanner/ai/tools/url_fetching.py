@@ -4,7 +4,7 @@ from langchain.tools import tool
 from markdownify import markdownify
 
 from scanner.ai.llm import get_chat_model
-from scanner.shared.fetching import fetch_url
+from scanner.shared.fetching import fetch_url_with_browser
 
 logger = logging.getLogger("scanner.ai.tools")
 
@@ -14,7 +14,7 @@ def fetch_url_summary(url: str) -> str:
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
     and condenses it for useful content extraction.
     """
-    _, raw_content = fetch_url(url)
+    _, raw_content = fetch_url_with_browser(url)
     return summarize_text_with_map_reduce(raw_content)
 
 @tool(description="Fetch a URL, returning its raw content as markdown.")
@@ -23,7 +23,7 @@ def fetch_url_as_markdown(url: str) -> str:
     Fetch a URL using SeleniumBase, renders JS, waits for the DOM to settle,
     and returns the raw content.
     """
-    _, raw_content = fetch_url(url)
+    _, raw_content = fetch_url_with_browser(url)
     md = markdownify(raw_content)
     if len(md) > 20000:
         logger.warning("Fetched content from %s is very large (%i characters). Truncated to avoid LLM input error.", url, len(md))
