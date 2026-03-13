@@ -82,7 +82,8 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         Currently just selects the 10 endpoints with the shallowest path, as they are more likely to contain informative content.
         """
         all_endpoints = list(service.endpoints.where(Endpoint._keywords.is_null(True)))
-        depth_sorted = sorted(all_endpoints, key=lambda ep: ep.path.strip('/').count('/'))
+        non_empty_endpoints = [ep for ep in all_endpoints if ep.page_source and ep.page_source.strip()]
+        depth_sorted = sorted(non_empty_endpoints, key=lambda ep: ep.path.strip('/').count('/'))
         return depth_sorted[:10]
 
     def extract_keywords(self, endpoint: Endpoint):
