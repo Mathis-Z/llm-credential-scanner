@@ -57,6 +57,11 @@ class BrowserPool:
                     "--allow-insecure-localhost",
                     "--allow-running-insecure-content",
                 ],
+                prefs={
+                    "download_restrictions": 3,  # Block all downloads
+                    "download.prompt_for_download": False,
+                    "download.default_directory": "/dev/null",
+                }
             )
             sb = sb_ctx.__enter__()
             logger.debug("Browser %d ready", index)
