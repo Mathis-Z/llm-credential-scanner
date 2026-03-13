@@ -39,3 +39,5 @@
 - some buttons or fields are sometimes not interactable when doing the cred test
     - we try scroll into view, but this does not always work
     - we also try using js native events as a fallback
+- SQLite is NOT meant for many concurrent threads => many contention problems
+- webdrivers must be carefully cleaned up, otherwise leaking FDs => OS error: too many open files
