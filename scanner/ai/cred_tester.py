@@ -25,7 +25,7 @@ from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import make_credential_testing_tools
 from scanner.db.models import Endpoint
 from scanner.db import DBConnectionMixin
-from scanner.settings import Settings
+from scanner.settings import get_settings
 from scanner.shared.browser_pool import BrowserPool
 
 
@@ -123,7 +123,7 @@ class CredTester(DBConnectionMixin, Thread):
         self.task_queue: queue.Queue[tuple[int, str, str] | None] = queue.Queue()
         self.in_flight: set[tuple[int, str, str]] = set()
         self.in_flight_lock = threading.Lock()
-        self.max_workers = max(1, Settings().max_webdrivers)
+        self.max_workers = max(1, get_settings().max_webdrivers)
         self.workers: list[Thread] = []
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.cred_searcher_done_event.set, 'cred_searcher.done')
@@ -221,7 +221,7 @@ class CredTester(DBConnectionMixin, Thread):
         return safe.strip("_-") or "na"
 
     def _get_screenshot_dir(self) -> Path | None:
-        artifacts_dir = Settings().artifacts_dir
+        artifacts_dir = get_settings().artifacts_dir
         if not artifacts_dir:
             return None
         path = Path(artifacts_dir) / "screenshots"

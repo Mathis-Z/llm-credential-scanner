@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from tabulate import tabulate
 import click
 from scanner.tests.startup_script import RunDockerCompose
-from scanner.db import Endpoint, Service, init_db
+from scanner.db import Endpoint, Service, load_db, load_or_create_db
 from scanner.db.models import DEFAULT_CREDS
-from scanner.settings import Settings
+from scanner.settings import override_settings
 from scanner.main import configure_logging
 
 KEEP_DB_FILES = True
@@ -170,8 +170,7 @@ def run_app_test(app_dir_name, artifacts, port, login_path, username, password) 
             artifacts.dir_path
         )
         # Rebind our ORM to the same temporary DB used by the scanner run
-        Settings().configure_cli_arguments(artifacts_dir=artifacts.dir_path)
-        init_db()
+        load_db(artifacts.db_path)
         r = TestResult(
             found_creds=found_creds(username, password),
             creds_are_trivial=(username, password) in DEFAULT_CREDS,
@@ -211,9 +210,10 @@ def clean_docker_environment():
 @click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--kill-containers", is_flag=True, help="Kill any running Docker containers before starting tests")
 def run(keep, select, log_level, kill_containers):
-    configure_logging(log_level)
     start_time = time.time()
-    init_db()
+    override_settings(log_level=log_level)
+    configure_logging()
+    load_or_create_db()
     global KEEP_DB_FILES
     KEEP_DB_FILES = keep or KEEP_DB_FILES
 
@@ -255,7 +255,7 @@ def run(keep, select, log_level, kill_containers):
             try:
                 results[app_name] = run_app_test(app_name, artifacts, port, login_path, username, password)
             except Exception as exc:
-                logger.error("Test for %s failed: %s", app_name, exc)
+                logger.error("Test for %s failed: %s", app_name, exc, exc_info=True)
                 results[app_name] = TestResult(
                     found_creds=False,
                     verified_creds=False,

@@ -11,7 +11,7 @@ from pathlib import Path
 from playhouse.pool import PooledSqliteDatabase
 import peewee as pw
 from pubsub import pub
-from scanner.settings import Settings
+from scanner.settings import get_settings
 
 logger = logging.getLogger("scanner.db")
 
@@ -81,38 +81,68 @@ def submit_db_write(func: callable, timeout: int | None = None):
         return func()
     return DB_WRITE_QUEUE.submit(func, timeout=timeout)
 
-def init_db(path: str | None = None):
+def full_db_path(path: str | None = None) -> Path:
+    return Path(os.getcwd()) / (path if path else get_settings().db_path)
+
+def load_db(path: Path | str):
+    """Load existing DB. Throws FileNotFoundError. Useful for debug shells."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Database file not found at {path}")
+
+    real_db = PooledSqliteDatabase(
+        path,
+        max_connections=get_settings().db_max_connections,
+        stale_timeout=300,
+        pragmas={
+            "journal_mode": "wal",
+            "busy_timeout": 5000,
+            "foreign_keys": 1,
+        },
+        check_same_thread=False
+    )
+    _init_db(real_db)
+
+def create_db(path: Path | str):
+    """Create new DB."""
+    # creating the directory here is suboptimal but future work I guess
+    path = Path(path)
+    db_dir = path.parent
+    if not db_dir.exists():
+        logger.debug("Creating database directory at %s", db_dir)
+        db_dir.mkdir(parents=True, exist_ok=True)
+
+    real_db = PooledSqliteDatabase(
+        path,
+        max_connections=get_settings().db_max_connections,
+        stale_timeout=300,
+        pragmas={
+            "journal_mode": "wal",
+            "busy_timeout": 5000,
+            "foreign_keys": 1,
+        },
+        check_same_thread=False
+    )
+    _init_db(real_db)
+
+def _init_db(real_db: PooledSqliteDatabase):
+    # Bind the proxy to the real database
+    DB.initialize(real_db)
+    DB_WRITE_QUEUE.start()
+    from scanner.db.models import Service, Endpoint # avoid circular import
+    DB.create_tables([Service, Endpoint], safe=True)
+
+def load_or_create_db(path: str | None = None):
     """Initialize database connection and tables. Call after Settings is configured."""
     try:
-        full_db_path = Path(os.getcwd()) / (path if path else Settings().db_path)
-        # creating the directory here is suboptimal but future work I guess
-        db_dir = full_db_path.parent
-        if not db_dir.exists():
-            logger.debug("Creating database directory at %s", db_dir)
-            db_dir.mkdir(parents=True, exist_ok=True)
+        path = full_db_path(path)
 
-        real_db = PooledSqliteDatabase(
-            full_db_path,
-            max_connections=Settings().db_max_connections,
-            stale_timeout=300,
-            pragmas={
-                "journal_mode": "wal",
-                "busy_timeout": 5000,
-                "foreign_keys": 1,
-            },
-            check_same_thread=False
-        )
-
-        # Bind the proxy to the real database
-        DB.initialize(real_db)
-
-        DB_WRITE_QUEUE.start()
-
-        # Now create tables
-        from scanner.db.models import Service, Endpoint
-        DB.create_tables([Service, Endpoint], safe=True)
+        if path.exists():
+            load_db(path)
+        else:
+            create_db(path)
     except pw.OperationalError as e:
-        logger.critical("Failed to initialize database at %s: %s", full_db_path, e)
+        logger.critical("Failed to initialize database at %s: %s", path, e)
         raise e
 
 class BaseModel(pw.Model):

@@ -6,7 +6,7 @@ import threading
 from contextlib import contextmanager
 from seleniumbase import SB
 from selenium.common.exceptions import TimeoutException
-from scanner.settings import Settings
+from scanner.settings import get_settings
 
 NON_CRITICAL_EXCEPTIONS = (
     RuntimeError,       # e.g. "Failed to load login panel"
@@ -31,7 +31,7 @@ class BrowserPool:
                 return cls._instance
 
             instance = super().__new__(cls)
-            size = Settings().max_webdrivers
+            size = get_settings().max_webdrivers
             logger.info("Initializing browser pool with %d instances", size)
             instance._pool = queue.Queue(maxsize=size)
             for i in range(size):
@@ -57,11 +57,6 @@ class BrowserPool:
                     "--allow-insecure-localhost",
                     "--allow-running-insecure-content",
                 ],
-                prefs={
-                    "download_restrictions": 3,  # Block all downloads
-                    "download.prompt_for_download": False,
-                    "download.default_directory": "/dev/null",
-                }
             )
             sb = sb_ctx.__enter__()
             logger.debug("Browser %d ready", index)

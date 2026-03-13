@@ -13,9 +13,8 @@ from langchain_core.language_models.base import LanguageModelInput
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 
-from scanner.settings import Settings
+from scanner.settings import get_settings
 from .llm_cache import LLMCache
-settings = Settings()
 
 logger = logging.getLogger('scanner.llm')
 
@@ -141,6 +140,7 @@ def get_chat_model(reasoning: bool|None = None) -> WrappedChatOllama|WrappedChat
     """
     Returns a ChatOpenAI or ChatOllama instance based on the USE_LOCAL_LLM setting.
     """
+    settings = get_settings()
     model_name = settings.reasoning_llm_name if reasoning else settings.nonreasoning_llm_name
 
     if settings.use_local_llm:

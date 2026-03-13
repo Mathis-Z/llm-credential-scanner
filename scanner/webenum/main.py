@@ -23,7 +23,7 @@ from markdownify import markdownify
 from scanner.db.models import Endpoint, Service
 from scanner.db import DBConnectionMixin
 from scanner.ai.tools.url_fetching import fetch_url_with_browser
-from scanner.settings import Settings
+from scanner.settings import get_settings
 
 # relative to this file
 WORDLIST_RELATIVE_PATH = 'wordlist.txt'
@@ -37,7 +37,7 @@ class WebEnumerator(threading.Thread):
         super().__init__()
         self.workers = []
         self.pending_services: queue.Queue[Service] = queue.Queue()
-        self.max_workers = max(1, Settings().max_webenum_workers)
+        self.max_workers = max(1, get_settings().max_webenum_workers)
         self.worker_semaphore = threading.BoundedSemaphore(self.max_workers)
         self.dispatcher_thread: threading.Thread | None = None
         self.netscan_done = threading.Event()

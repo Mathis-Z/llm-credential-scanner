@@ -4,7 +4,7 @@ import json
 import time
 from pathlib import Path
 from typing import Any
-from scanner.settings import Settings
+from scanner.settings import get_settings
 
 
 class LLMCache:
@@ -68,7 +68,7 @@ class LLMCache:
         """Retrieve a cached result, or None if not found. Updates timestamp on hit."""
         self.total_requests += 1
 
-        if Settings().disable_llm_cache:
+        if get_settings().disable_llm_cache:
             return None
 
         cache = self._load_cache()
