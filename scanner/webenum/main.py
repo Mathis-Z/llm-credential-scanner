@@ -263,8 +263,8 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
         try:
             soup = BeautifulSoup(content, 'html.parser')
             for link in soup.find_all('a', href=True):
-                href = link['href']
-                if not href.startswith(('http://', 'https://', '//', 'mailto:', 'tel:')):
+                href = link['href'].strip()
+                if not href.startswith(('http://', 'https://', '//', 'mailto:', 'tel:', '#', 'javascript:', 'data:', 'blob:')):
                     full_url = urllib.parse.urljoin(url, href)
                     # Remove fragment (everything after #)
                     full_url = full_url.split('#')[0]
