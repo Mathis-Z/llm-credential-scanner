@@ -220,3 +220,5 @@ __marimo__/
 
 # Include Zabbix environment file
 !test-network/Zabbix/.env
+
+downloaded_files/
