@@ -21,7 +21,7 @@ def configure_logging():
         "class": "logging.FileHandler",
         "filters": ["scanner_only"],
         "formatter": "default",
-        "filename": get_settings().log_file,
+        "filename": str(get_settings().log_file),
         "encoding": "utf-8"
     }
 

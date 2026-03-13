@@ -8,7 +8,7 @@ from tabulate import tabulate
 from scanner.netscan import NetScanner
 from scanner.webenum import WebEnumerator
 from scanner.ai import CredSearcher, CredTester, KeywordExtractor
-from scanner.settings import override_settings, configure_logging
+from scanner.settings import override_settings, configure_logging, get_settings
 from scanner.db import load_or_create_db, Endpoint, Service
 from scanner.ai.llm_cache import LLMCache
 
@@ -18,7 +18,7 @@ logger = logging.getLogger("scanner.main")
 @click.argument("subnets")
 @click.option("--ports", "-p", default=None, help="Comma-separated list of ports to scan; forwarded to nmap")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
-@click.option("--log-file", default=None, help="Path to the log file. Default: <artifacts_dir>/scanner.log")
+@click.option("--log-file", default="scanner.log", help="Path to the log file. Default: <artifacts_dir>/scanner.log")
 @click.option("--max-webdrivers", default=3, help="Maximum number of concurrent WebDriver instances for credential testing")
 @click.option("--max-webenum-workers", default=4, help="Maximum number of concurrent web enumeration workers")
 @click.option("--artifacts-dir", default=None, help="Base directory for scan artifacts (DB, screenshots, logs)")
@@ -37,6 +37,7 @@ def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers
         artifacts_dir=Path(artifacts_dir),
         disable_llm_cache=disable_llm_cache
     )
+    get_settings().artifacts_dir.mkdir(parents=True, exist_ok=True)
     configure_logging()
     load_or_create_db()
 
