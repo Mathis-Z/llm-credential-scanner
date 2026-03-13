@@ -17,7 +17,7 @@ def fetch_url(start_url: str, acquire_timeout: float = 60.0) -> tuple[str, str]:
     logger.debug("Fetching URL: %s", start_url)
     try:
         with BrowserPool().acquire(timeout=acquire_timeout) as sb:
-            sb.open(start_url)
+            sb.driver.get(start_url)
             sb.sleep(1)
             _wait_for_dom_settle(sb)
             raw = sb.get_page_source()

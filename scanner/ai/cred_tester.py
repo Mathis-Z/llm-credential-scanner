@@ -12,7 +12,6 @@ from pathlib import Path
 from threading import Thread, Event
 import logging
 from dataclasses import dataclass
-from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.common.by import By
@@ -27,6 +26,7 @@ from scanner.ai.tools import make_credential_testing_tools
 from scanner.db.models import Endpoint
 from scanner.db import DBConnectionMixin
 from scanner.settings import Settings
+from scanner.shared.browser_pool import BrowserPool
 
 
 PROMPT_TEMPLATE = """
@@ -325,14 +325,9 @@ class CredTester(DBConnectionMixin, Thread):
         Performs a login attempt on the given endpoint with the given credentials, using the LLM to interact with the page.
         Returns the page state before and after the login attempt, for comparison to determine if the login was successful.
         """
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--ignore-certificate-errors")
-        options.add_argument("--allow-insecure-localhost")
-        options.add_argument("--allow-running-insecure-content")
-        options.page_load_strategy = "eager"
 
-        with webdriver.Chrome(options=options) as driver:
+        with BrowserPool().acquire(timeout=60) as sb:
+            driver = sb.driver
             driver.set_page_load_timeout(30)
             driver.set_script_timeout(30)
 
