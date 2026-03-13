@@ -288,35 +288,28 @@ class WebEnumWorker(DBConnectionMixin, threading.Thread):
             md_hash = self.create_markdown_hash(html)
 
             after_path = urllib.parse.urlparse(after_url).path
+            normalized_after_path = self.normalize_path(after_path)
+            after_path_is_duplicate = self.already_found(normalized_after_path) or self.md_hash_exists(md_hash)
+
+            if self.detect_password_input(after_url, html) and not after_path_is_duplicate:
+                if after_path == path:
+                    logger.info("Non-existent path returned login page %s; recording login endpoint", after_url)
+                else:
+                    logger.info("Non-existent path redirected to login page %s; recording login endpoint", after_url)
+
+                Endpoint.create(
+                    service=self.service,
+                    path=normalized_after_path,
+                    initial_path=self.normalize_path(path),
+                    is_login=True,
+                    page_source=html,
+                    md_hash=md_hash
+                )
+
             if after_path != path:
                 # TODO: this is a rather lazy check for apps that redirect all or most requests to their login page
                 logger.debug("Soft 404 detection encountered redirect from %s to %s; disabling soft 404 detection", before_url, after_url)
-                if self.detect_password_input(after_url, html):
-                    normalized_after_path = self.normalize_path(after_path)
-                    if not self.already_found(normalized_after_path) and not self.md_hash_exists(md_hash):
-                        logger.info("Non-existent path redirected to login page %s; recording login endpoint", after_url)
-                        Endpoint.create(
-                            service=self.service,
-                            path=normalized_after_path,
-                            initial_path=self.normalize_path(path),
-                            is_login=True,
-                            page_source=html,
-                            md_hash=md_hash
-                        )
                 return None
-
-            if self.detect_password_input(after_url, html):
-                normalized_after_path = self.normalize_path(after_path)
-                if not self.already_found(normalized_after_path) and not self.md_hash_exists(md_hash):
-                    logger.info("Non-existent path returned login page %s; recording login endpoint", after_url)
-                    Endpoint.create(
-                        service=self.service,
-                        path=normalized_after_path,
-                        initial_path=self.normalize_path(path),
-                        is_login=True,
-                        page_source=html,
-                        md_hash=md_hash
-                    )
 
             return self.simhash(html)
         except Exception as e:
