@@ -43,6 +43,7 @@ class BrowserPool:
             cls._instance = instance
             logger.info("Browser pool ready (%d/%d browsers)", instance._pool.qsize(), size)
             atexit.register(cls._instance.shutdown)
+            return cls._instance
 
     def _create_browser(self, index: int = 0) -> tuple | None:
         try:
