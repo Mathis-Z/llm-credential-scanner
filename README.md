@@ -1,66 +1,191 @@
-# Team 1
+# Team 1: LLM-Assisted Web Default-Credential Scanner
 
+This repository contains a prototype security scanner for discovering web services on a network, enumerating endpoints, and testing likely default credentials with help from LLM-driven agents.
 
-## Collaborate with your team
+The project is organized around two runnable parts:
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+- `scanner/`: the scanning pipeline (network scan -> web enum -> keyword extraction -> credential search -> credential testing)
+- `dashboard/`: a Flask UI for browsing scan artifacts (`scanner.db`, logs, screenshots)
 
-## Test and Deploy
+## What It Does
 
-Use the built-in continuous integration in GitLab.
+For each target subnet/IP:
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+1. Discovers hosts/ports that expose HTTP(S) (`scanner/netscan/`)
+2. Enumerates reachable paths and detects login pages (`scanner/webenum/`)
+3. Extracts identifying keywords from selected endpoints (`scanner/ai/keyword_extractor.py`)
+4. Searches the web using LLMs for likely default credentials (`scanner/ai/cred_searcher.py`)
+5. Uses browser automation + LLM tool calls to test credentials (`scanner/ai/cred_tester.py`)
 
-***
+Results are stored in SQLite and artifacts are written to a run directory containing:
 
-## Suggestions for a good README
+- `scanner.db`
+- `scanner.log`
+- `screenshots/` (credential test before/after states)
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Repository Layout
 
-## Name
-Choose a self-explaining name for your project.
+- `scanner/`: core scanner code, tests, DB models, AI modules
+- `dashboard/`: Flask dashboard for viewing run outputs
+- `artifacts/successful_scan/`: sample run artifacts
+- `references/`: papers, notes, prompts, and related material
+- `meetings/`: project notes and progress logs
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Requirements
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+- Linux/macOS environment (tested on Linux)
+- Python (testing with 3.13.7)
+- `nmap` available on the host (used via `python3-nmap`)
+- Chrome/Chromium runtime for SeleniumBase headless browser tasks
+- LLM access:
+	- remote API: set `OPENAI_API_KEY` (used with OpenRouter-compatible base URL by default)
+	- or local model mode (`USE_LOCAL_LLM=true`, e.g. Ollama)
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+## Quick Start
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### 1) Set up scanner environment
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```bash
+cd scanner
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+Create `scanner/.env`:
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```env
+OPENAI_API_KEY=your_api_key_here
+# Optional
+# OPENAI_BASE_URL=https://openrouter.ai/api/v1
+# USE_LOCAL_LLM=false
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### 2) Run a scan
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+From repository root:
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```bash
+python3 -m scanner.main "192.168.1.0/24"
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Or scan specific hosts/subnets and ports:
 
-## License
-For open source projects, say how it is licensed.
+```bash
+python3 -m scanner.main "192.168.1.10,192.168.1.0/28" -p "80,443,8080" --max-webdrivers 3 --max-webenum-workers 4
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### 3) Open dashboard
+
+```bash
+python3 -m pip install -r dashboard/requirements.txt
+python3 dashboard/app.py
+```
+
+Then open `http://127.0.0.1:8089`.
+
+If your artifacts live elsewhere:
+
+```bash
+export SCANNER_LOGS_DIR=/path/to/scan_artifacts
+python3 dashboard/app.py
+```
+
+## Scanner CLI
+
+Main entrypoint: `python3 -m scanner.main <subnets>`
+
+Supported options:
+
+- `-p, --ports`: comma-separated ports forwarded to nmap
+- `-L, --log-level`: `DEBUG|INFO|WARNING|ERROR|CRITICAL`
+- `--log-file`: log filename/path under artifacts dir
+- `--max-webdrivers`: concurrent browser sessions for credential testing
+- `--max-webenum-workers`: concurrent web enumeration workers
+- `--artifacts-dir`: output directory for DB/logs/screenshots
+- `--disable_llm_cache`: disable local LLM response caching
+
+Run help:
+
+```bash
+python3 -m scanner.main --help
+```
+
+## Artifacts and Data Model
+
+Each run writes to an artifacts directory (default: `scan_artifacts/` relative to current working directory):
+
+- `scanner.db`:
+	- `service` table: discovered web services and candidate credentials
+	- `endpoint` table: enumerated paths, login flags, extracted keywords, tested/working credentials
+- `scanner.log`: scanner logs and status summaries
+- `screenshots/`: saved around login attempts
+
+The dashboard can:
+
+- list runs
+- inspect discovered services/endpoints
+- show found credentials/login panels
+- group screenshots by endpoint and credential attempt
+- view scanner/docker logs
+
+## Testing
+
+Integration tests are under `scanner/tests/` and rely on containerized vulnerable applications.
+
+Important:
+
+- Test scripts may stop/kill running Docker containers.
+- Test artifacts are created under `/tmp/scan_artifacts` by default.
+
+### How the Docker Compose test setup works
+
+The integration runner (`scanner/tests/tests.py`) executes a list of application test cases. For each app:
+
+1. A Docker Compose stack is started from `scanner/tests/test-network/<app>/docker-compose.yml`.
+2. The test waits until the target login page is reachable and a password field is present.
+3. The scanner is run against that app target (`python -m scanner.main ...`) with a dedicated artifacts directory.
+4. Assertions are collected (credentials found, credentials verified, login panel found, endpoint count).
+5. The Compose stack is torn down (`docker compose down -v --remove-orphans`), with a force-kill fallback if needed.
+
+The startup helper also prunes containers/networks before runs to reduce leftover-state issues.
+
+Run tests:
+
+```bash
+python3 -m scanner.tests.tests --keep
+```
+
+Useful flags:
+
+- `--select app1,app2`: run only selected apps
+- `--kill-containers`: clean running containers before test execution
+- `-L, --log-level`: set test/scanner logging verbosity
+
+### Historical integration results
+
+Collected integration test summaries are stored in:
+
+- `artifacts/integration-tests-results/`
+
+These files track results across project development iterations. The newest report is:
+
+- `artifacts/integration-tests-results/11_02_2026_even_more_improved_cred_tester.txt`
+
+## Safety Notes
+
+- Use only on assets/networks you are explicitly authorized to test.
+- Aggressive credential testing can trigger lockouts/rate limits.
+- Web-search-based LLM steps should be treated as untrusted input.
+- Keep API keys in `.env`; do not commit secrets.
+
+## Current Status
+
+This is an active prototype with evolving heuristics and test coverage.
+
+Helpful project docs:
+
+- `idea.md`
+- `scanner/structure.md`
+- `scanner/README.md`
+- `dashboard/README.md`

@@ -1,69 +1,109 @@
 # Structure of the application
 
-## Potential Modules
+This file reflects the current implementation status in `scanner/`.
 
-0. Root Module
-    - CLI interface
-    - orchestrates other modules
-    - handles data storage?
-        - if this should be a long-running daemon, should store data, e.g., in sqlite to avoid data loss by restarting
+## Implemented modules (already in code)
 
-1. Network Scan
-    - Input: subnets to scan, scanning settings
-    - Output: list of detected (host, port) pairs
+0. Root/orchestration module (`scanner/main.py`)
+    - CLI entrypoint with options for subnets, ports, logging, worker limits, artifacts dir, LLM cache toggle.
+    - Sequentially orchestrates modules:
+      1) `NetScanner`
+      2) `WebEnumerator`
+      3) `KeywordExtractor`
+      4) `CredSearcher`
+      5) `CredTester`
+    - Periodic status summary and final scan summary logging.
 
-2. Web enumeration: finding login pages
-    - Input: (host, port) pair, enum settings
-    - Output: (vhost?, path) identifying potential web page
-    - vhost enumeration
-    - directory enumeration
-        - can we do this smart? only looking for login pages which should be close to top level
-        - could use papers on this (I saw something using ML to enumerate more efficiently)
-    - should also use crawling
-    - needs way to detect (potential) login pages
-        - probably just look for "input[type=password]" for now
+1. Settings and runtime config (`scanner/settings.py`)
+    - Central settings via env + runtime overrides.
+    - Supports remote LLM mode and local LLM mode.
+    - Artifacts dir, DB path, log file, worker limits, cache settings.
 
-3. Webapp Fingerprinting / name&version detection
-    - Input: (host, port, vhost, path) identifying potential web page
-    - Output: (app name?, version?, fingerprint?) identifying web page
-    - how does the fingerprinting work?
-        - should do research on existing tools
-        - are there recent papers for this?
-    - name/version extraction using LLM
+2. Persistence/DB layer (`scanner/db/`)
+    - SQLite (peewee) with pooled connections.
+    - Thread-safe serialized DB write queue.
+    - Models:
+      - `Service`: discovered web service + candidate credentials + module completion flags.
+      - `Endpoint`: discovered path + login flag + keywords + tested/working credentials.
 
-4. Database Lookup
-    - Input: (app name?, version?, fingerprint?)
-    - Output: list of (user, password) pairs with descending probability
-    - how does the matching work?
-        - fingerprints can be compared 1:1 but what about app names and versions?
+3. Network scan module (`scanner/netscan/main.py`)
+    - Scans target subnet(s)/IP(s) with nmap.
+    - Detects reachable HTTP services and checks HTTPS behavior.
+    - Creates `Service` records and emits pubsub events.
 
-5. Credential Web search
-    - Input: (app name?, version?, fingerprint?)
-    - Output: list of (user, password) pairs with descending probability
-    - using LLM
-        - how to build web search with LLM? are there existing approaches/papers?
-        - how can we search GitHub as well (probably not fully indexed by Google?)
+4. Web enumeration module (`scanner/webenum/main.py`)
+    - Multi-worker directory/path enumeration from wordlist.
+    - Basic crawling by parsing links.
+    - Renders pages via browser fetch helper for JS-heavy pages.
+    - Endpoint deduplication and soft-404 handling.
+    - Login page detection using password input heuristic.
 
-6. Credential testing
-    - Input: (host, port, vhost, path) and list of (user, password) with descending probability
-    - Output: list of working (user, password)
-    - how to handle failed login tries that lock the account?
-    - do we need LLM for this as well?
-    - what about logins that are not simple html forms?
+5. Keyword extraction module (`scanner/ai/keyword_extractor.py`)
+    - Selects relevant endpoints per service.
+    - Converts page HTML to markdown.
+    - Uses LLM to extract search keywords/links.
+    - Stores extracted keywords in endpoint records.
 
-7. Reporting
-    - Input: (host, port, vhost, path, user)
-    - notify admin per mail/slack/etc.
+6. Credential web-search module (`scanner/ai/cred_searcher.py`)
+    - Uses LLM agent tools for web search and page fetch.
+    - Collects potential default credentials and stores on `Service`.
+    - Retries with bounded attempts and can stop early when creds already verified.
 
-8. (CVE Lookup)
-    - could also do a CVE lookup if time allows
+7. Credential testing module (`scanner/ai/cred_tester.py`)
+    - Concurrent credential testing workers with bounded browser pool.
+    - Selenium/LLM-tool-driven form interaction (`insert_text_into_field`, `click_button`).
+    - Baseline failed-login comparison logic and success heuristics.
+    - Records tested credentials, working credentials, and screenshots.
 
-9. (GitHub scanning)
-    - could use LLM to scan popular GitHub repos for creds
-    - would not be part of main scanner but help to create extensive database to start with
+8. Shared browser/runtime helpers (`scanner/shared/`, `scanner/ai/tools/`)
+    - Browser pool management for reusable headless sessions.
+    - URL fetching, web search, and credential testing tool wrappers.
+    - LLM wrapper with response caching and rate-limit backoff.
 
+9. Integration testing harness (`scanner/tests/`)
+    - End-to-end tests against vulnerable containerized apps.
+    - Verifies discovery, login detection, and credential verification outcomes.
+    - Stores per-run artifacts and summary tables.
+
+## Potential/future work (not implemented or partial)
+
+1. Webapp fingerprinting/name+version detection
+    - No dedicated fingerprinting module yet.
+    - Add deterministic fingerprints (headers, assets, routes, signatures) plus LLM-assisted labeling.
+
+2. Database credential lookup from curated sources
+    - Current flow relies on LLM web search + small static defaults.
+    - Add local curated credential corpus and matching/ranking logic.
+
+3. VHost enumeration and smarter crawl strategy
+    - Path enumeration/crawling exists, but no explicit vhost brute forcing.
+    - Add adaptive crawling prioritization and depth policies.
+
+4. Lockout/rate-limit aware credential strategy
+    - Basic early-stop logic exists.
+    - Add per-service attempt budgets, cooldowns, and account lockout detection.
+
+5. Reporting/notification module
+    - Results are written to DB/logs and viewable in dashboard.
+    - Missing alert channels (email/Slack/webhook) and report export.
+
+6. CVE enrichment
+    - No CVE lookup currently.
+    - Once app identification is reliable, add CPE/CVE correlation.
+
+7. GitHub/source mining for defaults
+    - Not integrated in scanner pipeline.
+    - Could be a separate offline job to enrich credential knowledge base.
+
+8. Operator controls and resumability
+    - No complete pause/resume/checkpointing workflow yet.
+    - Add module-level resume and manual result injection between stages.
+
+9. Config schema and policy controls
+    - Settings currently env/CLI driven.
+    - Add structured YAML/TOML config profiles and per-module policies.
 
 ## Notes
 
-- could allow user to hard-code / inject results between steps (e.g, add a known host/port pair before web enum is done)
-- settings (i.e., scanning, enum) could be defined in YAML with one section per module
+- Main pipeline is already functional end-to-end and tested with lab applications.
+- Several items above are quality, safety, and accuracy improvements rather than missing core functionality.
