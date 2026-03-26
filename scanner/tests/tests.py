@@ -246,6 +246,7 @@ def run(keep, select, log_level, kill_containers):
         ("Zabbix", 80, "*", "Admin", "zabbix"),
         ("ActiveMQ", 8161, "/admin", "admin", "admin"),
         ("Cacti", 80, "/login.php", "admin", "admin"),
+        ("Huginn", 3000, "/users/sign_in", "admin", "password")
     ]
 
     if select:
