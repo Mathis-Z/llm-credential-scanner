@@ -21,7 +21,7 @@ logger = logging.getLogger("scanner.main")
 @click.option("--log-file", default="scanner.log", help="Path to the log file. Default: <artifacts_dir>/scanner.log")
 @click.option("--max-webdrivers", default=3, help="Maximum number of concurrent WebDriver instances for credential testing")
 @click.option("--max-webenum-workers", default=4, help="Maximum number of concurrent web enumeration workers")
-@click.option("--artifacts-dir", default=None, help="Base directory for scan artifacts (DB, screenshots, logs)")
+@click.option("--artifacts-dir", default="./scan_artifacts", help="Base directory for scan artifacts (DB, screenshots, logs)")
 @click.option("--disable_llm_cache", is_flag=True, help="Do not cache LLM responses")
 def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache):
     run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache)

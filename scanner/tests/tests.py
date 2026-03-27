@@ -244,7 +244,10 @@ def run(keep, select, evaluation, log_level, kill_containers):
         # ("Rainloop", 80, "/", "admin", "12345"), Error response from daemon: error while creating mount source path '/opt/docker-rainloop/data': mkdir /opt/docker-rainloop: read-only file system
         ("Readmine", 8084, "/login", "admin", "admin"),
         ("SonarQube", 9000, "/sessions/new", "admin", "admin"),
-        ("Zabbix", 80, "*", "Admin", "zabbix")
+        ("Zabbix", 80, "*", "Admin", "zabbix"),
+        ("ActiveMQ", 8161, "/admin", "admin", "admin"),
+        ("Cacti", 80, "/login.php", "admin", "admin"),
+        ("Huginn", 3000, "/users/sign_in", "admin", "password")
     ]
 
     evaluation_cases = [
