@@ -1,0 +1,8 @@
+services:
+  nuxeo:
+    image: nuxeo:latest
+    ports:
+      - "18083:8080"
+    environment:
+      - NUXEO_PACKAGES=nuxeo-web-ui
+    restart: unless-stopped

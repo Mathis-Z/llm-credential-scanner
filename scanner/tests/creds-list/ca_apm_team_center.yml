@@ -1,0 +1,28 @@
+auth:
+  credentials:
+  - password: ''
+    username: Admin
+  - password: Guest
+    username: Guest
+  post:
+    password: j_password
+    username: j_username
+  sessionid: WSESSIONID
+  success:
+    body: 
+    - ja/webview/webview.nocache.js
+    status: 200
+  type: post
+  url:
+  - /jsp/j_security_check
+category: web
+contributor: ztgrace
+default_port: 80
+fingerprint:
+  body:
+    - <title>APM WebView</title>
+  status: 200
+  url:
+  - /
+name: CA APM Team Center
+ssl: false

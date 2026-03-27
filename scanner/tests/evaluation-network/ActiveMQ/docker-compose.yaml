@@ -1,0 +1,7 @@
+services:
+  activemq:
+    image: apache/activemq:latest
+    ports:
+      - "18161:8161"
+      - "18616:61616"
+    restart: unless-stopped

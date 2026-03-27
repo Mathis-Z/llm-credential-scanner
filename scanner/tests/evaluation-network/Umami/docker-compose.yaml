@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=umami
+      - POSTGRES_USER=umami
+      - POSTGRES_PASSWORD=umami
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://umami:umami@db:5432/umami
+      - HASH_SALT=change_me_for_test_env
+    ports:
+      - "18162:3000"
+    restart: unless-stopped
+
+volumes:
+  umami_db_data:

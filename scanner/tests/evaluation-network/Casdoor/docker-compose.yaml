@@ -1,0 +1,23 @@
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=casdoor
+    volumes:
+      - casdoor_db_data:/var/lib/mysql
+    restart: unless-stopped
+
+  casdoor:
+    image: casbin/casdoor:latest
+    depends_on:
+      - db
+    volumes:
+      - ./app.conf:/conf/app.conf:ro
+    ports:
+      - "18159:8000"
+    restart: unless-stopped
+
+volumes:
+  casdoor_db_data:

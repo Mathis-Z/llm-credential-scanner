@@ -1,0 +1,6 @@
+services:
+  kanboard:
+    image: kanboard/kanboard:latest
+    ports:
+      - "18081:80"
+    restart: unless-stopped

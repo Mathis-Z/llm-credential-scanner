@@ -1,0 +1,29 @@
+auth:
+  credentials:
+  - password: zabbix
+    username: Admin
+  post:
+    autologin: '1'
+    enter: Sign in
+    password: password
+    request: ''
+    username: name
+  sessionid: zbx_sessionid
+  success:
+    body: 
+    - Logout</a>
+    status: 200
+  type: post
+  url:
+  - /zabbix/index.php
+category: web
+contributor: ztgrace
+default_port: 80
+fingerprint:
+  body:
+    - by Zabbix SIA
+  status: 200
+  url:
+  - /zabbix/index.php
+name: Zabbix
+ssl: false

@@ -1,0 +1,54 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=huginn_production
+      - MYSQL_USER=huginn
+      - MYSQL_PASSWORD=password
+    volumes:
+      - huginn_mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/huginn/huginn-single-process:latest
+    depends_on:
+      - mysql
+    environment:
+      - DATABASE_ADAPTER=mysql2
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=huginn_production
+      - DATABASE_USERNAME=huginn
+      - DATABASE_PASSWORD=password
+      - HUGINN_DATABASE_PASSWORD=password
+      - SEED_USERNAME=admin
+      - SEED_PASSWORD=password
+      - SEED_EMAIL=admin@example.com
+      - INVITATION_CODE=password
+    ports:
+      - "18168:3000"
+    restart: unless-stopped
+
+  threaded:
+    image: ghcr.io/huginn/huginn-single-process:latest
+    command: /scripts/init bin/threaded.rb
+    depends_on:
+      - mysql
+      - web
+    environment:
+      - DATABASE_ADAPTER=mysql2
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=huginn_production
+      - DATABASE_USERNAME=huginn
+      - DATABASE_PASSWORD=password
+      - HUGINN_DATABASE_PASSWORD=password
+      - SEED_USERNAME=admin
+      - SEED_PASSWORD=password
+      - SEED_EMAIL=admin@example.com
+      - INVITATION_CODE=password
+    restart: unless-stopped
+
+volumes:
+  huginn_mysql_data:

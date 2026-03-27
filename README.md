@@ -156,9 +156,16 @@ Run tests:
 python3 -m scanner.tests.tests --keep
 ```
 
+Run evaluation-network tests:
+
+```bash
+python3 -m scanner.tests.tests --evaluation --keep
+```
+
 Useful flags:
 
 - `--select app1,app2`: run only selected apps
+- `-e, --evaluation`: run the evaluation-network app set instead of the default test-network set
 - `--kill-containers`: clean running containers before test execution
 - `-L, --log-level`: set test/scanner logging verbosity
 

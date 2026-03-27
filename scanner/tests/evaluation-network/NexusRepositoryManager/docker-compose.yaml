@@ -1,0 +1,6 @@
+services:
+  nexus:
+    image: sonatype/nexus3:3.16.2
+    ports:
+      - "18082:8081"
+    restart: unless-stopped

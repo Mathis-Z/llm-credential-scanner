@@ -1,0 +1,13 @@
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:v2.32.0
+    ports:
+      - "18146:80"
+    volumes:
+      - filebrowser_data:/database
+      - filebrowser_config:/config
+    restart: unless-stopped
+
+volumes:
+  filebrowser_data:
+  filebrowser_config:

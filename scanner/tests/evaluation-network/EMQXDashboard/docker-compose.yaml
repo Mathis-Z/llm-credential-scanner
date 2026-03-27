@@ -1,0 +1,8 @@
+services:
+  emqx:
+    image: emqx/emqx:latest
+    container_name: eval-emqx-dashboard
+    network_mode: bridge
+    ports:
+      - "18201:18083"
+    restart: unless-stopped

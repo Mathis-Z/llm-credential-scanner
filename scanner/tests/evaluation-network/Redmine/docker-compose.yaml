@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=redmine
+      - POSTGRES_USER=redmine
+      - POSTGRES_PASSWORD=admin
+    volumes:
+      - redmine_db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redmine:
+    image: redmine:5.1
+    depends_on:
+      - db
+    environment:
+      - REDMINE_DB_POSTGRES=db
+      - REDMINE_DB_DATABASE=redmine
+      - REDMINE_DB_USERNAME=redmine
+      - REDMINE_DB_PASSWORD=admin
+      - REDMINE_SECRET_KEY_BASE=changeme_redmine_secret
+    ports:
+      - "18158:3000"
+    volumes:
+      - redmine_data:/usr/src/redmine/files
+    restart: unless-stopped
+
+volumes:
+  redmine_db_data:
+  redmine_data:

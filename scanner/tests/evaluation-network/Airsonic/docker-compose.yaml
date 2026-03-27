@@ -1,0 +1,8 @@
+services:
+  airsonic:
+    image: airsonic/airsonic:latest
+    container_name: eval-airsonic
+    network_mode: bridge
+    ports:
+      - "18215:4040"
+    restart: unless-stopped

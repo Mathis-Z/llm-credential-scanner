@@ -1,0 +1,12 @@
+services:
+  qbittorrent:
+    image: linuxserver/qbittorrent:4.6.0
+    container_name: eval-qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - WEBUI_PORT=18206
+    ports:
+      - "18206:18206"
+    restart: unless-stopped

@@ -1,0 +1,7 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "18144:15672"
+      - "15673:5672"
+    restart: unless-stopped

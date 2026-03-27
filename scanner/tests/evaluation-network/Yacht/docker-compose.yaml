@@ -1,0 +1,12 @@
+services:
+  yacht:
+    image: selfhostedpro/yacht:latest
+    ports:
+      - "18165:8000"
+    volumes:
+      - yacht_config:/config
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  yacht_config:

@@ -1,0 +1,13 @@
+services:
+  eventstore:
+    image: eventstore/eventstore:release-5.0.11
+    container_name: eval-eventstoredb
+    network_mode: bridge
+    environment:
+      - EVENTSTORE_INSECURE=true
+      - EVENTSTORE_RUN_PROJECTIONS=All
+      - EVENTSTORE_START_STANDARD_PROJECTIONS=true
+      - EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP=true
+    ports:
+      - "2113:2113"
+    restart: unless-stopped

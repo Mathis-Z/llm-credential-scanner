@@ -207,9 +207,10 @@ def clean_docker_environment():
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary artifacts after tests complete")
 @click.option("--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
+@click.option("--evaluation", "-e", is_flag=True, help="Run evaluation network cases instead of default test network cases")
 @click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--kill-containers", is_flag=True, help="Kill any running Docker containers before starting tests")
-def run(keep, select, log_level, kill_containers):
+def run(keep, select, evaluation, log_level, kill_containers):
     start_time = time.time()
     override_settings(log_level=log_level)
     configure_logging()
@@ -246,11 +247,42 @@ def run(keep, select, log_level, kill_containers):
         ("Zabbix", 80, "*", "Admin", "zabbix")
     ]
 
+    evaluation_cases = [
+        ("ActiveMQ", 18161, "/admin", "admin", "admin"),
+        ("Airsonic", 18215, "/", "admin", "admin"),
+        ("ApacheGuacamole", 18163, "/guacamole/", "guacadmin", "guacadmin"),
+        ("Casdoor", 18159, "/", "Admin", "123"),
+        ("EMQXDashboard", 18201, "/", "admin", "public"),
+        ("EventStoreDB", 18219, "/", "admin", "changeit"),
+        ("Filebrowser", 18146, "/", "admin", "admin"),
+        ("Huginn", 18168, "/users/sign_in", "admin", "password"),
+        ("Kanboard", 18081, "/", "admin", "admin"),
+        ("Keycloak", 18140, "/", "admin", "admin"),
+        ("KibanaOSS", 18167, "/login", "elastic", "changeme"),
+        ("MinIO", 18147, "/", "minioadmin", "minioadmin"),
+        ("NexusRepositoryManager", 18082, "/", "admin", "admin123"),
+        ("NginxProxyManager", 18145, "/", "admin@example.com", "changeme"),
+        ("NuxeoServer", 18083, "/nuxeo/", "Administrator", "Administrator"),
+        ("OpenSearchDashboards", 5601, "/", "admin", "admin"),
+        ("OpenVAS", 18226, "/", "admin", "adminpassword"),
+        ("RabbitMQManagement", 18144, "/", "guest", "guest"),
+        ("Redmine", 18158, "/login", "admin", "admin"),
+        ("Rundeck", 18143, "/user/login", "admin", "admin"),
+        ("Seafile", 18169, "/accounts/login/", "me@example.com", "asecret"),
+        ("StirlingPDF", 18217, "/", "admin", "stirling"),
+        ("Superset", 18220, "/", "admin", "admin"),
+        ("Umami", 18162, "/login", "admin", "umami"),
+        ("Yacht", 18165, "/login", "admin@yacht.local", "pass"),
+        ("qBittorrent", 18206, "/", "admin", "adminadmin"),
+    ]
+
+    active_cases = evaluation_cases if evaluation else test_cases
+
     if select:
-        test_cases = [tc for tc in test_cases if tc[0] in selected_apps]
+        active_cases = [tc for tc in active_cases if tc[0] in selected_apps]
 
     results: dict[str, TestResult | None] = {}
-    for (app_name, port, login_path, username, password) in test_cases:
+    for (app_name, port, login_path, username, password) in active_cases:
         with TemporaryScanArtifacts() as artifacts:
             try:
                 results[app_name] = run_app_test(app_name, artifacts, port, login_path, username, password)

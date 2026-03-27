@@ -1,0 +1,8 @@
+services:
+  openvas:
+    image: securecompliance/gvm:latest
+    container_name: eval-openvas
+    network_mode: bridge
+    ports:
+      - "18226:9392"
+    restart: unless-stopped
