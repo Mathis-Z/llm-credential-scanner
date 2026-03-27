@@ -157,12 +157,13 @@ def run_scanner(port, log_path, artifacts_dir, extra_args=None):
     p.wait()
 
 
-def run_app_test(app_dir_name, artifacts, port, login_path, username, password) -> TestResult:
+def run_app_test(app_dir_name, artifacts, port, login_path, username, password, network_dir: str = "test-network") -> TestResult:
     wait_path = "/" if login_path == "*" else login_path
     with RunDockerCompose(
         app_dir_name,
         wait_for_login_url=f"http://127.0.0.1:{port}{wait_path}",
-        log_path=artifacts.docker_log_path
+        log_path=artifacts.docker_log_path,
+        network_dir=network_dir,
     ):
         run_scanner(
             port,
@@ -278,6 +279,7 @@ def run(keep, select, evaluation, log_level, kill_containers):
     ]
 
     active_cases = evaluation_cases if evaluation else test_cases
+    active_network_dir = "evaluation-network" if evaluation else "test-network"
 
     if select:
         active_cases = [tc for tc in active_cases if tc[0] in selected_apps]
@@ -286,7 +288,15 @@ def run(keep, select, evaluation, log_level, kill_containers):
     for (app_name, port, login_path, username, password) in active_cases:
         with TemporaryScanArtifacts() as artifacts:
             try:
-                results[app_name] = run_app_test(app_name, artifacts, port, login_path, username, password)
+                results[app_name] = run_app_test(
+                    app_name,
+                    artifacts,
+                    port,
+                    login_path,
+                    username,
+                    password,
+                    network_dir=active_network_dir,
+                )
             except Exception as exc:
                 logger.error("Test for %s failed: %s", app_name, exc, exc_info=True)
                 results[app_name] = TestResult(

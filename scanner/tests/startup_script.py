@@ -115,9 +115,10 @@ class StartupScript:
 
 
 class RunDockerCompose(StartupScript):
-    """Run a docker compose file from the test-network directory and wait for a port to respond."""
+    """Run a docker compose file from a test network directory and wait for a port to respond."""
 
-    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 120, log_path: Path | None = None):
+    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 120, log_path: Path | None = None, network_dir: str = "test-network"):
+        self.network_dir = network_dir
         self.compose_file_path = self.find_docker_compose_file(compose_file_path)
 
         logger.info("Starting docker compose %s", self.compose_file_path)
@@ -130,7 +131,7 @@ class RunDockerCompose(StartupScript):
         )
 
     def find_docker_compose_file(self, compose_file_path: str) -> Path:
-        full_path = Path(__file__).parent / "test-network" / compose_file_path
+        full_path = Path(__file__).parent / self.network_dir / compose_file_path
 
         if full_path.suffix == ".yaml" or full_path.suffix == ".yml":
             return full_path
