@@ -1,4 +1,4 @@
 docker compose up
-http://localhost:18219/
+http://localhost:2113/
 admin
 changeit
