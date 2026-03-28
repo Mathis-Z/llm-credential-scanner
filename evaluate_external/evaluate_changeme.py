@@ -54,6 +54,12 @@ class TemporaryEvalArtifacts:
 
     def __enter__(self):
         self.dir_path.mkdir(parents=True, exist_ok=True)
+        # Make artifacts writable for containerized tools. This mainly helps
+        # when running as a non-root UID inside containers.
+        try:
+            self.dir_path.chmod(0o777)
+        except Exception:
+            pass
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -236,6 +242,10 @@ def run_changeme_in_docker(
     image: str,
 ) -> None:
     output_csv_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        output_csv_path.parent.chmod(0o777)
+    except Exception:
+        pass
     if output_csv_path.exists():
         output_csv_path.unlink()
 
@@ -253,14 +263,14 @@ def run_changeme_in_docker(
             "docker",
             "run",
             "--rm",
+            "--security-opt",
+            "label=disable",
             "--network",
             "host",
             "--user",
             f"{os.getuid()}:{os.getgid()}",
             "-v",
-            # Fedora/RHEL systems with SELinux typically require :Z/:z for
-            # containers to write into host-mounted directories.
-            f"{str(output_csv_path.parent)}:/mnt:Z",
+            f"{str(output_csv_path.parent)}:/mnt",
             image,
             "./changeme.py",
             "--noversion",

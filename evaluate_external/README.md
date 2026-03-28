@@ -15,7 +15,7 @@ This is **scanner-independent** (stdlib-only Python).
 
 Notes:
 - Changeme runs in Docker with `--network host`, so targets are `127.0.0.1`.
-- On SELinux systems (Fedora/RHEL), the script mounts artifacts with `:Z` so the container can write `results.csv`.
+- Changeme is run with `--security-opt label=disable` by default to avoid `results.csv` write issues caused by SELinux labeling.
 
 ## Usage
 
