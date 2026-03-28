@@ -1,3 +1,5 @@
+# Test helpers for deploying applications via subprocess or docker-compose.
+
 import subprocess
 import logging
 import time
@@ -7,10 +9,13 @@ from seleniumbase import SB
 
 logger = logging.getLogger('scanner.tests.startup_script')
 
+
 class StartupScript:
     """
-    Helper class for tests to automatically deploy an app using a startup script from apps/
-    Implements the context manager protocol to start and stop the script.
+    Context manager for running arbitrary startup commands in tests.
+    
+    Starts the process, waits for a login panel to be accessible,
+    and cleans up the process on exit.
     """
 
     def __init__(self, cmd: list[str], wait_for_login_url: int, timeout: int = 30, cwd="/tmp", log_path: Path | None = None):
@@ -25,6 +30,7 @@ class StartupScript:
 
     def __enter__(self):
         def stream_logs(process, log_file):
+            """Stream process output to file or stdout."""
             for line in process.stdout:
                 try:
                     if log_file:
@@ -35,6 +41,7 @@ class StartupScript:
                 except ValueError:
                     break
 
+        # Clean up Docker before starting
         subprocess.run(["docker", "container", "prune", "-f"], check=True)
         subprocess.run(["docker", "network", "prune", "-f"], check=True)
 
@@ -64,20 +71,20 @@ class StartupScript:
         self.cleanup_process()
 
     def cleanup_process(self):
+        """Gracefully terminate process, then force kill if necessary."""
         if self.process:
-            self.process.terminate() # graceful shutdown
+            self.process.terminate()
             try:
                 self.process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 logger.warning("Process did not terminate gracefully, sending SIGKILL.")
 
-            self.process.kill() # force kill
+            self.process.kill()
             try:
                 self.process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 logger.error("Process did not respond to SIGKILL, may be a zombie process.")
 
-            # Double-check process status
             if self.process.poll() is None:
                 logger.warning("Process still running after kill attempts, forcing kill again.")
                 self.process.kill()
@@ -89,6 +96,11 @@ class StartupScript:
             self.log_file.close()
 
     def wait_login_panel_up(self, url: str, timeout: int) -> bool:
+        """
+        Poll URL until password input element is present or timeout expires.
+        
+        Uses exponential backoff between retries.
+        """
         try:
             with SB(uc=True, headless=True, chromium_arg="--disable-dev-shm-usage") as sb:
                 wait = 1
@@ -99,11 +111,11 @@ class StartupScript:
 
                     if sb.is_element_present('input[type="password"]'):
                         logger.info("Login panel is up at %s", url)
-                        time.sleep(5) # idk why but Pyload is not reachable by the netscan module otherwise
+                        time.sleep(5)  # Allow time for service to be fully ready
                         return True
 
                     timeout -= wait
-                    wait = min(wait * 2, 10)  # exponential backoff up to 10 seconds
+                    wait = min(wait * 2, 10)  # exponential backoff
 
                 html = sb.get_page_source()
                 logger.error("Login panel did not come up at %s within %i seconds.", url, timeout)
@@ -123,7 +135,7 @@ class RunDockerCompose(StartupScript):
 
         logger.info("Starting docker compose %s", self.compose_file_path)
         super().__init__(
-            cmd=["docker", "compose", "-f", self.compose_file_path ,"up"],
+            cmd=["docker", "compose", "-f", self.compose_file_path, "up"],
             cwd=self.compose_file_path.parent,
             wait_for_login_url=wait_for_login_url,
             timeout=timeout,
@@ -131,11 +143,13 @@ class RunDockerCompose(StartupScript):
         )
 
     def find_docker_compose_file(self, compose_file_path: str) -> Path:
+        """Locate docker-compose.yaml file relative to self.network_dir directory."""
         full_path = Path(__file__).parent / self.network_dir / compose_file_path
 
-        if full_path.suffix == ".yaml" or full_path.suffix == ".yml":
+        if full_path.suffix in (".yaml", ".yml"):
             return full_path
         else:
+            # Assume it's a directory name; look for docker-compose.yaml inside
             for file in full_path.iterdir():
                 if file.name in ("docker-compose.yaml", "docker-compose.yml"):
                     return file
@@ -150,15 +164,16 @@ class RunDockerCompose(StartupScript):
 
     def __exit__(self, exc_type, exc_value, traceback):
         logger.info("Stopping docker compose %s", self.compose_file_path)
-
-        super().__exit__(exc_type, exc_value, traceback) # kills the docker compose up process
+        super().__exit__(exc_type, exc_value, traceback)
         self.cleanup()
 
     def cleanup(self):
+        """Stop docker-compose services, force kill if graceful shutdown fails."""
         if not self.docker_compose_down() and not self.docker_compose_force_kill():
             logger.error("Failed to stop docker compose services for %s", self.compose_file_path)
 
     def docker_compose_down(self) -> bool:
+        """Gracefully stop services and remove containers."""
         try:
             down_proc = subprocess.Popen(
                 ["docker", "compose", "-f", self.compose_file_path, "down", "-v", "--remove-orphans"],
@@ -170,10 +185,11 @@ class RunDockerCompose(StartupScript):
             down_proc.wait(timeout=10)
             return True
         except subprocess.TimeoutExpired:
-            logger.warning("docker compose down timed out for %s; Trying to force-kill containers.", self.compose_file_path)
+            logger.warning("docker compose down timed out; trying force kill.")
             return False
 
     def docker_compose_force_kill(self) -> bool:
+        """Force kill all containers managed by this compose file."""
         try:
             kill_proc = subprocess.Popen(
                 ["docker", "compose", "-f", self.compose_file_path, "kill"],
@@ -185,5 +201,5 @@ class RunDockerCompose(StartupScript):
             kill_proc.wait(timeout=10)
             return True
         except subprocess.TimeoutExpired:
-            logger.warning("docker compose kill timed out for %s; terminating kill process.", self.compose_file_path)
+            logger.warning("docker compose kill timed out.")
             return False

@@ -1,3 +1,5 @@
+# Singleton pool of Selenium browsers for parallel web interactions.
+
 import logging
 import queue
 import sys
@@ -8,6 +10,7 @@ from seleniumbase import SB
 from selenium.common.exceptions import TimeoutException
 from scanner.settings import get_settings
 
+# Exceptions that should not cause browser replacement (handled by caller)
 NON_CRITICAL_EXCEPTIONS = (
     RuntimeError,       # e.g. "Failed to load login panel"
     TimeoutException,   # Selenium timeout waiting for element
@@ -20,6 +23,12 @@ logger = logging.getLogger("scanner.shared.browser_pool")
 
 
 class BrowserPool:
+    """
+    Thread-safe singleton pool of headless Chrome browsers.
+    
+    Manages a fixed number of browser instances for concurrent web operations.
+    Browsers are reset between uses to ensure clean state.
+    """
     _instance: "BrowserPool | None" = None
     _instance_lock = threading.Lock()
 
@@ -27,7 +36,7 @@ class BrowserPool:
         if cls._instance is not None:
             return cls._instance
         with cls._instance_lock:
-            if cls._instance is not None:  # double-checked locking
+            if cls._instance is not None:
                 return cls._instance
 
             instance = super().__new__(cls)
@@ -46,6 +55,7 @@ class BrowserPool:
             return cls._instance
 
     def _create_browser(self, index: int = 0) -> tuple | None:
+        """Create a headless Chrome browser with anti-detection flags."""
         try:
             sb_ctx = SB(
                 uc=True,
@@ -66,6 +76,7 @@ class BrowserPool:
             return None
 
     def shutdown(self) -> None:
+        """Close all browser instances on shutdown."""
         with self._instance_lock:
             if self._pool.empty():
                 return
@@ -79,11 +90,17 @@ class BrowserPool:
 
     @contextmanager
     def acquire(self, timeout: float | None = None):
+        """
+        Acquire a browser from the pool for exclusive use.
+        
+        Returns browser to pool on exit, replacing if unhealthy.
+        """
         try:
             entry = self._pool.get(block=True, timeout=timeout)
         except queue.Empty:
             raise TimeoutError(f"No browser became available within {timeout}s") from None
 
+        # Check browser health before returning
         if not self._is_healthy(entry):
             entry = self._replace_entry(entry)
 
@@ -96,7 +113,7 @@ class BrowserPool:
             self._pool.put(entry)
 
     def _reset_browser(self, entry: tuple) -> tuple:
-        """Reset browser state by clearing storage, cookies, and navigating to blank page."""
+        """Clear browser state (storage, cookies) between uses."""
         sb, _ctx = entry
         try:
             sb.clear_local_storage()
@@ -110,6 +127,7 @@ class BrowserPool:
         return entry
 
     def _close_browser(self, entry: tuple) -> None:
+        """Close a browser context."""
         _sb, ctx = entry
         try:
             ctx.__exit__(None, None, None)
@@ -117,6 +135,7 @@ class BrowserPool:
             logger.exception("Error closing browser")
 
     def _replace_entry(self, entry: tuple) -> tuple:
+        """Replace crashed/unhealthy browser with fresh instance."""
         logger.warning("Replacing dead/crashed browser")
         self._close_browser(entry)
         new_entry = self._create_browser()
@@ -125,6 +144,7 @@ class BrowserPool:
         return new_entry
 
     def _is_healthy(self, entry: tuple) -> bool:
+        """Check if browser is responsive via simple JS execution."""
         sb, _ctx = entry
         try:
             sb.driver.execute_script("return 1")

@@ -1,6 +1,5 @@
-"""
-Abstraction over langchains ChatOpenAI and ChatOllama to easily switch between local and remote LLMs
-"""
+# Abstraction over langchain ChatOpenAI and ChatOllama for easy LLM provider switching.
+
 import time
 import json
 import threading
@@ -18,13 +17,18 @@ from .llm_cache import LLMCache
 
 logger = logging.getLogger('scanner.llm')
 
-API_SERIALIZATION_LOCK = threading.Lock() # prevent concurrent invoke() calls
+# Ensures LLM API calls don't happen concurrently (which could cause rate limit issues)
+API_SERIALIZATION_LOCK = threading.Lock()
 
 class WrappedInvokeMixin:
-    """Mixin to wrap the invoke method with custom error handling for rate limiting."""
+    """Wraps LLM invoke() with caching and exponential backoff for rate limits."""
 
     def _make_cache_key(self, input, config, stop, kwargs):
-        """Create a cacheable representation of the invoke parameters."""
+        """
+        Create a deterministic cache key from invoke parameters.
+        
+        Only includes parameters that affect LLM output to maximize cache hits.
+        """
         cache_dict = {}
         
         # Handle input (messages)
@@ -38,10 +42,9 @@ class WrappedInvokeMixin:
         else:
             cache_dict['input'] = str(input)
         
-        # Handle stop sequences
         cache_dict['stop'] = stop
         
-        # Handle kwargs - only cache relevant parameters
+        # Only cache parameters that affect model output
         relevant_kwargs = {}
         for key in ['temperature', 'max_tokens', 'top_p', 'frequency_penalty', 'presence_penalty', 'parallel_tool_calls']:
             if key in kwargs:
@@ -50,7 +53,6 @@ class WrappedInvokeMixin:
         # Handle tools if present
         if 'tools' in kwargs:
             try:
-                # Try to serialize tools to JSON-compatible format
                 relevant_kwargs['tools'] = [
                     {'type': t.get('type'), 'function': t.get('function', {}).get('name')}
                     if isinstance(t, dict) else str(t)
@@ -61,7 +63,6 @@ class WrappedInvokeMixin:
         
         cache_dict['kwargs'] = relevant_kwargs
         
-        # Convert to JSON string for consistent hashing
         return json.dumps(cache_dict, sort_keys=True)
 
     def invoke(
@@ -73,7 +74,10 @@ class WrappedInvokeMixin:
         **kwargs: Any,
     ) -> AIMessage:
         """
-        Invoke the LLM and handle rate limiting by serializing calls.
+        Invoke LLM with caching and automatic rate limit handling.
+        
+        On rate limit errors, uses exponential backoff up to 10 minutes.
+        Results are cached to avoid redundant API calls.
         """
         cache_key = self._make_cache_key(input, config, stop, kwargs)
         result = LLMCache().get(cache_key)
@@ -83,14 +87,14 @@ class WrappedInvokeMixin:
 
         with API_SERIALIZATION_LOCK:
             result = None
-            backoff_seconds = 60 # as per github docs, we should wait at least 60s before retrying after rate limit
+            backoff_seconds = 60
 
             while result is None:
                 try:
-                    # disable parallel tool calls to avoid issues with wrong order
                     kwargs['parallel_tool_calls'] = False
                     result = super().invoke(input, config=config, stop=stop, **kwargs)
                 except openai.RateLimitError as e:
+                    # Parse retry timing from response headers
                     retry_after_header = e.response.headers.get("retry-after", e.response.headers.get("x-ratelimit-timeremaining"))
                     ratelimit_reset_header = e.response.headers.get("x-ratelimit-reset")
                     if retry_after_header is not None:
@@ -98,13 +102,14 @@ class WrappedInvokeMixin:
                     elif ratelimit_reset_header is not None:
                         backoff_seconds = max(int(ratelimit_reset_header) - time.time(), backoff_seconds)
                     if backoff_seconds > time.time():
-                        backoff_seconds = int(backoff_seconds - time.time()) # convert to seconds from epoch to relative seconds
+                        backoff_seconds = int(backoff_seconds - time.time())
 
                     logger.debug("Rate limit error details: %s, headers: %s", e, e.response.headers)
 
-                    logger.warning("LLM rate limit exceeded. Trying again after %s seconds...", backoff_seconds)
+                    logger.warning("LLM rate limit exceeded. Retrying after %s seconds...", backoff_seconds)
                     time.sleep(backoff_seconds)
-                    backoff_seconds = min(backoff_seconds * 2, 600) # exponential backoff up to 10 minutes
+                    # Exponential backoff capped at 10 minutes
+                    backoff_seconds = min(backoff_seconds * 2, 600)
 
             LLMCache().store(cache_key, result)
             return result
@@ -119,26 +124,30 @@ class WrappedInvokeMixin:
         response_format = None,
         **kwargs: Any,
     ):
-        kwargs.pop("parallel_tool_calls", None)  # remove if present
+        # Force sequential tool calls to avoid ordering issues with LLM responses
+        kwargs.pop("parallel_tool_calls", None)
         return super().bind_tools(
             tools,
             tool_choice=tool_choice,
             strict=strict,
-            parallel_tool_calls=False,  # disable parallel tool calls to avoid issues with wrong order
+            parallel_tool_calls=False,
             response_format=response_format,
             **kwargs,
         )
 
 class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
-    """ChatOllama with WrappedInvokeMixin to handle rate limiting."""
+    """Ollama LLM with rate limit handling and caching."""
 
 class WrappedChatOpenAI(WrappedInvokeMixin, ChatOpenAI):
-    """ChatOpenAI with WrappedInvokeMixin to handle rate limiting."""
+    """OpenAI-compatible API LLM with rate limit handling and caching."""
 
 
 def get_chat_model(reasoning: bool|None = None) -> WrappedChatOllama|WrappedChatOpenAI:
     """
-    Returns a ChatOpenAI or ChatOllama instance based on the USE_LOCAL_LLM setting.
+    Factory function returning configured LLM instance.
+    
+    Uses local Ollama or remote OpenAI-compatible API based on settings.
+    Selects reasoning or non-reasoning model based on parameter.
     """
     settings = get_settings()
     model_name = settings.reasoning_llm_name if reasoning else settings.nonreasoning_llm_name
@@ -147,7 +156,7 @@ def get_chat_model(reasoning: bool|None = None) -> WrappedChatOllama|WrappedChat
         return WrappedChatOllama(model=model_name, reasoning=reasoning)
     else:
         if reasoning:
-            logger.warning("Warning: reasoning parameter is ignored for remote LLMs because its not supported.")
+            logger.warning("Reasoning parameter ignored for remote LLMs (not supported).")
 
         return WrappedChatOpenAI(
             model_name=model_name,

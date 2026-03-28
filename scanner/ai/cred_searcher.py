@@ -1,7 +1,4 @@
-"""
-CredSearcher module. Takes keywords from the KeywordExtractor module and performs a web search
-to find potential default credentials.
-"""
+# Uses LLM agent to search for default credentials based on keywords extracted from the target service.
 
 import time
 from threading import Thread, Event
@@ -36,6 +33,12 @@ Submit the credentials using the submit_credentials tool once you find them.
 logger = logging.getLogger('scanner.cred_searcher')
 
 class CredSearcher(DBConnectionMixin, Thread):
+    """
+    LLM-based credential searcher that uses web search to find default credentials.
+    
+    Processes services marked 'done' by KeywordExtractor. Searches for credentials based on keywords
+    extracted from the service's web pages. Gives up after 3 attempts per service.
+    """
     def __init__(self):
         super().__init__()
         self.termination_event = Event()
@@ -44,9 +47,11 @@ class CredSearcher(DBConnectionMixin, Thread):
         pub.subscribe(self.keyword_extractor_done_event.set, 'keyword_extractor.done')
 
     def run_with_db(self):
+        # Track number of search attempts per service to enforce the 3-attempt limit
         services_search_count = {}
 
         while not self.termination_event.is_set():
+            # Find services that are ready for credential search (keywords extracted, no creds found yet)
             ready_services = list(
                 Service
                 .select()
@@ -55,6 +60,7 @@ class CredSearcher(DBConnectionMixin, Thread):
                     & Service._credentials.is_null()
                 )
             )
+            # Filter out services that already have working creds or exceeded retry limit
             ready_services = [s for s in ready_services
                               if not s.endpoint_with_working_creds_found()
                               and services_search_count.get(s.pk, 0) < 3
@@ -80,11 +86,17 @@ class CredSearcher(DBConnectionMixin, Thread):
         self.termination_event.set()
 
     def can_early_abort(self, service: Service):
+        """Check if we already found working creds on another endpoint for that service, allowing early termination."""
         service = Service.get(Service.pk == service.pk)
         return service.endpoint_with_working_creds_found()
 
     def search_service(self, service: Service):
-        """Search default credentials for a service using its keywords"""
+        """
+        Use LLM agent to search for default credentials using service keywords.
+        
+        The agent uses web search and URL fetching tools to find documentation
+        containing default credentials. Credentials are saved to the DB.
+        """
         try:
             logger.debug("Starting CredSearcher for service %s", service.url())
 
@@ -108,9 +120,7 @@ class CredSearcher(DBConnectionMixin, Thread):
             logger.debug("CredSearcher prompt for service %s:\n%s", service.url(), prompt)
             agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url_as_markdown])
 
-            # https://docs.langchain.com/oss/python/langchain/agents#streaming
             for chunk in agent.stream({"messages": [{"role": "user", "content": prompt}]}, stream_mode="values"):
-                # Each chunk contains the full state at that point
                 latest_message = chunk["messages"][-1]
 
                 logger.debug("---------------------------- Chunk ----------------------------")

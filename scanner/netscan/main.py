@@ -1,8 +1,4 @@
-"""
-Network scanner module.
-Scans a list of subnets and creates Service records for all
-detected HTTP(S) services.
-"""
+# Network scanner that discovers HTTP/HTTPS services using nmap and HTTP probes.
 
 import threading
 import logging
@@ -16,14 +12,21 @@ from scanner.db import DBConnectionMixin
 
 logger = logging.getLogger('scanner.netscan')
 
+
 class NetScanner(DBConnectionMixin, threading.Thread):
+    """
+    Discovers HTTP/HTTPS services on target subnets using nmap and HTTP probes.
+    
+    For each host with open ports, it tests if HTTP or HTTPS is responding
+    and creates Service records for any web services found.
+    """
     def __init__(self, subnets_or_ips: list[str], ports: str|None = None):
         super().__init__()
         self.subnets_or_ips = subnets_or_ips
         self.ports = ports
-        # TODO: implement abort mechanism
 
     def run_with_db(self):
+        """Scan all subnets/IPs and publish completion event."""
         pub.sendMessage('netscanner.started')
         for subnet_or_ip in self.subnets_or_ips:
             self.scan_subnet_or_ip(subnet_or_ip)
@@ -31,7 +34,12 @@ class NetScanner(DBConnectionMixin, threading.Thread):
         logger.info("NetScanner done")
 
     def scan_host(self, host: str):
-        """Scan a single host."""
+        """
+        Scan single host for HTTP/HTTPS services.
+        
+        Uses nmap for port discovery, then tests detected ports
+        for HTTP/HTTPS responsiveness.
+        """
         logger.debug("Scanning host %s", host)
         ports_argument = f'-p{self.ports}' if self.ports else ''
 
@@ -40,6 +48,7 @@ class NetScanner(DBConnectionMixin, threading.Thread):
 
         detected_services = []
         for h, data in result.items():
+            # Skip metadata keys and non-up hosts
             if h in ['runtime', 'stats', 'task_results'] or data['state']['state'] != 'up':
                 continue
 
@@ -51,7 +60,6 @@ class NetScanner(DBConnectionMixin, threading.Thread):
                     https = self.test_https_service(h, port)
 
                     logger.info("Detected HTTP service at %s:%s (HTTPS: %s)", h, port, https)
-                    # TODO: resuming from stored DB
                     Service.get_or_create(host=h, port=port, https=https)
                     detected_services.append("%s://%s:%s" % ('https' if https else 'http', h, port))
 
@@ -61,13 +69,12 @@ class NetScanner(DBConnectionMixin, threading.Thread):
             logger.debug("No services detected on %s", host)
 
     def scan_subnet_or_ip(self, subnet_or_ip: str):
-        """Scan the given subnet one host at a time"""
+        """Expand subnet CIDR and scan each host individually."""
         for h in ipaddress.ip_network(subnet_or_ip):
             self.scan_host(str(h))
 
     def test_http_service(self, host: str, port: int) -> bool:
-        """Test if an HTTP service is running on the given host:port service."""
-
+        """Check if HTTP service responds on host:port."""
         url = f"http://{host}:{port}/"
         try:
             requests.get(url, timeout=5, allow_redirects=True, verify=False)
@@ -77,10 +84,7 @@ class NetScanner(DBConnectionMixin, threading.Thread):
             return False
 
     def test_https_service(self, host: str, port: int) -> bool:
-        """
-        Test if an HTTPS service is running on the given host:port service,
-        ignoring certificate errors.
-        """
+        """Check if HTTPS service responds on host:port, ignoring cert errors."""
         url = f"https://{host}:{port}/"
         try:
             response = requests.get(url, timeout=5, allow_redirects=False, verify=False)

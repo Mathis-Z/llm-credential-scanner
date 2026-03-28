@@ -1,3 +1,5 @@
+# Integration test suite for the scanner against real web applications.
+
 import subprocess
 import random
 import logging
@@ -18,6 +20,7 @@ logger = logging.getLogger("scanner.tests")
 
 @dataclass
 class TestResult:
+    """Results from testing a single application deployment."""
     found_creds: bool | None
     verified_creds: bool | None
     verified_no_other_creds: bool | None
@@ -28,6 +31,11 @@ class TestResult:
 
 
 class TemporaryScanArtifacts:
+    """
+    Creates temporary directory for test artifacts (DB, logs).
+    
+    Automatically cleans up unless KEEP_DB_FILES is set.
+    """
     def __init__(self):
         scan_id = random.randint(100000, 999999)
         self.dir_path = Path("/tmp/scan_artifacts") / f"scanner-test-{scan_id}"
@@ -51,7 +59,7 @@ class TemporaryScanArtifacts:
 
 
 def found_creds(username, password):
-    """Check if the given credentials were found (websearch) for any service."""
+    """Check if the given credentials were found via web search for any service."""
     for s in Service.select():
         for u, p in (s.credentials or []):
             if u == username and p == password:
@@ -60,7 +68,7 @@ def found_creds(username, password):
 
 
 def verified_creds(username: str, password: str, path: str|None = None) -> bool:
-    """Verify that the expected credentials were found for the given path. If path is None or '*', check all endpoints."""
+    """Check if credentials successfully authenticated at the given endpoint path."""
     path_cred_pairs = get_verified_creds(path)
     for creds in path_cred_pairs:
         if creds == f"{username}:{password}":
@@ -69,7 +77,7 @@ def verified_creds(username: str, password: str, path: str|None = None) -> bool:
 
 
 def get_verified_creds(path: str|None = None) -> set[str]:
-    """Returns a list of (path, creds) pairs for all endpoints that have working credentials, optionally filtered by path."""
+    """Get all credential pairs that successfully authenticated, optionally filtered by path."""
     if path and path != "*":
         endpoints = Endpoint.select().where((Endpoint.path == path) & (Endpoint.working_credentials != ""))
     else:
@@ -78,7 +86,7 @@ def get_verified_creds(path: str|None = None) -> set[str]:
 
 
 def verified_no_other_creds(username: str, password: str, path: str|None = None) -> bool:
-    """Verify that no credentials other than the expected one were found for this endpoint"""
+    """Verify only the expected credentials work; no other credentials should succeed."""
     path_cred_pairs = get_verified_creds(path)
     expected_creds = f"{username}:{password}"
     for creds in path_cred_pairs:
@@ -88,6 +96,7 @@ def verified_no_other_creds(username: str, password: str, path: str|None = None)
 
 
 def found_login_panel(path):
+    """Check if login panel was detected at the given path."""
     if path and path != "*":
         e = Endpoint.get_or_none((Endpoint.path == path) & (Endpoint.is_login == True))
     else:
@@ -96,11 +105,12 @@ def found_login_panel(path):
 
 
 def endpoints_num():
+    """Get total number of endpoints discovered."""
     return Endpoint.select().count()
 
 
 def print_results(results: dict[str, TestResult | None]):
-    """Prints the test results in a tabular format."""
+    """Print test results in a formatted table."""
     headers = [
         "Service\nName",
         "Found\nCredentials",
@@ -134,11 +144,14 @@ def print_results(results: dict[str, TestResult | None]):
     print(tabulate(table, headers=headers, tablefmt="simple_grid"))
     print("* - Credentials are part of default credential lists, so PASS is not fully indicative of success in this case.\n")
 
+
 def colorful_pass_or_fail(value: bool, annotation: str = '') -> str:
+    """Return colored PASS/FAIL text for CLI output."""
     return click.style(f"PASS{annotation}", fg="green") if value else click.style(f"FAIL{annotation}", fg="red")
 
+
 def run_scanner(port, log_path, artifacts_dir, extra_args=None):
-    """Run the scanner as a subprocess with the given arguments. Waits for it to complete before returning."""
+    """Run scanner as subprocess against localhost on specified port."""
     cmd = [
         "python",
         "-m",
@@ -158,6 +171,11 @@ def run_scanner(port, log_path, artifacts_dir, extra_args=None):
 
 
 def run_app_test(app_dir_name, artifacts, port, login_path, username, password, network_dir: str = "test-network") -> TestResult:
+    """
+    Deploy application, run scanner, and verify results.
+    
+    Returns TestResult with credential detection and verification status.
+    """
     wait_path = "/" if login_path == "*" else login_path
     with RunDockerCompose(
         app_dir_name,
@@ -170,7 +188,7 @@ def run_app_test(app_dir_name, artifacts, port, login_path, username, password, 
             artifacts.scanner_log_path,
             artifacts.dir_path
         )
-        # Rebind our ORM to the same temporary DB used by the scanner run
+        # Connect to scanner's DB to verify results
         load_db(artifacts.db_path)
         r = TestResult(
             found_creds=found_creds(username, password),
@@ -183,13 +201,15 @@ def run_app_test(app_dir_name, artifacts, port, login_path, username, password, 
         )
         return r
 
+
 def running_containers() -> list[str]:
-    """Returns a list of running Docker container IDs."""
+    """Get list of running Docker container IDs."""
     result = subprocess.run(["docker", "ps", "-q"], capture_output=True, text=True, check=True)
     return [c for c in result.stdout.strip().split("\n") if c]
 
+
 def clean_docker_environment():
-    """Check for running containers and clean them up."""
+    """Stop all running Docker containers gracefully, then force kill if needed."""
     containers = running_containers()
     if not containers:
         logger.info("No running Docker containers found.")
@@ -212,6 +232,14 @@ def clean_docker_environment():
 @click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--kill-containers", is_flag=True, help="Kill any running Docker containers before starting tests")
 def run(keep, select, evaluation, log_level, kill_containers):
+    """
+    Run integration tests against Docker-deployed web applications.
+    
+    Each test deploys an app, runs the scanner, and verifies that:
+    - Login panel was detected
+    - Credentials were found via web search
+    - Credentials successfully authenticated
+    """
     start_time = time.time()
     override_settings(log_level=log_level)
     configure_logging()
@@ -232,17 +260,14 @@ def run(keep, select, evaluation, log_level, kill_containers):
         ("CalibrWeb", 8083, "/login", "admin", "admin123"),
         ("ClipCascade", 8088, "/login", "admin", "admin123"),
         ("Convertigo", 28080, "/convertigo/admin/login.html", "admin", "admin"),
-        # ("DataLens", 8080, "/auth/signin", "admin", "admin"), Worked, but is broken for some reason now
         ("DockerSSOServer", 3000, "/login", "username", "password"),
         ("Filadex", 8080, "/login", "admin", "admin"),
         ("Grafana", 3000, "/login", "admin", "admin"),
         ("Joplin", 22300, "/login", "admin@localhost", "admin"),
-        # ("MongoExpress", 8081, "/", "admin", "pass"), WARNING: MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!
         ("osTicket", 8080, "/scp/login.php", "ostadmin", "Admin1"),
         ("ownCloud", 8080, "/login", "admin", "admin"),
         ("PasswordCockpit", 8080, "/login", "admin", "Admin123!"),
         ("Pyload", 8000, "/login", "admin", "password"),
-        # ("Rainloop", 80, "/", "admin", "12345"), Error response from daemon: error while creating mount source path '/opt/docker-rainloop/data': mkdir /opt/docker-rainloop: read-only file system
         ("Readmine", 8084, "/login", "admin", "admin"),
         ("SonarQube", 9000, "/sessions/new", "admin", "admin"),
         ("Zabbix", 80, "*", "Admin", "zabbix"),
@@ -310,6 +335,7 @@ def run(keep, select, evaluation, log_level, kill_containers):
 
     print_results(results)
     logger.info("All tests completed in %.2f seconds.", time.time() - start_time)
+
 
 if __name__ == "__main__":
     run()  # pylint: disable=no-value-for-parameter

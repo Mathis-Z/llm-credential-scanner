@@ -1,3 +1,5 @@
+# URL fetching via pooled browsers with JavaScript rendering support.
+
 import logging
 import time
 import simhash
@@ -13,10 +15,10 @@ def fetch_url_with_browser(
         page_load_timeout: float = 10
     ) -> tuple[str, str]:
     """
-    Fetch a URL using a pooled SeleniumBase browser.
-
-    Blocks until a browser is available (up to *acquire_timeout* seconds).
-    Returns (final_url, html) or (start_url, "") on failure.
+    Fetch URL using pooled browser, render JavaScript, wait for DOM to settle.
+    
+    Returns (final_url, html) after all dynamic content loads.
+    Falls back to (start_url, "") on failure.
     """
     logger.debug("Fetching URL: %s", start_url)
     try:
@@ -37,6 +39,12 @@ def fetch_url_with_browser(
 
 
 def _wait_for_dom_settle(sb, timeout_ms: int = 2000, stable_ms: int = 300) -> None:
+    """
+    Wait for DOM to stop changing using simhash distance comparison.
+    
+    Pages that continue changing (animations, live updates) will timeout
+    after timeout_ms and return with whatever content is available.
+    """
     start = time.time()
     last_html = sb.get_page_source()
     while True:

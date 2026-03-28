@@ -1,3 +1,5 @@
+# File-based cache for LLM responses to avoid redundant API calls.
+
 import pickle
 import hashlib
 import json
@@ -8,6 +10,7 @@ from scanner.settings import get_settings
 
 
 class LLMCache:
+    """Singleton cache for LLM responses stored on disk as JSON."""
     _instance = None
     total_requests = 0
     cached_requests = 0
@@ -43,18 +46,18 @@ class LLMCache:
         self.cache_file.write_text(json.dumps(cache, indent=2))
 
     def _hash_inputs(self, inputs: Any) -> str:
-        """Hash the inputs using pickle and MD5."""
+        """Create cache key by hashing serialized inputs with MD5."""
         pickled = pickle.dumps(inputs)
         return hashlib.md5(pickled).hexdigest()
 
     def _evict_oldest(self, cache: dict) -> None:
-        """Remove the oldest entry if cache exceeds max_entries."""
+        """Remove oldest entry when cache reaches max_entries limit."""
         if len(cache) >= self.max_entries:
             oldest_key = min(cache.keys(), key=lambda k: cache[k]["timestamp"])
             del cache[oldest_key]
 
     def store(self, inputs: Any, result: Any) -> None:
-        """Store a result in the cache with the current timestamp."""
+        """Store LLM response in cache with timestamp for LRU eviction."""
         cache = self._load_cache()
         self._evict_oldest(cache)
         key = self._hash_inputs(inputs)
@@ -65,7 +68,12 @@ class LLMCache:
         self._save_cache(cache)
 
     def get(self, inputs: Any) -> Any | None:
-        """Retrieve a cached result, or None if not found. Updates timestamp on hit."""
+        """
+        Retrieve cached LLM response or None if not found.
+        
+        Updates access timestamp on cache hit for LRU tracking.
+        Respects disable_llm_cache setting.
+        """
         self.total_requests += 1
 
         if get_settings().disable_llm_cache:
@@ -79,6 +87,7 @@ class LLMCache:
         else:
             self.cached_requests += 1
 
+        # Update timestamp on access for LRU eviction
         cache[key]["timestamp"] = time.time()
         self._save_cache(cache)
 

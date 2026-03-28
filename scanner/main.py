@@ -1,3 +1,6 @@
+# Main entry point for the network scanner.
+# Orchestrates all scanner modules to discover services and test credentials.
+
 import logging
 import time
 import threading
@@ -24,9 +27,13 @@ logger = logging.getLogger("scanner.main")
 @click.option("--artifacts-dir", default="./scan_artifacts", help="Base directory for scan artifacts (DB, screenshots, logs)")
 @click.option("--disable_llm_cache", is_flag=True, help="Do not cache LLM responses")
 def main_cmd(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache):
+    """CLI wrapper that delegates to the run() function."""
     run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache)
 
 def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers, artifacts_dir, disable_llm_cache):
+    """
+    Initialize settings, database, and start all scanner modules.
+    """
     override_settings(
         subnets=subnets,
         ports=ports,
@@ -54,7 +61,7 @@ def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers
         CredTester(),
     ]
 
-    # Start status monitoring thread
+    # Status monitoring thread prints progress every 3 minutes
     stop_event = threading.Event()
     status_thread = threading.Thread(
         target=status_monitor,
@@ -74,7 +81,6 @@ def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers
 
         logger.info("All modules completed.")
     finally:
-        # Stop the status monitoring thread
         stop_event.set()
         status_thread.join(timeout=1)
 
@@ -82,15 +88,15 @@ def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers
 
 
 def status_monitor(stop_event):
-    """Monitor and print status every 180 seconds until stop_event is set"""
+    """Background thread that prints scan progress every 180 seconds."""
     while not stop_event.is_set():
-        # Wait for 180 seconds or until stop_event is set
         if stop_event.wait(timeout=180):
             break
         print_status_summary()
 
 
 def print_scan_summary(start_time):
+    """Print final scan results including discovered credentials and statistics."""
     summary = "\n" + "=" * 30 + " Scan Summary " + "=" * 30 + "\n"
 
     endpoints_with_default_creds = Endpoint.select().where(Endpoint.working_credentials != '')
@@ -124,9 +130,8 @@ def print_scan_summary(start_time):
     logger.info(summary)
 
 
-
 def print_status_summary():
-    """Print a real-time summary of the current scan status"""
+    """Print real-time scan status including services, endpoints, and credential testing progress."""
     services = Service.select()
     endpoints = Endpoint.select()
     login_endpoints = Endpoint.select().where(Endpoint.is_login == True)
@@ -181,6 +186,5 @@ def print_status_summary():
     logger.info(status)
 
 
-
 if __name__ == '__main__':
-    main_cmd() # pylint: disable=no-value-for-parameter
+    main_cmd()  # pylint: disable=no-value-for-parameter

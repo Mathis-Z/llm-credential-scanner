@@ -1,13 +1,8 @@
-"""
-Keyword Extraction Module.
-Uses the LLM to extract keywords from page source.
-"""
+# Extracts application-specific keywords from endpoint pages to enable credential search.
 
 from threading import Thread, Event
 import logging
-import random
 import time
-from peewee import fn, Case
 from pubsub import pub
 from markdownify import markdownify
 from scanner.ai.llm import get_chat_model
@@ -32,8 +27,10 @@ logger = logging.getLogger('scanner.keyword_extractor')
 
 class KeywordExtractor(DBConnectionMixin, Thread):
     """
-    KeywordExtractor module. Uses LLM to extract websearch-relevant keywords from endpoint page sources.
-    Runs until abort message is received.
+    Extracts web-searchable keywords from web application pages using LLM.
+    
+    Keywords are used by CredSearcher to find documentation containing default credentials.
+    Runs after WebEnumerator completes and before CredSearcher starts.
     """
     def __init__(self):
         super().__init__()
@@ -44,6 +41,7 @@ class KeywordExtractor(DBConnectionMixin, Thread):
 
     def run_with_db(self):
         while not self.termination_event.is_set():
+            # Find services where webenum is done but keyword extraction is not
             unfinished_services = list(
                 Service
                 .select()
@@ -68,9 +66,7 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         logger.info("KeywordExtractor exited")
 
     def extract_keywords_for_service(self, service: Service):
-        """
-        Extract keywords for all endpoints of the given service that do not yet have keywords.
-        """
+        """Extract keywords from up to 10 most relevant endpoints of the service."""
         for endpoint in self.select_relevant_endpoints(service):
             if self.termination_event.is_set():
                 return
@@ -78,26 +74,30 @@ class KeywordExtractor(DBConnectionMixin, Thread):
 
     def select_relevant_endpoints(self, service: Service) -> list[Endpoint]:
         """
-        Selects some hopefully relevant endpoints for keyword extraction.
-        Currently just selects the 10 endpoints with the shallowest path, as they are more likely to contain informative content.
+        Selects endpoints most likely to contain useful keywords.
+        
+        Prioritizes shallow paths (e.g., /login > /admin/settings/users) as they
+        typically contain application names and branding information.
         """
         all_endpoints = list(service.endpoints.where(Endpoint._keywords.is_null(True)))
         non_empty_endpoints = [ep for ep in all_endpoints if ep.page_source and ep.page_source.strip()]
+        # Sort by path depth (number of slashes) and take top 10
         depth_sorted = sorted(non_empty_endpoints, key=lambda ep: ep.path.strip('/').count('/'))
         return depth_sorted[:10]
 
     def extract_keywords(self, endpoint: Endpoint):
         """
-        Converts the page source of the endpoint to markdown and
-        sends it to the LLM to extract keywords.
-        Updates the endpoint with the extracted keywords.
+        Convert endpoint page to markdown and extract keywords using LLM.
+        
+        LLM analyzes the page content to identify application-specific identifiers
+        like product names, version numbers, or documentation links.
         """
         try:
             llm = get_chat_model(reasoning=False)
             prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
             logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
             response = llm.invoke([("human", prompt)]).content
-            if response is None: # aborted
+            if response is None:  # aborted
                 return
             lines = [line.strip() for line in response.split('\n')]
 

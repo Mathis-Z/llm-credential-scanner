@@ -1,3 +1,6 @@
+# Application configuration using Pydantic settings.
+# Supports environment variables and CLI overrides.
+
 import os
 import logging
 import logging.config
@@ -8,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def configure_logging():
-    """Configure logging for the scanner application. Excludes logs from other modules."""
+    """Configure logging for the scanner application. Filters to only show 'scanner.*' logs."""
     handlers = {
         "console": {
             "class": "logging.StreamHandler",

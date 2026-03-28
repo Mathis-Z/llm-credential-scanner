@@ -1,3 +1,5 @@
+# LangChain tools for LLM-driven credential testing via Selenium browser automation.
+
 import time
 import logging
 from typing import Any
@@ -9,14 +11,12 @@ from selenium.common.exceptions import StaleElementReferenceException
 logger = logging.getLogger('scanner.cred_tester.tools')
 
 def _format_html_element(element) -> str:
-    """Format a Selenium WebElement for logging, showing tag and key attributes."""
+    """Format WebElement for logging, showing tag and key attributes only."""
     try:
         outer_html = element.get_attribute('outerHTML')
-        # Extract just the opening tag by finding the first '>'
         if '>' in outer_html:
-            # Find the opening tag
             first_tag_end = outer_html.index('>')
-            # Check if it's a self-closing tag
+            # Check for self-closing tag
             if outer_html[first_tag_end-1] == '/':
                 opening_tag = outer_html[:first_tag_end+1]
             else:
@@ -27,19 +27,21 @@ def _format_html_element(element) -> str:
                 opening_tag = f"{opening_tag}...</{tag_name}>"
         else:
             opening_tag = outer_html
-
         return opening_tag
     except Exception as e:
         logger.debug("Failed to format HTML element: %s", str(e))
         return f"<{element.tag_name} ...>"
 
 def make_credential_testing_tools(driver: Any):
-    """Create LangChain tools bound to a shared Selenium WebDriver session.
-
-    The returned tool callables close over the provided ``driver`` so the agent
-    can reuse a single browser session across multiple tool calls.
+    """
+    Create LangChain tools for browser automation in credential testing.
+    
+    Tools interact with a shared Selenium WebDriver session to:
+    - insert_text_into_field: Fill form fields with credentials
+    - click_button: Submit forms by clicking buttons
     """
     def _prepare_element(element) -> None:
+        """Scroll element into view and focus it before interaction."""
         try:
             driver.execute_script(
                 "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
@@ -57,6 +59,7 @@ def make_credential_testing_tools(driver: Any):
 
     @tool(description="Insert text into a field specified by a CSS selector in the shared browser session")
     def insert_text_into_field(selector: str, text: str) -> str:
+        """Fill a form field with text, handling React/Vue-style inputs via JS fallback."""
         logger.debug("Inserting text into field with selector: %s", selector)
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, selector)
@@ -68,6 +71,7 @@ def make_credential_testing_tools(driver: Any):
 
             element = elements[0]
             _prepare_element(element)
+            # Try standard send_keys first, fall back to JS injection for React/Vue inputs
             try:
                 element.clear()
                 element.send_keys(text)
@@ -82,6 +86,7 @@ def make_credential_testing_tools(driver: Any):
 
     @tool(description="Click a button specified by a CSS selector in the shared browser session")
     def click_button(selector: str) -> str:
+        """Click a button or submit a form. Includes retry for stale elements and JS fallback."""
         time.sleep(2)
         logger.debug("Clicking button with selector: %s", selector)
         try:
@@ -124,6 +129,7 @@ def make_credential_testing_tools(driver: Any):
             time.sleep(1)
         except Exception as e:
             try:
+                # Final fallback: use JS to find and click element
                 driver.execute_script(
                     "var el = document.querySelector(arguments[0]);"
                     "if (el) {"

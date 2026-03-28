@@ -1,7 +1,5 @@
-"""
-DB module.
-Provides common BaseModel and DB connection.
-"""
+# Database module providing SQLite connection, write queue, and base model classes.
+
 import os
 import logging
 import threading
@@ -15,8 +13,7 @@ from scanner.settings import get_settings
 
 logger = logging.getLogger("scanner.db")
 
-# Create a DatabaseProxy that will be bound later
-# this is required for the tests because I want temporary DBs for each test
+# DatabaseProxy allows late binding - required for tests with temporary DBs
 DB = pw.DatabaseProxy()
 
 DB_WRITE_TIMEOUT_SECONDS = 60
@@ -25,6 +22,7 @@ _DB_WRITE_CONTEXT = threading.local()
 
 @dataclass
 class _DBWriteTask:
+    """Task wrapper for async database writes via queue."""
     func: callable
     done_event: threading.Event
     result: object | None = None
@@ -32,12 +30,19 @@ class _DBWriteTask:
 
 
 class DBWriteQueue:
+    """
+    Serializes database writes through a dedicated writer thread.
+    
+    All writes go through a single thread to avoid SQLite locking issues
+    when multiple scanner modules access the DB concurrently.
+    """
     def __init__(self):
         self._queue: queue.Queue[_DBWriteTask | None] = queue.Queue()
         self._thread: threading.Thread | None = None
         self._lock = threading.Lock()
 
     def start(self):
+        """Start the writer thread if not already running."""
         with self._lock:
             if self._thread and self._thread.is_alive():
                 return
@@ -45,6 +50,7 @@ class DBWriteQueue:
             self._thread.start()
 
     def submit(self, func: callable, timeout: int | None = None):
+        """Submit a write operation and wait for completion."""
         self.start()
         task = _DBWriteTask(func=func, done_event=threading.Event())
         self._queue.put(task)
@@ -57,6 +63,7 @@ class DBWriteQueue:
         return task.result
 
     def _run(self):
+        """Writer thread that processes queued write operations."""
         while True:
             task = self._queue.get()
             if task is None:
@@ -77,15 +84,17 @@ DB_WRITE_QUEUE = DBWriteQueue()
 
 
 def submit_db_write(func: callable, timeout: int | None = None):
+    """Submit write operation to queue, or execute directly if already in writer thread."""
     if getattr(_DB_WRITE_CONTEXT, "in_writer", False):
         return func()
     return DB_WRITE_QUEUE.submit(func, timeout=timeout)
 
 def full_db_path(path: str | None = None) -> Path:
+    """Resolve absolute path for database file."""
     return Path(os.getcwd()) / (path if path else get_settings().db_path)
 
 def load_db(path: Path | str):
-    """Load existing DB. Throws FileNotFoundError. Useful for debug shells."""
+    """Load existing database file. Raises FileNotFoundError if not found."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Database file not found at {path}")
@@ -104,8 +113,7 @@ def load_db(path: Path | str):
     _init_db(real_db)
 
 def create_db(path: Path | str):
-    """Create new DB."""
-    # creating the directory here is suboptimal but future work I guess
+    """Create new database with directory if needed."""
     path = Path(path)
     db_dir = path.parent
     if not db_dir.exists():
@@ -126,10 +134,10 @@ def create_db(path: Path | str):
     _init_db(real_db)
 
 def _init_db(real_db: PooledSqliteDatabase):
-    # Bind the proxy to the real database
+    """Bind proxy to database, start write queue, create tables."""
     DB.initialize(real_db)
     DB_WRITE_QUEUE.start()
-    from scanner.db.models import Service, Endpoint # avoid circular import
+    from scanner.db.models import Service, Endpoint  # avoid circular import
     DB.create_tables([Service, Endpoint], safe=True)
 
 def load_or_create_db(path: str | None = None):
@@ -145,12 +153,15 @@ def load_or_create_db(path: str | None = None):
         logger.critical("Failed to initialize database at %s: %s", path, e)
         raise e
 
+
 class BaseModel(pw.Model):
+    """Base model with async write queue and pubsub notifications."""
     class Meta:
         database = DB  # Use the proxy, not DB()
 
     @classmethod
     def create(cls, **query):
+        """Create record via write queue and publish creation event."""
         def _create():
             with DB.atomic():
                 return super(BaseModel, cls).create(**query)
@@ -161,6 +172,7 @@ class BaseModel(pw.Model):
 
     @classmethod
     def get_or_create(cls, **query):
+        """Get existing or create new record via write queue."""
         defaults = query.pop("defaults", None)
 
         def _get_or_create():
@@ -179,6 +191,7 @@ class BaseModel(pw.Model):
         return record, created
 
     def save(self, *args, **kwargs):
+        """Save record via write queue."""
         def _save():
             with DB.atomic():
                 return super(BaseModel, self).save(*args, **kwargs)
@@ -187,7 +200,14 @@ class BaseModel(pw.Model):
 
 
 class DBConnectionMixin:
+    """Mixin for threads that need database access within a connection context."""
     def run(self):
+        """
+        Entry point for thread execution with database connection context.
+        
+        Subclasses must implement run_with_db() which will be called
+        with an active database connection.
+        """
         run_with_db = getattr(self, "run_with_db", None)
         if not callable(run_with_db):
             raise NotImplementedError("run_with_db must be implemented by DBConnectionMixin subclasses")
