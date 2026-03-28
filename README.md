@@ -169,6 +169,19 @@ Useful flags:
 - `--kill-containers`: clean running containers before test execution
 - `-L, --log-level`: set test/scanner logging verbosity
 
+### External Changeme evaluator (scanner-independent)
+
+There is also a lightweight evaluator that runs the third-party tool **Changeme** against the same Docker Compose app suites, without using any scanner logic.
+
+See: `evaluate_external/README.md`
+
+Examples:
+
+```bash
+python3 evaluate_external/evaluate_changeme.py --both --keep
+python3 evaluate_external/evaluate_changeme.py -s Grafana --keep -L DEBUG
+```
+
 ### Historical integration results
 
 Collected integration test summaries are stored in:
