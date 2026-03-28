@@ -227,11 +227,12 @@ def clean_docker_environment():
 
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary artifacts after tests complete")
-@click.option("--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
+@click.option("--include", "-i", "--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
+@click.option("--exclude", "-x", default=None, help="Exclude specific applications from testing; comma-separated list; case-sensitive")
 @click.option("--evaluation", "-e", is_flag=True, help="Run evaluation network cases instead of default test network cases")
 @click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--kill-containers", is_flag=True, help="Kill any running Docker containers before starting tests")
-def run(keep, select, evaluation, log_level, kill_containers):
+def run(keep, include, exclude, evaluation, log_level, kill_containers):
     """
     Run integration tests against Docker-deployed web applications.
     
@@ -247,8 +248,8 @@ def run(keep, select, evaluation, log_level, kill_containers):
     global KEEP_DB_FILES
     KEEP_DB_FILES = keep or KEEP_DB_FILES
 
-    if select:
-        selected_apps = set([app.strip() for app in select.split(",")])
+    if include:
+        selected_apps = set([app.strip() for app in include.split(",")])
 
     if kill_containers:
         clean_docker_environment()
@@ -306,8 +307,12 @@ def run(keep, select, evaluation, log_level, kill_containers):
     active_cases = evaluation_cases if evaluation else test_cases
     active_network_dir = "evaluation-network" if evaluation else "test-network"
 
-    if select:
+    if include:
         active_cases = [tc for tc in active_cases if tc[0] in selected_apps]
+
+    if exclude:
+        excluded_apps = set([app.strip() for app in exclude.split(",")])
+        active_cases = [tc for tc in active_cases if tc[0] not in excluded_apps]
 
     results: dict[str, TestResult | None] = {}
     for (app_name, port, login_path, username, password) in active_cases:
