@@ -250,6 +250,7 @@ def run_changeme_in_docker(
         output_csv_path.unlink()
 
     redis_name = f"changeme-redis-{random.randint(100000, 999999)}"
+    changeme_name = f"changeme-scan-{random.randint(100000, 999999)}"
     try:
         # Bind Redis to a random localhost port to avoid conflicts, and so the
         # Changeme container can reach it via --network host.
@@ -262,15 +263,14 @@ def run_changeme_in_docker(
         docker_cmd = [
             "docker",
             "run",
-            "--rm",
+            "--name",
+            changeme_name,
             "--security-opt",
             "label=disable",
             "--network",
             "host",
             "--user",
             f"{os.getuid()}:{os.getgid()}",
-            "-v",
-            f"{str(output_csv_path.parent)}:/mnt",
             image,
             "./changeme.py",
             "--noversion",
@@ -279,7 +279,7 @@ def run_changeme_in_docker(
             "--redisport",
             str(redis_port),
             "--output",
-            f"/mnt/{output_csv_path.name}",
+            "/tmp/results.csv",
             "--protocols",
             protocols,
             "--threads",
@@ -291,7 +291,17 @@ def run_changeme_in_docker(
             target,
         ]
         _run_checked(docker_cmd, log_path=changeme_log_path)
+
+        # Copy results out of the container. This avoids host bind-mount
+        # permission issues (SELinux, NFS root-squash, etc.).
+        subprocess.run(
+            ["docker", "cp", f"{changeme_name}:/tmp/results.csv", str(output_csv_path)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
     finally:
+        _docker_rm_f(changeme_name)
         _docker_rm_f(redis_name)
 
 

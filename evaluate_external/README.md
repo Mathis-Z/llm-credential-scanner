@@ -15,7 +15,8 @@ This is **scanner-independent** (stdlib-only Python).
 
 Notes:
 - Changeme runs in Docker with `--network host`, so targets are `127.0.0.1`.
-- Changeme is run with `--security-opt label=disable` by default to avoid `results.csv` write issues caused by SELinux labeling.
+- Changeme writes `results.csv` inside the container and the evaluator copies it out with `docker cp`.
+	This avoids bind-mount permission/SELinux/NFS issues that can cause `Permission denied: '/mnt/results.csv'`.
 
 ## Usage
 
