@@ -227,8 +227,8 @@ def clean_docker_environment():
 
 @click.command()
 @click.option("--keep", is_flag=True, help="Keep temporary artifacts after tests complete")
-@click.option("--include", "-i", "--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-sensitive")
-@click.option("--exclude", "-x", default=None, help="Exclude specific applications from testing; comma-separated list; case-sensitive")
+@click.option("--include", "-i", "--select", "-s", default=None, help="Run test for a specific application only; comma-separated list; case-insensitive")
+@click.option("--exclude", "-x", default=None, help="Exclude specific applications from testing; comma-separated list; case-insensitive")
 @click.option("--evaluation", "-e", is_flag=True, help="Run evaluation network cases instead of default test network cases")
 @click.option("--log-level", "-L", default="DEBUG", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--kill-containers", is_flag=True, help="Kill any running Docker containers before starting tests")
@@ -247,9 +247,6 @@ def run(keep, include, exclude, evaluation, log_level, kill_containers):
     load_or_create_db()
     global KEEP_DB_FILES
     KEEP_DB_FILES = keep or KEEP_DB_FILES
-
-    if include:
-        selected_apps = set([app.strip() for app in include.split(",")])
 
     if kill_containers:
         clean_docker_environment()
@@ -308,11 +305,12 @@ def run(keep, include, exclude, evaluation, log_level, kill_containers):
     active_network_dir = "evaluation-network" if evaluation else "test-network"
 
     if include:
-        active_cases = [tc for tc in active_cases if tc[0] in selected_apps]
+        included_apps_lower = set([app.lower().strip() for app in exclude.split(",")])
+        active_cases = [tc for tc in active_cases if tc[0].lower() in included_apps_lower]
 
     if exclude:
-        excluded_apps = set([app.strip() for app in exclude.split(",")])
-        active_cases = [tc for tc in active_cases if tc[0] not in excluded_apps]
+        excluded_apps_lower = set([app.lower().strip() for app in exclude.split(",")])
+        active_cases = [tc for tc in active_cases if tc[0].lower() not in excluded_apps_lower]
 
     results: dict[str, TestResult | None] = {}
     for (app_name, port, login_path, username, password) in active_cases:
