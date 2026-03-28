@@ -91,7 +91,8 @@ class WrappedInvokeMixin:
 
             while result is None:
                 try:
-                    kwargs['parallel_tool_calls'] = False
+                    if 'parallel_tool_calls' in kwargs:
+                        kwargs['parallel_tool_calls'] = False
                     result = super().invoke(input, config=config, stop=stop, **kwargs)
                 except openai.RateLimitError as e:
                     # Parse retry timing from response headers
@@ -114,6 +115,27 @@ class WrappedInvokeMixin:
             LLMCache().store(cache_key, result)
             return result
 
+
+class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
+    """Ollama LLM with rate limit handling and caching."""
+
+    def bind_tools(
+        self,
+        tools,
+        *,
+        tool_choice: dict | str | bool | None = None,
+        strict: bool | None = None,
+        parallel_tool_calls: bool | None = None,
+        response_format = None,
+        **kwargs: Any,
+    ):
+        # Ollama doesn't support parallel tool calls or strict mode, so we ignore those parameters
+        return super().bind_tools(tools, tool_choice=tool_choice, **kwargs)
+
+
+class WrappedChatOpenAI(WrappedInvokeMixin, ChatOpenAI):
+    """OpenAI-compatible API LLM with rate limit handling and caching."""
+
     def bind_tools(
         self,
         tools,
@@ -134,12 +156,6 @@ class WrappedInvokeMixin:
             response_format=response_format,
             **kwargs,
         )
-
-class WrappedChatOllama(WrappedInvokeMixin, ChatOllama):
-    """Ollama LLM with rate limit handling and caching."""
-
-class WrappedChatOpenAI(WrappedInvokeMixin, ChatOpenAI):
-    """OpenAI-compatible API LLM with rate limit handling and caching."""
 
 
 def get_chat_model(reasoning: bool|None = None) -> WrappedChatOllama|WrappedChatOpenAI:
