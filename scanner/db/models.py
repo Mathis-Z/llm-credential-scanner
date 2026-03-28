@@ -113,9 +113,27 @@ class Endpoint(BaseModel):
         """
         Return credentials that haven't been tested yet on this login panel.
         
-        Uses service-specific credentials if found, otherwise falls back to DEFAULT_CREDS.
+        Uses service-specific credentials if found.
+        Falls back to DEFAULT_CREDS only after credential search has completed for the service,
+        and after all service-specific credentials have been tested.
         """
-        if self.is_login:
-            return list(set(self.service.credentials or DEFAULT_CREDS) - set(self.tested_credentials))
-        else:
+        if not self.is_login:
             return []
+
+        # If credential search hasn't completed for this service yet, don't start
+        # burning through DEFAULT_CREDS. CredSearcher will set Service._credentials
+        # to a JSON list (possibly empty) when it finishes.
+        service_creds = self.service.credentials
+        if service_creds is None:
+            return []
+
+        tested = set(self.tested_credentials)
+
+        # 1) Try service-specific credentials first (if any remain untested)
+        service_untested = [c for c in service_creds if c not in tested]
+        if service_untested:
+            return service_untested
+
+        # 2) Then try default credentials
+        default_untested = [c for c in DEFAULT_CREDS if c not in tested]
+        return default_untested
