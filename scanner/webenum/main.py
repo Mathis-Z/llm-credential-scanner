@@ -56,7 +56,7 @@ class WebEnumerator(threading.Thread):
         self.worker_semaphore = threading.BoundedSemaphore(self.max_workers)
         self.dispatcher_thread: threading.Thread | None = None
         self.shutdown_event = threading.Event()
-        pub.subscribe(self.pending_services.put, 'Service.created')
+        pub.subscribe(self._on_service_created, 'Service.created')
         pub.subscribe(self.shutdown_event.set, 'netscanner.done')
         pub.subscribe(self.shutdown_event.set, 'abort')
 
@@ -83,6 +83,9 @@ class WebEnumerator(threading.Thread):
 
         pub.sendMessage('webenum.done')
         logger.info("WebEnumerator done.")
+
+    def _on_service_created(self, record: Service):
+        self.pending_services.put(record)
 
     def _dispatch_service_workers(self):
         """

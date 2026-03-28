@@ -20,6 +20,7 @@ def configure_logging():
         }
     }
 
+    Path(get_settings().log_file).parent.mkdir(parents=True, exist_ok=True)
     handlers["file"] = {
         "class": "logging.FileHandler",
         "filters": ["scanner_only"],

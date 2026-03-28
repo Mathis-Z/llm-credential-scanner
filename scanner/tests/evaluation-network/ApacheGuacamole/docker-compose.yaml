@@ -10,7 +10,6 @@ services:
       - POSTGRES_USER=guacamole_user
       - POSTGRES_PASSWORD=guacpass
     volumes:
-      - guac_db_data:/var/lib/postgresql/data
       - ./initdb.sql:/docker-entrypoint-initdb.d/initdb.sql:ro
     restart: unless-stopped
 
@@ -28,6 +27,3 @@ services:
     ports:
       - "18163:8080"
     restart: unless-stopped
-
-volumes:
-  guac_db_data:
