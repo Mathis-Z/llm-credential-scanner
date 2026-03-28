@@ -324,7 +324,13 @@ def evaluate_case(
     try:
         wait_path = "/" if login_path == "*" else login_path
         wait_url = f"http://127.0.0.1:{port}{wait_path}"
-        wait_login_panel_up(wait_url, timeout_s=180)
+        # Best-effort readiness check.
+        # If we can't confirm readiness within the timeout, still run Changeme
+        # (some apps may be slow to start or render logins client-side).
+        try:
+            wait_login_panel_up(wait_url, timeout_s=180)
+        except TimeoutError as exc:
+            logger.warning("Login page not confirmed within timeout; running Changeme anyway (%s)", exc)
 
         # Changeme runs in Docker with --network host, so it can scan localhost
         # targets directly.
