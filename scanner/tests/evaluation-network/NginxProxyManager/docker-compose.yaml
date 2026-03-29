@@ -5,4 +5,7 @@ services:
       - "18145:81"
       - "18150:80"
       - "18443:443"
+    tmpfs:
+      - /data
+      - /etc/letsencrypt
     restart: unless-stopped
