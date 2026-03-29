@@ -2,9 +2,6 @@
 **/__pycache__/
 *.py[codz]
 *$py.class
-# DB files
-*.db
-scanner.db*
 
 # C extensions
 *.so
@@ -222,3 +219,4 @@ __marimo__/
 !test-network/Zabbix/.env
 
 downloaded_files/
+scan_artifacts/
