@@ -105,7 +105,7 @@ class KeywordExtractor(DBConnectionMixin, Thread):
         """
         try:
             llm = get_chat_model(reasoning=False)
-            prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
+            prompt = PROMPT_TEMPLATE % endpoint.page_source[:32000]  # Limit to first 32k chars to avoid token limits
             logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
 
             messages = [("human", prompt)]

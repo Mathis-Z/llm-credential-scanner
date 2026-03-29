@@ -30,22 +30,36 @@ from scanner.shared.browser_pool import BrowserPool
 
 
 PROMPT_TEMPLATE = """
-<<<PAGE CONTENT>>>
+<<<LOGIN PAGE HTML>>>
 %s
-<<<END PAGE CONTENT>>>
-You are a blueteam pentester trying to test default credentials for a web application at "%s".
-The login page has the HTML content above.
-The default credentials you want to test are:
-- Username: "%s"
-- Password: "%s"
+<<<END LOGIN PAGE HTML>>>
 
-Follow these steps to test the credentials:
-1. Identify required form fields.
-2. Send keys to the from fields using css selectors and the insert_text_into_field tool.
-3. Submit the form using the click_button tool. Then terminate without further output.
+You are testing default credentials on a web application login page at "%s".
 
-You may use tools multiple times. Do not give up quickly. ONLY CALL TOOLS ONE BY ONE.
-After calling a tool, wait for the result before calling another tool.
+**Credentials to test:**
+- Username: %s
+- Password: %s
+
+**Instructions:**
+You MUST derive ALL CSS selectors directly from the HTML above. Do NOT guess or invent selectors.
+
+1. Read the HTML above carefully. Identify:
+   - The username/email input field (look for input elements with type="text", type="email", or name/id containing "user", "email", "login")
+   - The password input field (type="password")
+   - The submit button (type="submit", type="button", or role="button")
+
+2. For each field you identified, call insert_text_into_field with the EXACT CSS selector matching that element in the HTML above.
+
+3. After filling all fields, call click_button with the EXACT CSS selector of the submit element found in the HTML above.
+
+4. Stop after calling click_button. Do not call any more tools.
+
+**Rules:**
+- Use only CSS selectors that match elements present in the HTML above
+- Prefer id-based selectors (#id) over class or type selectors when an id is present
+- If a field has no id, use the most specific selector you can derive from the HTML
+- Call tools ONE AT A TIME and wait for each result before proceeding
+- If a tool returns an error saying the element was not found, re-examine the HTML above and try a different selector for the same field
 """
 
 logger = logging.getLogger('scanner.cred_tester')

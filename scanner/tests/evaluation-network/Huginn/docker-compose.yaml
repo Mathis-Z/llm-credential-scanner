@@ -6,8 +6,6 @@ services:
       - MYSQL_DATABASE=huginn_production
       - MYSQL_USER=huginn
       - MYSQL_PASSWORD=password
-    volumes:
-      - huginn_mysql_data:/var/lib/mysql
     restart: unless-stopped
 
   web:
@@ -49,6 +47,3 @@ services:
       - SEED_EMAIL=admin@example.com
       - INVITATION_CODE=password
     restart: unless-stopped
-
-volumes:
-  huginn_mysql_data:

@@ -5,8 +5,6 @@ services:
       - POSTGRES_DB=redmine
       - POSTGRES_USER=redmine
       - POSTGRES_PASSWORD=admin
-    volumes:
-      - redmine_db_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   redmine:
@@ -21,10 +19,4 @@ services:
       - REDMINE_SECRET_KEY_BASE=changeme_redmine_secret
     ports:
       - "18158:3000"
-    volumes:
-      - redmine_data:/usr/src/redmine/files
     restart: unless-stopped
-
-volumes:
-  redmine_db_data:
-  redmine_data:

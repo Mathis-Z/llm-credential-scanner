@@ -8,9 +8,4 @@ services:
     ports:
       - "18147:9001"
       - "19100:9000"
-    volumes:
-      - minio_data:/data
     restart: unless-stopped
-
-volumes:
-  minio_data:
