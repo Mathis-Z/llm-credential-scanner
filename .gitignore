@@ -220,3 +220,6 @@ __marimo__/
 
 downloaded_files/
 scan_artifacts/
+
+# Include .log files inside artifacts directory
+!artifacts/*.log
