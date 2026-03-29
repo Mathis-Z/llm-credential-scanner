@@ -29,9 +29,5 @@ You can use `python3 main.py --help` to get a list of available options.
 # Notes
 
 When running Ollama, you should probably increase the context window by setting `export OLLAMA_CONTEXT_LENGTH=16000` before running `ollama serve`
-Make sure to install a recent version of Ollama (tested with 0.18.3) to support the "qwen3.5:4b" model.
-Also pull the models you want to use. Default are:
-```bash
-ollama pull qwen3:4b-instruct-2507-q4_K_M
-ollama pull qwen3.5:4b
-```
+Make sure to install a recent version of Ollama (tested with 0.18.3) to support the qwen3.5 models.
+Also pull the models you want to use.

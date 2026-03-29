@@ -133,7 +133,7 @@ def print_results(results: dict[str, TestResult | None]):
 
         table.append([
             service_name,
-            colorful_pass_or_fail(True, annotation="*") if result.creds_are_trivial else colorful_pass_or_fail(result.found_creds),
+            colorful_pass_or_fail(result.found_creds, annotation="*" if result.creds_are_trivial else ""),
             colorful_pass_or_fail(result.verified_creds),
             colorful_pass_or_fail(result.verified_no_other_creds),
             colorful_pass_or_fail(result.found_login_panel),
@@ -142,7 +142,7 @@ def print_results(results: dict[str, TestResult | None]):
         ])
 
     print(tabulate(table, headers=headers, tablefmt="simple_grid"))
-    print("* - Credentials are part of default credential lists, so PASS is not fully indicative of success in this case.\n")
+    print("* - Correct credentials are part of default credential lists, so the web search capability was not beneficial/required.\n")
 
 
 def colorful_pass_or_fail(value: bool, annotation: str = '') -> str:
