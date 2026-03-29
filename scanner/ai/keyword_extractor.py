@@ -13,14 +13,25 @@ PROMPT_TEMPLATE = """
 <<<BEGIN CONTENT>>>
 %s
 <<<END CONTENT>>>
-You are a pentester and have encountered an unknown web application.
-Your goal is to find documentation or source code for this application that might contain default credentials.
-Identify keywords or links for a web search. If an application name appears (title, logo text, headings),
-include it as a keyword even if it is the only one. The keywords/links must be specific to this application.
-Do not include keywords that are unspecific or not informative.
-The web page has the content given above.
-Your first line of output must contain the number of identified keywords/links as a decimal integer. The following lines should contain one keyword/link per line.
-If there are no specific keywords on the page, output 0. Output no more than 5 keywords.
+
+You are a pentester analyzing an unknown web application.
+Given the page content above, identify search keywords or URLs that could locate documentation or source code containing default credentials for this specific application.
+
+**Rules**
+- Only include keywords/URLs specific to this application (app name, product identifiers, doc URLs)
+- Exclude generic or uninformative terms
+- If an application name is visible (title, logo, headings), always include it
+- Output at most 5 keywords/URLs
+- Output at least 1 keyword/URL
+
+**Output Format**
+Your first line of output must contain the number of identified keywords/links as a decimal integer.
+The following lines should contain one keyword/link per line.
+
+**Example Output**
+2
+ExampleApp
+https://example.com/docs
 """
 
 logger = logging.getLogger('scanner.keyword_extractor')
@@ -96,13 +107,33 @@ class KeywordExtractor(DBConnectionMixin, Thread):
             llm = get_chat_model(reasoning=False)
             prompt = PROMPT_TEMPLATE % markdownify(endpoint.page_source)
             logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
-            response = llm.invoke([("human", prompt)]).content
+
+            messages = [("human", prompt)]
+            response = llm.invoke(messages).content
             if response is None:  # aborted
                 return
-            lines = [line.strip() for line in response.split('\n')]
 
-            keyword_count = int(lines[0])
-            endpoint.keywords = [kw for kw in lines[1:keyword_count+1] if len(kw) > 3]
+            logger.debug("LLM response for %s: \n%s", endpoint.url(), response)
+            try:
+                lines = [line.strip() for line in response.split('\n') if line.strip()]
+                keyword_count = int(float(lines[0]))
+                keywords = lines[1:keyword_count+1]
+            except (ValueError, IndexError):
+                logger.debug("LLM format error, retrying for %s", endpoint.url())
+                reminder = "Your previous response was not in the correct format. Please strictly follow the output format: the first line must be the number of keywords as a simple integer, followed by exactly one keyword per line."
+                messages.append(("ai", response))
+                messages.append(("human", reminder))
+
+                response = llm.invoke(messages).content
+                if response is None:
+                    return
+
+                logger.debug("LLM retry response for %s: \n%s", endpoint.url(), response)
+                lines = [line.strip() for line in response.split('\n') if line.strip()]
+                keyword_count = int(float(lines[0]))
+                keywords = lines[1:keyword_count+1]
+
+            endpoint.keywords = [kw for kw in keywords if len(kw) > 3]
             endpoint.save(only=[Endpoint._keywords])
             logger.info("Extracted keywords for %s: %s", endpoint.url(), endpoint.keywords)
         except Exception as e:

@@ -17,7 +17,7 @@ def fetch_url_as_markdown(url: str) -> str:
     """
     _, raw_content = fetch_url_with_browser(url)
     md = markdownify(raw_content)
-    if len(md) > 20000:
+    if len(md) > 32000:
         logger.warning("Fetched content from %s is very large (%i characters). Truncated to avoid LLM input error.", url, len(md))
-        md = md[:20000] + "\n\n*Content truncated due to length.*"
+        md = md[:32000] + "\n\n*Content truncated due to length.*"
     return md

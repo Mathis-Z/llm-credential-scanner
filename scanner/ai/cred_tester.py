@@ -336,9 +336,9 @@ class CredTester(DBConnectionMixin, Thread):
 
             self.save_screenshot(driver, endpoint, username, password, attempt_label, "before")
             pre_login_state = self.record_page_state(driver)
-            
+
             full_prompt = PROMPT_TEMPLATE % (pre_login_state.cleaned_page_source(), pre_login_state.url, username, password)
-            llm = get_chat_model(reasoning=False)
+            llm = get_chat_model(reasoning=True)
             tools = make_credential_testing_tools(driver)
             agent = create_agent(llm, tools=tools)
 
