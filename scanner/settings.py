@@ -83,7 +83,7 @@ class Settings(BaseSettings):
         """Apply defaults that depend on other field values."""
         if self.use_local_llm:
             if self.reasoning_llm_name is None:
-                self.reasoning_llm_name = "qwen3.5:4b"
+                self.reasoning_llm_name = "qwen3:8b-q4_K_M"
             if self.nonreasoning_llm_name is None:
                 self.nonreasoning_llm_name = "qwen3:4b-instruct-2507-q4_K_M"
         else:

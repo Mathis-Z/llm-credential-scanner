@@ -115,7 +115,7 @@ class CredSearcher(DBConnectionMixin, Thread):
                     service.save()
                 return
 
-            llm = get_chat_model(reasoning=True)
+            llm = get_chat_model(reasoning=False)
             prompt = PROMPT_TEMPLATE % "\n".join(keywords)
             logger.debug("CredSearcher prompt for service %s:\n%s", service.url(), prompt)
             agent = create_agent(llm, tools=[search_web, submit_credentials, fetch_url_as_markdown])
