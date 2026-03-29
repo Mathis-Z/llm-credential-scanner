@@ -123,7 +123,7 @@ class CredTester(DBConnectionMixin, Thread):
         self.task_queue: queue.Queue[tuple[int, str, str] | None] = queue.Queue()
         self.in_flight: set[tuple[int, str, str]] = set()
         self.in_flight_lock = threading.Lock()
-        self.max_workers = max(1, get_settings().max_webdrivers)
+        self.max_workers = 1
         self.workers: list[Thread] = []
         pub.subscribe(self._on_abort, 'abort')
         pub.subscribe(self.cred_searcher_done_event.set, 'cred_searcher.done')

@@ -64,7 +64,8 @@ def make_credential_testing_tools(driver: Any):
         try:
             elements = driver.find_elements(By.CSS_SELECTOR, selector)
             if len(elements) == 0:
-                return "Error: No elements found"
+                page_source = driver.page_source
+                return "Error: No elements found. The current page source is: <<<PAGE CONTENT>>>\n" + page_source + "\n<<<END PAGE CONTENT>>>"
             if len(elements) > 1:
                 formatted_elements = "\n".join([_format_html_element(el) for el in elements])
                 return "Error: Selector matched multiple elements:\n" + formatted_elements
@@ -94,7 +95,8 @@ def make_credential_testing_tools(driver: Any):
             for attempt in range(2):
                 elements = driver.find_elements(By.CSS_SELECTOR, selector)
                 if len(elements) == 0:
-                    return "error: no elements found"
+                    page_source = driver.page_source
+                    return "Error: No elements found. The current page source is: <<<PAGE CONTENT>>>\n" + page_source + "\n<<<END PAGE CONTENT>>>"
                 if len(elements) > 1:
                     formatted_elements = "\n".join([_format_html_element(el) for el in elements])
                     return "Error: Selector matched multiple elements:\n" + formatted_elements
