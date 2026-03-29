@@ -150,7 +150,7 @@ def colorful_pass_or_fail(value: bool, annotation: str = '') -> str:
     return click.style(f"PASS{annotation}", fg="green") if value else click.style(f"FAIL{annotation}", fg="red")
 
 
-def run_scanner(port, log_path, artifacts_dir, extra_args=None):
+def run_scanner(port, log_path, artifacts_dir, extra_args=None, timeout=None):
     """Run scanner as subprocess against localhost on specified port."""
     cmd = [
         "python",
@@ -167,7 +167,11 @@ def run_scanner(port, log_path, artifacts_dir, extra_args=None):
         str(artifacts_dir)
     ] + (extra_args or [])
     p = subprocess.Popen(cmd, text=True)
-    p.wait()
+    try:
+        p.wait(timeout)
+    except subprocess.TimeoutExpired as exc:
+        p.kill()
+        raise RuntimeError(f"Scanner process timed out after {timeout} seconds") from exc
 
 
 def run_app_test(app_dir_name, artifacts, port, login_path, username, password, network_dir: str = "test-network") -> TestResult:
@@ -186,7 +190,8 @@ def run_app_test(app_dir_name, artifacts, port, login_path, username, password, 
         run_scanner(
             port,
             artifacts.scanner_log_path,
-            artifacts.dir_path
+            artifacts.dir_path,
+            timeout=600  # 10 minutes timeout for scanner to complete
         )
         # Connect to scanner's DB to verify results
         load_db(artifacts.db_path)
@@ -282,7 +287,7 @@ def run(keep, include, exclude, evaluation, log_level, kill_containers):
         ("Filebrowser", 18146, "/login", "admin", "admin"),
         ("Huginn", 18168, "/users/sign_in", "admin", "password"),
         ("Kanboard", 18081, "/login", "admin", "admin"),
-        ("Keycloak", 18140, "/realms/master/protocol/openid-connect/auth", "admin", "admin"),
+        ("Keycloak", 18140, "*", "admin", "admin"),
         ("KibanaOSS", 18167, "/login", "elastic", "changeme"),
         ("MinIO", 18147, "/login", "minioadmin", "minioadmin"),
         ("NexusRepositoryManager", 18082, "/", "admin", "admin123"),
@@ -305,7 +310,7 @@ def run(keep, include, exclude, evaluation, log_level, kill_containers):
     active_network_dir = "evaluation-network" if evaluation else "test-network"
 
     if include:
-        included_apps_lower = set([app.lower().strip() for app in exclude.split(",")])
+        included_apps_lower = set([app.lower().strip() for app in include.split(",")])
         active_cases = [tc for tc in active_cases if tc[0].lower() in included_apps_lower]
 
     if exclude:
@@ -336,7 +341,7 @@ def run(keep, include, exclude, evaluation, log_level, kill_containers):
                     artifacts_dir=str(artifacts.dir_path)
                 )
 
-    print_results(results)
+        print_results(results)
     logger.info("All tests completed in %.2f seconds.", time.time() - start_time)
 
 
