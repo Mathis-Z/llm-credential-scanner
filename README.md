@@ -1,4 +1,4 @@
-# Team 1: LLM-Assisted Web Default-Credential Scanner
+# LLM-Assisted Web Default-Credential Scanner
 
 This repository contains a prototype security scanner for discovering web services on a network, enumerating endpoints, and testing likely default credentials with help from LLM-driven agents.
 
@@ -27,39 +27,36 @@ Results are stored in SQLite and artifacts are written to a run directory contai
 
 - `scanner/`: core scanner code, tests, DB models, AI modules
 - `dashboard/`: Flask dashboard for viewing run outputs
-- `artifacts/successful_scan/`: sample run artifacts
-- `references/`: papers, notes, prompts, and related material
-- `meetings/`: project notes and progress logs
+- `evaluate_external/` Evaluation script to run [ztgrace/changeme](https://github.com/ztgrace/changeme) against our test services (see `evaluate_external/README.md`)
 
 ## Requirements
 
 - Linux/macOS environment (tested on Linux)
-- Python (testing with 3.13.7)
+- Python (tested with 3.14.5)
 - `nmap` available on the host (used via `python3-nmap`)
 - Chrome/Chromium runtime for SeleniumBase headless browser tasks
 - LLM access:
 	- remote API: set `OPENAI_API_KEY` (used with OpenRouter-compatible base URL by default)
-	- or local model mode (`USE_LOCAL_LLM=true`, e.g. Ollama)
+	- or Ollama mode with `USE_LOCAL_LLM=true` (make sure to pull the models you want to use)
 
 ## Quick Start
 
 ### 1) Set up scanner environment
 
-```bash
-cd scanner
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install -r requirements.txt
-```
-
-Create `scanner/.env`:
+Create `.env` (in project root) with at least:
 
 ```env
 OPENAI_API_KEY=your_api_key_here
-# Optional
-# OPENAI_BASE_URL=https://openrouter.ai/api/v1
-# USE_LOCAL_LLM=false
 ```
+
+The `example.env` shows more settings. Then create the venv and install the requirements:
+
+```bash
+python3 -m venv scanner/.venv
+source scanner/.venv/bin/activate
+python3 -m pip install -r scanner/requirements.txt
+```
+
 
 ### 2) Run a scan
 
@@ -131,11 +128,11 @@ The dashboard can:
 
 ## Testing
 
-Integration tests are under `scanner/tests/` and rely on containerized vulnerable applications.
+Integration tests are under `scanner/tests/` and rely on containerized known-vulnerable applications.
 
 Important:
 
-- Test scripts may stop/kill running Docker containers.
+- Test scripts stop/kill running Docker containers.
 - Test artifacts are created under `/tmp/scan_artifacts` by default.
 
 ### How the Docker Compose test setup works
@@ -169,43 +166,7 @@ Useful flags:
 - `--kill-containers`: clean running containers before test execution
 - `-L, --log-level`: set test/scanner logging verbosity
 
-### External Changeme evaluator (scanner-independent)
-
-There is also a lightweight evaluator that runs the third-party tool **Changeme** against the same Docker Compose app suites, without using any scanner logic.
-
-See: `evaluate_external/README.md`
-
-Examples:
-
-```bash
-python3 evaluate_external/evaluate_changeme.py --both --keep
-python3 evaluate_external/evaluate_changeme.py -s Grafana --keep -L DEBUG
-```
-
-### Historical integration results
-
-Collected integration test summaries are stored in:
-
-- `artifacts/integration-tests-results/`
-
-These files track results across project development iterations. The newest report is:
-
-- `artifacts/integration-tests-results/11_02_2026_even_more_improved_cred_tester.txt`
-
 ## Safety Notes
 
 - Use only on assets/networks you are explicitly authorized to test.
 - Aggressive credential testing can trigger lockouts/rate limits.
-- Web-search-based LLM steps should be treated as untrusted input.
-- Keep API keys in `.env`; do not commit secrets.
-
-## Current Status
-
-This is an active prototype with evolving heuristics and test coverage.
-
-Helpful project docs:
-
-- `idea.md`
-- `scanner/structure.md`
-- `scanner/README.md`
-- `dashboard/README.md`
