@@ -132,7 +132,7 @@ Integration tests are under `scanner/tests/` and rely on containerized known-vul
 
 Important:
 
-- Test scripts stop/kill running Docker containers.
+- Test scripts stop/kill running Docker containers and delete stopped ones!
 - Test artifacts are created under `/tmp/scan_artifacts` by default.
 
 ### How the Docker Compose test setup works
