@@ -191,7 +191,7 @@ def run_app_test(app_dir_name, artifacts, port, login_path, username, password, 
             port,
             artifacts.scanner_log_path,
             artifacts.dir_path,
-            timeout=600  # 10 minutes timeout for scanner to complete
+            timeout=1800  # 30 minutes timeout for scanner to complete
         )
         # Connect to scanner's DB to verify results
         load_db(artifacts.db_path)

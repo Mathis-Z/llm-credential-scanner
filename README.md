@@ -38,6 +38,7 @@ Results are stored in SQLite and artifacts are written to a run directory contai
 - LLM access:
 	- remote API: set `OPENAI_API_KEY` (used with OpenRouter-compatible base URL by default)
 	- or Ollama mode with `USE_LOCAL_LLM=true` (make sure to pull the models you want to use)
+- (docker compose for tests)
 
 ## Quick Start
 

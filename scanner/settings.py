@@ -78,6 +78,14 @@ class Settings(BaseSettings):
     max_webenum_workers: int = 4
     db_max_connections: int = 32
 
+    # RAG-based credential search
+    embedding_model_name: str = "TaylorAI/bge-micro-v2"
+    rag_num_search_results: int = 10   # top-N DDGS results fetched per service
+    rag_chunk_size: int = 500          # characters per chunk
+    rag_chunk_overlap: int = 100       # character overlap between chunks
+    rag_top_k_chunks: int = 5          # chunks retrieved for the final LLM extraction call
+    rag_query_max_chars: int = 300     # cap on combined search-query length
+
     @model_validator(mode="after")
     def resolve_dynamic_defaults(self) -> "Settings":
         """Apply defaults that depend on other field values."""
