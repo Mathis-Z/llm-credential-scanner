@@ -98,46 +98,75 @@ class KeywordExtractor(DBConnectionMixin, Thread):
 
     def extract_keywords(self, endpoint: Endpoint):
         """
-        Convert endpoint page to markdown and extract keywords using LLM.
-        
-        LLM analyzes the page content to identify application-specific identifiers
-        like product names, version numbers, or documentation links.
+        Extract keywords using the LLM, preferring the markdownified page content.
+
+        If the markdown attempt finds no keywords (either a well-formed "0" response
+        or unparseable output even after retry), falls back to a second attempt using
+        the raw HTML - some pages carry app-identifying info only in attributes/structure
+        that markdownify strips. Both attempts are capped to 32k characters.
         """
         try:
-            llm = get_chat_model(reasoning=False)
-            prompt = PROMPT_TEMPLATE % endpoint.page_source[:32000]  # Limit to first 32k chars to avoid token limits
-            logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
+            markdown_content = markdownify(endpoint.page_source, strip=['img'])[:32000]
+            keywords = self._extract_keywords_from_content(endpoint, markdown_content)
 
-            messages = [("human", prompt)]
-            response = llm.invoke(messages).content
-            if response is None:  # aborted
+            if not keywords:
+                logger.debug("No keywords found from markdown for %s; retrying with raw HTML", endpoint.url())
+                raw_content = endpoint.page_source[:32000]
+                html_keywords = self._extract_keywords_from_content(endpoint, raw_content)
+                if html_keywords is not None:
+                    keywords = html_keywords
+
+            if keywords is None:
+                logger.warning("Could not extract keywords for %s (LLM response unparseable)", endpoint.url())
                 return
-
-            logger.debug("LLM response for %s: \n%s", endpoint.url(), response)
-            try:
-                lines = [line.strip() for line in response.split('\n') if line.strip()]
-                keyword_count = int(float(lines[0]))
-                keywords = lines[1:keyword_count+1]
-            except (ValueError, IndexError):
-                logger.debug("LLM format error, retrying for %s", endpoint.url())
-                reminder = "Your previous response was not in the correct format. Please strictly follow the output format: the first line must be the number of keywords as a simple integer, followed by exactly one keyword per line."
-                messages.append(("ai", response))
-                messages.append(("human", reminder))
-
-                response = llm.invoke(messages).content
-                if response is None:
-                    return
-
-                logger.debug("LLM retry response for %s: \n%s", endpoint.url(), response)
-                lines = [line.strip() for line in response.split('\n') if line.strip()]
-                keyword_count = int(float(lines[0]))
-                keywords = lines[1:keyword_count+1]
 
             endpoint.keywords = [kw for kw in keywords if len(kw) > 3]
             endpoint.save(only=[Endpoint._keywords])
             logger.info("Extracted keywords for %s: %s", endpoint.url(), endpoint.keywords)
         except Exception as e:
             logger.error("Error extracting keywords for %s: %s", endpoint.url(), str(e))
+
+    def _extract_keywords_from_content(self, endpoint: Endpoint, content: str) -> list[str] | None:
+        """
+        Single LLM extraction attempt against the given content, with one retry on
+        malformed output. Returns the parsed keyword list (possibly empty), or None
+        if the LLM was aborted or its response was unparseable even after retry.
+        """
+        llm = get_chat_model(reasoning=False)
+        prompt = PROMPT_TEMPLATE % content
+        logger.debug("Extracting keywords for %s: \n%s", endpoint.url(), prompt)
+
+        messages = [("human", prompt)]
+        response = llm.invoke(messages).content
+        if response is None:  # aborted
+            return None
+
+        logger.debug("LLM response for %s: \n%s", endpoint.url(), response)
+        keywords = self._parse_keywords_response(response)
+        if keywords is None:
+            logger.debug("LLM format error, retrying for %s", endpoint.url())
+            reminder = "Your previous response was not in the correct format. Please strictly follow the output format: the first line must be the number of keywords as a simple integer, followed by exactly one keyword per line."
+            messages.append(("ai", response))
+            messages.append(("human", reminder))
+
+            response = llm.invoke(messages).content
+            if response is None:
+                return None
+
+            logger.debug("LLM retry response for %s: \n%s", endpoint.url(), response)
+            keywords = self._parse_keywords_response(response)
+
+        return keywords
+
+    @staticmethod
+    def _parse_keywords_response(response: str) -> list[str] | None:
+        """Parse 'count\\nkeyword1\\n...' output. Returns None if the format doesn't match."""
+        try:
+            lines = [line.strip() for line in response.split('\n') if line.strip()]
+            keyword_count = int(float(lines[0]))
+            return lines[1:keyword_count + 1]
+        except (ValueError, IndexError):
+            return None
 
     def _on_abort(self):
         self.termination_event.set()
