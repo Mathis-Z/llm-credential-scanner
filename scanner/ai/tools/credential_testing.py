@@ -135,7 +135,7 @@ def make_credential_testing_tools(driver: Any):
                 driver.execute_script(
                     "var el = document.querySelector(arguments[0]);"
                     "if (el) {"
-                    "  if (el.form) { el.form.submit(); return; }"
+                    "  if (el?.form?.submit) { el.form.submit(); return; }"
                     "  el.click();"
                     "}",
                     selector,
