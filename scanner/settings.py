@@ -93,7 +93,6 @@ class Settings(BaseSettings):
     rag_num_search_results: int = 10   # top-N DDGS results fetched per service
     rag_chunk_size: int = 700          # characters per chunk
     rag_chunk_overlap: int = 100       # character overlap between chunks
-    rag_top_k_chunks: int = 5          # chunks retrieved for the final LLM extraction call
     rag_query_max_chars: int = 300     # cap on combined search-query length
 
     @model_validator(mode="after")

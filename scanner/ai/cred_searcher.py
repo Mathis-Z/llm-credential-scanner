@@ -151,7 +151,7 @@ class CredSearcher(DBConnectionMixin, Thread):
                 logger.warning("No text chunks produced for service %s", service.url())
                 return
 
-            top_chunks = retrieve_top_chunks(query="default credentials", chunks=chunks, top_k=settings.rag_top_k_chunks)
+            top_chunks = retrieve_top_chunks(query="default credentials", chunks=chunks, top_k=min(max(len(urls), 5), 20))
             if not top_chunks:
                 logger.warning("Retrieval returned no chunks for service %s", service.url())
                 return
