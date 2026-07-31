@@ -1,3 +1,3 @@
 from .credential_search import search_web
 from .credential_testing import make_credential_testing_tools
-from .url_fetching import fetch_url_as_markdown
+from .url_fetching import fetch_url_as_markdown, fetch_urls_as_markdown

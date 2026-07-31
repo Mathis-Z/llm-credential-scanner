@@ -8,7 +8,7 @@ from pubsub import pub
 
 from scanner.ai.llm import get_chat_model
 from scanner.ai.rag import Chunk, chunk_pages, retrieve_top_chunks
-from scanner.ai.tools import search_web, fetch_url_as_markdown
+from scanner.ai.tools import search_web, fetch_urls_as_markdown
 from scanner.db.models import Service
 from scanner.db import DBConnectionMixin
 from scanner.settings import get_settings
@@ -134,8 +134,12 @@ class CredSearcher(DBConnectionMixin, Thread):
             if not results:
                 logger.warning("No search results for service %s (query: %s)", service.url(), query)
 
+            logger.debug("cred search web query found these results: %s", results)
+
             search_urls = [r["href"] for r in results if r.get("href")]
             urls = list(dict.fromkeys(search_urls + keyword_links))  # de-dupe, preserve order
+
+            logger.debug("cred search web query found these urls: %s", urls)
 
             pages = self.fetch_pages(urls, service)
             if not pages:
@@ -147,7 +151,7 @@ class CredSearcher(DBConnectionMixin, Thread):
                 logger.warning("No text chunks produced for service %s", service.url())
                 return
 
-            top_chunks = retrieve_top_chunks(query=query, chunks=chunks, top_k=settings.rag_top_k_chunks)
+            top_chunks = retrieve_top_chunks(query="default credentials", chunks=chunks, top_k=settings.rag_top_k_chunks)
             if not top_chunks:
                 logger.warning("Retrieval returned no chunks for service %s", service.url())
                 return
@@ -158,9 +162,10 @@ class CredSearcher(DBConnectionMixin, Thread):
                 return
             if not credentials:
                 logger.info("No default credentials found in retrieved content for service %s", service.url())
+                service._credentials = []
+                service.save() # marks service as processed
                 return
 
-            service._credentials = []
             for cred in credentials:
                 service.add_credentials(cred)
             service.save()
@@ -195,15 +200,14 @@ class CredSearcher(DBConnectionMixin, Thread):
             return []
 
     def fetch_pages(self, urls: list[str], service: Service) -> list[tuple[str, str]]:
-        """Fetch markdown content for each URL; skips individual fetch failures."""
+        """Fetch markdown content for each URL in parallel; skips individual fetch failures."""
+        contents = fetch_urls_as_markdown(urls, truncate=False)
         pages: list[tuple[str, str]] = []
-        for url in urls:
-            try:
-                content = fetch_url_as_markdown(url, truncate=False)
-            except Exception as e:
-                logger.warning("Failed to fetch %s for service %s: %s", url, service.url(), str(e))
+        for url, content in zip(urls, contents):
+            if content is None:
+                logger.warning("Failed to fetch %s for service %s", url, service.url())
                 continue
-            if content and content.strip():
+            if content.strip():
                 pages.append((url, content))
         return pages
 

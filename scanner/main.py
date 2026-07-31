@@ -1,6 +1,7 @@
 # Main entry point for the network scanner.
 # Orchestrates all scanner modules to discover services and test credentials.
 
+import json
 import logging
 import time
 import threading
@@ -22,7 +23,7 @@ logger = logging.getLogger("scanner.main")
 @click.option("--ports", "-p", default=None, help="Comma-separated list of ports to scan; forwarded to nmap")
 @click.option("--log-level", "-L", default="INFO", help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 @click.option("--log-file", default="scanner.log", help="Path to the log file. Default: <artifacts_dir>/scanner.log")
-@click.option("--max-webdrivers", default=3, help="Maximum number of concurrent WebDriver instances for credential testing")
+@click.option("--max-webdrivers", default=None, type=int, help="Maximum number of concurrent WebDriver instances for credential testing. Default: min(CPU cores, RAM in GB / 2)")
 @click.option("--max-webenum-workers", default=4, help="Maximum number of concurrent web enumeration workers")
 @click.option("--artifacts-dir", default="./scan_artifacts", help="Base directory for scan artifacts (DB, screenshots, logs)")
 @click.option("--disable_llm_cache", is_flag=True, help="Do not cache LLM responses")
@@ -84,7 +85,18 @@ def run(subnets, ports, log_level, log_file, max_webdrivers, max_webenum_workers
         stop_event.set()
         status_thread.join(timeout=1)
 
+    write_token_usage_artifact()
     print_scan_summary(start_time)
+
+
+def write_token_usage_artifact():
+    """Persist cumulative LLM token usage to a JSON file in artifacts_dir for external tooling to read."""
+    token_usage_path = get_settings().artifacts_dir / "token_usage.json"
+    token_usage_path.write_text(json.dumps({
+        "input_tokens": LLMCache().total_input_tokens,
+        "output_tokens": LLMCache().total_output_tokens,
+        "estimated": LLMCache().estimated_tokens_used,
+    }))
 
 
 def status_monitor(stop_event):

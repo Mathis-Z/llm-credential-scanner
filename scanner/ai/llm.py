@@ -6,6 +6,7 @@ import threading
 from typing import Any
 import logging
 import openai
+import tiktoken
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.language_models.base import LanguageModelInput
@@ -19,6 +20,44 @@ logger = logging.getLogger('scanner.llm')
 
 # Ensures LLM API calls don't happen concurrently (which could cause rate limit issues)
 API_SERIALIZATION_LOCK = threading.Lock()
+
+_token_encoding = None
+
+
+def _get_token_encoding():
+    """Lazily load a generic BPE tokenizer used to estimate tokens when a provider omits usage_metadata."""
+    global _token_encoding
+    if _token_encoding is None:
+        _token_encoding = tiktoken.get_encoding("o200k_base")
+    return _token_encoding
+
+
+def estimate_tokens(text: str) -> int:
+    """Approximate the token count of text using a generic tokenizer (not model-exact, but a reasonable estimate)."""
+    if not text:
+        return 0
+    try:
+        return len(_get_token_encoding().encode(text))
+    except Exception:
+        logger.exception("Token estimation failed; reporting 0 tokens")
+        return 0
+
+
+def _input_to_text(input: LanguageModelInput) -> str:
+    """Flatten LLM input (string, message tuples, or BaseMessage objects) into plain text for token estimation."""
+    if isinstance(input, str):
+        return input
+    if isinstance(input, list):
+        parts = []
+        for msg in input:
+            if isinstance(msg, BaseMessage):
+                parts.append(str(msg.content))
+            elif isinstance(msg, (tuple, list)) and len(msg) == 2:
+                parts.append(str(msg[1]))
+            else:
+                parts.append(str(msg))
+        return "\n".join(parts)
+    return str(input)
 
 class WrappedInvokeMixin:
     """Wraps LLM invoke() with caching and exponential backoff for rate limits."""
@@ -112,7 +151,20 @@ class WrappedInvokeMixin:
                     # Exponential backoff capped at 10 minutes
                     backoff_seconds = min(backoff_seconds * 2, 600)
 
-            LLMCache().store(cache_key, result)
+            usage = getattr(result, 'usage_metadata', None) or {}
+            input_tokens = usage.get('input_tokens')
+            output_tokens = usage.get('output_tokens')
+            estimated = input_tokens is None or output_tokens is None
+            if estimated:
+                # Provider didn't return usage data (common for some Ollama models/versions);
+                # fall back to a generic tokenizer for an approximate count.
+                logger.debug("No usage_metadata returned by LLM; estimating token counts via tokenizer")
+                output_text = result.content if isinstance(result.content, str) else str(result.content)
+                input_tokens = estimate_tokens(_input_to_text(input))
+                output_tokens = estimate_tokens(output_text)
+
+            LLMCache().record_usage(input_tokens or 0, output_tokens or 0, estimated=estimated)
+            LLMCache().store(cache_key, result, input_tokens=input_tokens or 0, output_tokens=output_tokens or 0, estimated=estimated)
             return result
 
 

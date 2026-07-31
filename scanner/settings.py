@@ -10,6 +10,16 @@ from pydantic import model_validator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _default_max_webdrivers() -> int:
+    """Cap concurrent browser instances at min(CPU cores, RAM in GB / 4) - each browser is fairly memory-hungry."""
+    cpu_cores = os.cpu_count() or 1
+    try:
+        ram_gb = (os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")) / (1024 ** 3)
+    except (AttributeError, ValueError, OSError):
+        ram_gb = cpu_cores * 4  # sysconf unavailable (e.g. non-POSIX); don't let RAM constrain the estimate
+    return max(1, min(cpu_cores, int(ram_gb // 4)))
+
+
 def configure_logging():
     """Configure logging for the scanner application. Filters to only show 'scanner.*' logs."""
     handlers = {
@@ -74,14 +84,14 @@ class Settings(BaseSettings):
     _log_file: Path | None = None
     log_level: str = "INFO"
     disable_llm_cache: bool = False
-    max_webdrivers: int = 1
+    max_webdrivers: int | None = None
     max_webenum_workers: int = 4
     db_max_connections: int = 32
 
     # RAG-based credential search
     embedding_model_name: str = "TaylorAI/bge-micro-v2"
     rag_num_search_results: int = 10   # top-N DDGS results fetched per service
-    rag_chunk_size: int = 500          # characters per chunk
+    rag_chunk_size: int = 700          # characters per chunk
     rag_chunk_overlap: int = 100       # character overlap between chunks
     rag_top_k_chunks: int = 5          # chunks retrieved for the final LLM extraction call
     rag_query_max_chars: int = 300     # cap on combined search-query length
@@ -89,6 +99,9 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def resolve_dynamic_defaults(self) -> "Settings":
         """Apply defaults that depend on other field values."""
+        if self.max_webdrivers is None:
+            self.max_webdrivers = _default_max_webdrivers()
+
         if self.use_local_llm:
             if self.reasoning_llm_name is None:
                 self.reasoning_llm_name = "qwen3:8b-q4_K_M"
