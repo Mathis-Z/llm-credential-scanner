@@ -1,6 +1,6 @@
 services:
   mysql:
-    image: mysql:5.7
+    image: mysql:5.7.44
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=huginn_production
@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: ghcr.io/huginn/huginn-single-process:latest
+    image: ghcr.io/huginn/huginn-single-process@sha256:3eaabb166dedbfba24d1a1c163ee550fec60af89fe8fd4693df687ea4854e2af
     depends_on:
       - mysql
     environment:
@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 
   threaded:
-    image: ghcr.io/huginn/huginn-single-process:latest
+    image: ghcr.io/huginn/huginn-single-process@sha256:3eaabb166dedbfba24d1a1c163ee550fec60af89fe8fd4693df687ea4854e2af
     command: /scripts/init bin/threaded.rb
     depends_on:
       - mysql

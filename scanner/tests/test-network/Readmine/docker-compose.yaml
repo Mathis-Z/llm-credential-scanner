@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   redmine:
-    image: redmine
+    image: redmine:7.0.0
     ports:
       - "8084:3000"
 

@@ -1,6 +1,6 @@
 services:
   activemq:
-    image: apache/activemq:latest
+    image: apache/activemq:6.3.0
     ports:
       - "18161:8161"
       - "18616:61616"

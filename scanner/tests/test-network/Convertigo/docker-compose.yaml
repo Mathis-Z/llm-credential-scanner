@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   convertigo:
-    image: convertigo
+    image: convertigo:8.4.3
     container_name: C8O
     ports:
       - "28080:28080"

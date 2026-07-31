@@ -3,7 +3,7 @@ networks:
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:15.18
     tmpfs:
       - /var/lib/postgresql/data
     environment:
@@ -85,7 +85,7 @@ services:
       - zabbix-server
 
   backups:
-    image: postgres:15
+    image: postgres:15.18
     command: >-
       sh -c 'sleep 30m &&
       while true; do

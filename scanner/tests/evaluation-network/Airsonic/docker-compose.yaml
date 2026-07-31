@@ -1,6 +1,6 @@
 services:
   airsonic:
-    image: airsonic/airsonic:latest
+    image: airsonic/airsonic:10.6.2-RELEASE
     container_name: eval-airsonic
     network_mode: bridge
     ports:

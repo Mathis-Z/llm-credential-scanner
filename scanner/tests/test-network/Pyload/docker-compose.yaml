@@ -2,7 +2,7 @@
 version: "2.1"
 services:
   pyload:
-    image: lscr.io/linuxserver/pyload
+    image: lscr.io/linuxserver/pyload:2021.12.15
     container_name: pyload
     environment:
       - PUID=1000

@@ -1,6 +1,6 @@
 services:
   stirling-pdf:
-    image: frooodle/s-pdf:latest
+    image: frooodle/s-pdf:2.14.2
     container_name: eval-stirling-pdf
     network_mode: bridge
     ports:

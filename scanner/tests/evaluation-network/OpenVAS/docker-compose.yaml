@@ -1,6 +1,6 @@
 services:
   openvas:
-    image: securecompliance/gvm:latest
+    image: securecompliance/gvm:21.4.3-v1
     container_name: eval-openvas
     network_mode: bridge
     ports:

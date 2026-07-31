@@ -19,7 +19,7 @@ services:
     # You should update the version here to match the latest
     # release of BookStack: https://github.com/BookStackApp/BookStack/releases
     # You'll change this when wanting to update the version of BookStack used.
-    image: lscr.io/linuxserver/bookstack:version-v25.02
+    image: lscr.io/linuxserver/bookstack:version-v25.02.5
     container_name: bookstack
     environment:
       - PUID=1000

@@ -1,6 +1,6 @@
 services:
   db:
-    image: mariadb:10.6
+    image: mariadb:10.6.27
     container_name: osticket_mysql
     restart: unless-stopped
     environment:
@@ -12,7 +12,7 @@ services:
       - /var/lib/mysql
 
   osticket:
-    image: devinsolutions/osticket:latest
+    image: devinsolutions/osticket:1.17.5
     container_name: osticket_app
     restart: unless-stopped
     depends_on:

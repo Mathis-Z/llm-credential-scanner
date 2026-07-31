@@ -1,6 +1,6 @@
 services:
   emqx:
-    image: emqx/emqx:latest
+    image: emqx/emqx:6.2.2
     container_name: eval-emqx-dashboard
     network_mode: bridge
     ports:

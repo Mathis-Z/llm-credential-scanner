@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   db:
-    image: postgres:15
+    image: postgres:15.18
     environment:
       POSTGRES_DB: joplin
       POSTGRES_USER: joplin
@@ -11,7 +11,7 @@ services:
       - /var/lib/postgresql/data
 
   joplin:
-    image: joplin/server:latest
+    image: joplin/server:3.7.1
     ports:
       - "22300:22300"
     environment:

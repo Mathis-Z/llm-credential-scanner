@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:6
+    image: mongo:6.0.28
     container_name: mongo
     restart: unless-stopped
     ports:
@@ -9,7 +9,7 @@ services:
       - /data/db
 
   mongo-express:
-    image: mongo-express
+    image: mongo-express:1.0.2
     container_name: mongo-express
     restart: unless-stopped
     ports:

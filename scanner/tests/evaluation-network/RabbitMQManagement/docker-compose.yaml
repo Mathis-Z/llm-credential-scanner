@@ -1,6 +1,6 @@
 services:
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.13.7-management
     ports:
       - "18144:15672"
       - "15673:5672"

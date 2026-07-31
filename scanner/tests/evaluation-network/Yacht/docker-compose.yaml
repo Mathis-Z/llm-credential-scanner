@@ -1,6 +1,6 @@
 services:
   yacht:
-    image: selfhostedpro/yacht:latest
+    image: selfhostedpro/yacht:latest-2023-01-12--05
     ports:
       - "18165:8000"
     volumes:

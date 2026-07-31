@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   babybuddy:
-    image: lscr.io/linuxserver/babybuddy:latest
+    image: lscr.io/linuxserver/babybuddy:2.9.2
     container_name: babybuddy
     ports:
       - "8000:8000"

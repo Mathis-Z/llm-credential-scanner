@@ -1,10 +1,10 @@
 services:
   guacd:
-    image: guacamole/guacd:latest
+    image: guacamole/guacd:1.6.0
     restart: unless-stopped
 
   db:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     environment:
       - POSTGRES_DB=guacamole_db
       - POSTGRES_USER=guacamole_user
@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
 
   guacamole:
-    image: guacamole/guacamole:latest
+    image: guacamole/guacamole:1.6.0
     depends_on:
       - guacd
       - db
