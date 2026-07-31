@@ -124,15 +124,17 @@ def print_scan_summary(start_time):
 
     service_data = []
     for service in Service.select():
+        keywords = service.gather_keywords()
         service_data.append([
             service.url(),
             len(service.endpoints),
-            service.credentials if service.credentials else 'Unknown or N/A'
+            service.credentials if service.credentials else 'Unknown or N/A',
+            ', '.join(keywords) if keywords else 'None'
         ])
 
     summary += tabulate(
         service_data,
-        headers=['Service URL', 'Endpoints', 'Potential Default Credentials'],
+        headers=['Service URL', 'Endpoints', 'Potential Default Credentials', 'Keywords'],
         tablefmt='grid'
     ) + "\n"
 

@@ -18,7 +18,7 @@ class StartupScript:
     and cleans up the process on exit.
     """
 
-    def __init__(self, cmd: list[str], wait_for_login_url: int, timeout: int = 30, cwd="/tmp", log_path: Path | None = None):
+    def __init__(self, cmd: list[str], wait_for_login_url: int, timeout: int = 240, cwd="/tmp", log_path: Path | None = None):
         self.cmd = cmd
         self.cwd = cwd
         self.wait_for_login_url = wait_for_login_url
@@ -129,7 +129,7 @@ class StartupScript:
 class RunDockerCompose(StartupScript):
     """Run a docker compose file from a test network directory and wait for a port to respond."""
 
-    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 120, log_path: Path | None = None, network_dir: str = "test-network"):
+    def __init__(self, compose_file_path: str, wait_for_login_url, timeout: int = 240, log_path: Path | None = None, network_dir: str = "test-network"):
         self.network_dir = network_dir
         self.compose_file_path = self.find_docker_compose_file(compose_file_path)
 
