@@ -20,7 +20,9 @@ from pubsub import pub
 from bs4 import BeautifulSoup
 from markdownify import markdownify
 from langchain.agents import create_agent
-from langchain_core.messages import HumanMessage, ToolMessage, AIMessage
+from langchain.agents.middleware import AgentMiddleware
+from langchain_core.messages import HumanMessage, ToolMessage, AIMessage, RemoveMessage
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from scanner.ai.llm import get_chat_model
 from scanner.ai.tools import make_credential_testing_tools
 from scanner.db.models import Endpoint
@@ -63,6 +65,77 @@ You MUST derive ALL CSS selectors directly from the HTML above. Do NOT guess or 
 """
 
 logger = logging.getLogger('scanner.cred_tester')
+
+# Context-compaction tuning for ContextCompactionMiddleware. Repeated failed-selector
+# tool calls each dump the full page HTML back into the conversation, which can exhaust
+# the LLM's context window; these bound that growth.
+CONTEXT_TOKEN_LIMIT = 32000
+CONTEXT_CHARS_PER_TOKEN = 3  # rough estimate only, accuracy doesn't matter here
+NON_AI_MESSAGE_CHAR_LIMIT = 300
+TRUNCATION_SUFFIX = "... [TRUNCATED]"
+
+
+class ContextCompactionMiddleware(AgentMiddleware):
+    """
+    Keeps the credential-testing agent's context window from being exhausted by
+    repeated failed-selector tool responses (each of which dumps the full page HTML
+    back into the conversation on a not-found error).
+
+    Before every model call, estimates the session's token usage (total message
+    character count / CONTEXT_CHARS_PER_TOKEN). If that exceeds CONTEXT_TOKEN_LIMIT,
+    compacts the history: AI messages are kept in full, every other message (the
+    human prompt, tool results) is truncated to NON_AI_MESSAGE_CHAR_LIMIT characters,
+    and the current page source is appended fresh so the model still has accurate,
+    up-to-date selectors to continue from despite the truncated history.
+    """
+
+    def __init__(self, driver):
+        super().__init__()
+        self.driver = driver
+
+    def before_model(self, state, runtime):  # noqa: ARG002
+        messages = state["messages"]
+        estimated_tokens = sum(len(_message_text(m)) for m in messages) // CONTEXT_CHARS_PER_TOKEN
+        if estimated_tokens <= CONTEXT_TOKEN_LIMIT:
+            return None
+
+        logger.info(
+            "Compacting cred-tester context: ~%d estimated tokens exceeds %d limit (%d messages)",
+            estimated_tokens, CONTEXT_TOKEN_LIMIT, len(messages)
+        )
+
+        compacted = [m if isinstance(m, AIMessage) else _truncate_message(m) for m in messages]
+
+        try:
+            current_page_source = self.driver.page_source
+        except Exception:
+            logger.warning("Could not read current page source while compacting context", exc_info=True)
+            current_page_source = ""
+
+        compacted.append(HumanMessage(content=(
+            "[Context truncated to stay within the token budget - earlier messages above "
+            "were shortened.] Here is the CURRENT page source, which is the ground truth for "
+            "any selectors from here on:\n"
+            "<<<PAGE CONTENT>>>\n" + current_page_source + "\n<<<END PAGE CONTENT>>>\n\n"
+            "Continue the task: identify the username/password fields and submit button from "
+            "this page source, then proceed with the remaining steps (inserting the credentials "
+            "and clicking submit)."
+        )))
+
+        return {"messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *compacted]}
+
+
+def _message_text(message) -> str:
+    content = message.content
+    return content if isinstance(content, str) else str(content)
+
+
+def _truncate_message(message):
+    text = _message_text(message)
+    if len(text) <= NON_AI_MESSAGE_CHAR_LIMIT:
+        return message
+    return message.model_copy(update={"content": text[:NON_AI_MESSAGE_CHAR_LIMIT] + TRUNCATION_SUFFIX})
+
 
 # set of messages that might indicate a login failure
 NEGATIVE_MESSAGES = ["invalid username", "invalid password", "user does not exist",
@@ -354,7 +427,7 @@ class CredTester(DBConnectionMixin, Thread):
             full_prompt = PROMPT_TEMPLATE % (pre_login_state.cleaned_page_source(), pre_login_state.url, username, password)
             llm = get_chat_model(reasoning=True)
             tools = make_credential_testing_tools(driver)
-            agent = create_agent(llm, tools=tools)
+            agent = create_agent(llm, tools=tools, middleware=[ContextCompactionMiddleware(driver)])
 
             # https://docs.langchain.com/oss/python/langchain/agents#streaming
             try:
