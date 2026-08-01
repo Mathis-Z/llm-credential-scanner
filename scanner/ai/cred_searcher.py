@@ -40,6 +40,22 @@ Example output with none found:
 none
 """
 
+REFINE_QUERY_PROMPT_TEMPLATE = """
+You are helping a security auditor craft a single web search query to find the DEFAULT credentials of a specific web application (credentials that ship out of the box, or that are given as examples in the application's setup/installation documentation).
+
+Here are keywords automatically extracted from the application's own pages:
+%s
+
+Write ONE concise web search query that would surface the application's official documentation or setup guides mentioning its default username and password. Prefer the application's name and product identifiers, combined with terms like "default password" or "default login".
+
+**Rules**
+- Output only plain search terms on a single line.
+- No quotes, no boolean operators (AND/OR), no site: filters, no line breaks.
+- Keep it focused - a handful of words, not a sentence.
+
+Output ONLY the query text, nothing else.
+"""
+
 logger = logging.getLogger('scanner.cred_searcher')
 
 _URL_SCHEME_RE = re.compile(r'^https?://')
@@ -49,11 +65,12 @@ class CredSearcher(DBConnectionMixin, Thread):
     """
     Deterministic RAG-based credential searcher.
 
-    Processes services marked 'done' by KeywordExtractor. For each, performs a single
-    web search (using non-link keywords), fetches both the search result pages and any
-    URLs found directly among the keywords, retrieves the chunks most likely to contain
-    default credentials via local embeddings, and asks the LLM to extract them in a
-    fixed, parseable format. Gives up after 3 attempts per service.
+    Processes services marked 'done' by KeywordExtractor. For each, performs two
+    web searches (one built by concatenating the non-link keywords, and one where an
+    LLM refines those keywords into a focused query), fetches the combined, deduplicated
+    result pages plus any URLs found directly among the keywords, retrieves the chunks
+    most likely to contain default credentials via local embeddings, and asks the LLM to
+    extract them in a fixed, parseable format. Gives up after 3 attempts per service.
     """
     def __init__(self):
         super().__init__()
@@ -127,14 +144,22 @@ class CredSearcher(DBConnectionMixin, Thread):
 
             settings = get_settings()
             keyword_links, keyword_terms = self.split_keywords(keywords)
-            query = self.build_search_query(keyword_terms)
-            logger.debug("CredSearcher search query for %s: %s", service.url(), query)
 
-            results = self.run_web_search(query, settings.rag_num_search_results)
+            # Build two complementary queries: the deterministic keyword concatenation
+            # and an LLM-refined query. De-dupe in case they come out identical.
+            concat_query = self.build_search_query(keyword_terms)
+            refined_query = self.refine_search_query(keyword_terms)
+            queries = list(dict.fromkeys(q for q in (concat_query, refined_query) if q))
+            logger.debug("CredSearcher search queries for %s: %s", service.url(), queries)
+
+            # Run every query and pool the top results from each.
+            results = []
+            for q in queries:
+                results.extend(self.run_web_search(q, settings.rag_num_search_results))
             if not results:
-                logger.warning("No search results for service %s (query: %s)", service.url(), query)
+                logger.warning("No search results for service %s (queries: %s)", service.url(), queries)
 
-            logger.debug("cred search web query found these results: %s", results)
+            logger.debug("cred search web queries found these results: %s", results)
 
             search_urls = [r["href"] for r in results if r.get("href")]
             urls = list(dict.fromkeys(search_urls + keyword_links))  # de-dupe, preserve order
@@ -191,6 +216,36 @@ class CredSearcher(DBConnectionMixin, Thread):
             terms = terms[:max_terms_chars].rsplit(" ", 1)[0]
 
         return f"{terms} {mandatory_suffix}".strip()
+
+    def refine_search_query(self, term_keywords: list[str]) -> str | None:
+        """
+        Ask the LLM to turn the raw extracted keywords into a single, focused web-search
+        query. Returns the query string, or None if there are no keywords or the LLM call
+        fails / yields nothing usable (in which case the caller falls back to the
+        deterministic concatenated query alone).
+        """
+        if not term_keywords:
+            return None
+        try:
+            llm = get_chat_model(reasoning=False)
+            prompt = REFINE_QUERY_PROMPT_TEMPLATE % "\n".join(term_keywords)
+            response = llm.invoke([("human", prompt)]).content
+            if not response:  # empty or aborted
+                return None
+
+            # Keep the first non-empty line and strip any wrapping quotes the LLM added.
+            query = next((line.strip() for line in response.strip().splitlines() if line.strip()), "")
+            query = query.strip('"\'').strip()
+            if not query:
+                return None
+
+            max_chars = get_settings().rag_query_max_chars
+            if len(query) > max_chars:
+                query = query[:max_chars].rsplit(" ", 1)[0]
+            return query
+        except Exception as e:
+            logger.warning("Query refinement failed for keywords %s: %s", term_keywords, str(e))
+            return None
 
     def run_web_search(self, query: str, max_results: int) -> list[dict]:
         try:
