@@ -1,8 +1,11 @@
 #!/bin/bash
 # Repeatedly runs the test-network and evaluation-network suites, RUNS_PER_SUITE
-# times each, first against the remote LLM (default settings), then again with
-# USE_LOCAL_LLM=True. Waits WAIT_BETWEEN_RUNS seconds between every individual
-# run to let Docker/browser state settle.
+# times each, both against the remote LLM (default settings) and with
+# USE_LOCAL_LLM=True. The four backend/suite combinations are cycled round-robin:
+# each round runs every combination once, so results are spread evenly over time
+# instead of all remote runs happening before all local ones. Waits
+# WAIT_BETWEEN_RUNS seconds between every individual run to let Docker/browser
+# state settle.
 #
 # Usage: scanner/tests/run_repeated_suites.sh
 #
@@ -65,30 +68,31 @@ run_suite() {
     return "$exit_code"
 }
 
-run_phase() {
-    local model_backend="$1"
-
-    for run_number in $(seq 1 "$RUNS_PER_SUITE"); do
-        run_suite "$model_backend" "test-network" "$run_number"
-        echo "Waiting ${WAIT_BETWEEN_RUNS}s before next run..."
-        sleep "$WAIT_BETWEEN_RUNS"
-    done
-
-    for run_number in $(seq 1 "$RUNS_PER_SUITE"); do
-        run_suite "$model_backend" "evaluation-network" "$run_number" --evaluation
-        echo "Waiting ${WAIT_BETWEEN_RUNS}s before next run..."
-        sleep "$WAIT_BETWEEN_RUNS"
-    done
-}
+# The four backend/suite combinations, cycled round-robin so a given round covers
+# every combination before the next round starts. Fields are separated by "|":
+# model_backend|suite_name|extra CLI args (may be empty).
+COMBINATIONS=(
+    "remote|test-network|"
+    "local|test-network|"
+    "remote|evaluation-network|--evaluation"
+    "local|evaluation-network|--evaluation"
+)
 
 mkdir -p "$RESULTS_DIR"
 echo -e "model_backend\tsuite\trun\texit_code\tduration\tdir" > "$SUMMARY_FILE"
 
-echo "Starting repeated suite runs: $RUNS_PER_SUITE x test-network + $RUNS_PER_SUITE x evaluation-network, remote then local (USE_LOCAL_LLM=True)."
+echo "Starting repeated suite runs: $RUNS_PER_SUITE rounds of ${#COMBINATIONS[@]} runs each (test-network + evaluation-network, remote + local (USE_LOCAL_LLM=True)), round-robin."
 echo "Results directory: $RESULTS_DIR"
 
-run_phase "remote"
-run_phase "local"
+for run_number in $(seq 1 "$RUNS_PER_SUITE"); do
+    for combination in "${COMBINATIONS[@]}"; do
+        IFS="|" read -r model_backend suite_name suite_args <<< "$combination"
+        # shellcheck disable=SC2086 # suite_args is intentionally word-split (may be empty)
+        run_suite "$model_backend" "$suite_name" "$run_number" $suite_args
+        echo "Waiting ${WAIT_BETWEEN_RUNS}s before next run..."
+        sleep "$WAIT_BETWEEN_RUNS"
+    done
+done
 
 echo "All repeated suite runs completed at $(date -Iseconds)."
 echo "Summary: $SUMMARY_FILE"
