@@ -87,7 +87,7 @@ sudo apt-get update -y
 log "Installing base system packages"
 sudo apt-get install -y \
     curl wget git ca-certificates gnupg lsb-release software-properties-common \
-    build-essential nmap zstd pciutils dbus
+    build-essential nmap zstd pciutils dbus flatpak
 
 # ============================================================================
 # D-Bus system daemon
@@ -110,43 +110,35 @@ if ! sudo test -S /var/run/dbus/system_bus_socket; then
 fi
 
 # ============================================================================
-# Google Chrome
+# Google Chrome (via Flatpak / Flathub)
 #
 # Deliberately NOT the snap-packaged 'chromium-browser' Ubuntu ships by default:
 # snap's AppArmor confinement is a known source of intermittent "tab crashed"
-# errors under Selenium/undetected-chromedriver automation. Real Google Chrome
-# avoids that entirely. Installed via a direct .deb download rather than
-# adding Google's apt repo, since that's simpler and doesn't touch apt sources.
+# errors under Selenium/undetected-chromedriver automation.
 #
-# Pinned 5 major versions behind current stable (rather than "_current_") since
-# the newest release is more likely to hit fresh regressions/incompatibilities
-# with seleniumbase's uc mode. Override with CHROME_VERSION=x.y.z.w if needed -
-# see https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions
-# for available versions and confirm the .deb exists at the pool URL below
-# before pinning to it (not every version is mirrored there).
+# Installed via Flatpak (com.google.Chrome on Flathub) rather than the apt
+# .deb, and always the latest version Flathub has (no version pinning here).
+# Flatpak's own runtime bundles Chrome's shared-library dependencies, so the
+# separate "headless Chrome runtime libraries" apt install this used to need
+# isn't necessary anymore.
+#
+# seleniumbase/chromedriver expect a plain executable path, not "flatpak run
+# <app-id>", so a thin wrapper is installed on PATH as `google-chrome` that
+# forwards to `flatpak run com.google.Chrome` - this is the same binary name
+# the rest of this script (and the scanner's own code) already expects.
 # ============================================================================
-log "Installing Google Chrome"
-CHROME_VERSION="${CHROME_VERSION:-146.0.7680.177}"
-if ! command -v google-chrome &>/dev/null; then
-    CHROME_DEB="$(mktemp -t google-chrome-stable_current_amd64.XXXXXX.deb)"
-    wget -q -O "$CHROME_DEB" "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}-1_amd64.deb"
-    # world-readable so apt's unprivileged _apt sandbox user can access it directly,
-    # instead of falling back to an unsandboxed root download with a warning.
-    chmod 644 "$CHROME_DEB"
-    sudo apt-get install -y "$CHROME_DEB" || sudo apt-get install -y -f
-    rm -f "$CHROME_DEB"
-else
-    echo "google-chrome already installed: $(google-chrome --version)"
-fi
+log "Installing Google Chrome (Flatpak, latest)"
+sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+sudo flatpak install -y --noninteractive flathub com.google.Chrome
 
-# Headless Chrome runtime libraries that are often missing on minimal server images.
-# The ALSA package was renamed libasound2 -> libasound2t64 as part of Ubuntu 24.04's
-# time_t transition, so older releases (or non-Ubuntu bases) still use the old name.
-ALSA_PKG="libasound2t64"
-apt-cache show libasound2t64 &>/dev/null || ALSA_PKG="libasound2"
-sudo apt-get install -y \
-    libnss3 libatk-bridge2.0-0 libgtk-3-0 libxss1 "$ALSA_PKG" libgbm1 \
-    fonts-liberation libu2f-udev xdg-utils
+if ! command -v google-chrome &>/dev/null; then
+    sudo tee /usr/local/bin/google-chrome > /dev/null <<'WRAPPER'
+#!/bin/bash
+exec flatpak run com.google.Chrome "$@"
+WRAPPER
+    sudo chmod +x /usr/local/bin/google-chrome
+fi
+echo "google-chrome (flatpak) ready: $(google-chrome --version)"
 
 # ============================================================================
 # Docker (needed by scanner/tests/*.py to deploy the test/evaluation networks)
