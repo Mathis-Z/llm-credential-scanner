@@ -87,7 +87,7 @@ sudo apt-get update -y
 log "Installing base system packages"
 sudo apt-get install -y \
     curl wget git ca-certificates gnupg lsb-release software-properties-common \
-    build-essential nmap zstd pciutils dbus flatpak
+    build-essential nmap zstd pciutils dbus
 
 # ============================================================================
 # D-Bus system daemon
@@ -110,35 +110,42 @@ if ! sudo test -S /var/run/dbus/system_bus_socket; then
 fi
 
 # ============================================================================
-# Google Chrome (via Flatpak / Flathub)
+# Google Chrome
 #
 # Deliberately NOT the snap-packaged 'chromium-browser' Ubuntu ships by default:
 # snap's AppArmor confinement is a known source of intermittent "tab crashed"
-# errors under Selenium/undetected-chromedriver automation.
+# errors under Selenium/undetected-chromedriver automation. Real Google Chrome
+# avoids that entirely. Installed via a direct .deb download rather than
+# adding Google's apt repo, since that's simpler and doesn't touch apt sources.
 #
-# Installed via Flatpak (com.google.Chrome on Flathub) rather than the apt
-# .deb, and always the latest version Flathub has (no version pinning here).
-# Flatpak's own runtime bundles Chrome's shared-library dependencies, so the
-# separate "headless Chrome runtime libraries" apt install this used to need
-# isn't necessary anymore.
-#
-# seleniumbase/chromedriver expect a plain executable path, not "flatpak run
-# <app-id>", so a thin wrapper is installed on PATH as `google-chrome` that
-# forwards to `flatpak run com.google.Chrome` - this is the same binary name
-# the rest of this script (and the scanner's own code) already expects.
+# NOT installed via Flatpak: verified (both here and on a real pod) that
+# Flatpak's bwrap sandboxing isolates the filesystem enough that chromedriver
+# can't see the DevTools port file the sandboxed Chrome process writes -
+# "DevToolsActivePort file doesn't exist" - breaking automation entirely, in
+# both plain webdriver.Chrome and seleniumbase's uc=True mode. Not fixable
+# with flags; a real installed binary is required.
 # ============================================================================
-log "Installing Google Chrome (Flatpak, latest)"
-sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-sudo flatpak install -y --noninteractive flathub com.google.Chrome
-
+log "Installing Google Chrome"
 if ! command -v google-chrome &>/dev/null; then
-    sudo tee /usr/local/bin/google-chrome > /dev/null <<'WRAPPER'
-#!/bin/bash
-exec flatpak run com.google.Chrome "$@"
-WRAPPER
-    sudo chmod +x /usr/local/bin/google-chrome
+    CHROME_DEB="$(mktemp -t google-chrome-stable_current_amd64.XXXXXX.deb)"
+    wget -q -O "$CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    # world-readable so apt's unprivileged _apt sandbox user can access it directly,
+    # instead of falling back to an unsandboxed root download with a warning.
+    chmod 644 "$CHROME_DEB"
+    sudo apt-get install -y "$CHROME_DEB" || sudo apt-get install -y -f
+    rm -f "$CHROME_DEB"
+else
+    echo "google-chrome already installed: $(google-chrome --version)"
 fi
-echo "google-chrome (flatpak) ready: $(google-chrome --version)"
+
+# Headless Chrome runtime libraries that are often missing on minimal server images.
+# The ALSA package was renamed libasound2 -> libasound2t64 as part of Ubuntu 24.04's
+# time_t transition, so older releases (or non-Ubuntu bases) still use the old name.
+ALSA_PKG="libasound2t64"
+apt-cache show libasound2t64 &>/dev/null || ALSA_PKG="libasound2"
+sudo apt-get install -y \
+    libnss3 libatk-bridge2.0-0 libgtk-3-0 libxss1 "$ALSA_PKG" libgbm1 \
+    fonts-liberation libu2f-udev xdg-utils
 
 # ============================================================================
 # Docker (needed by scanner/tests/*.py to deploy the test/evaluation networks)
@@ -315,7 +322,14 @@ fi
 # Verify chromedriver / headless Chrome actually work end-to-end
 # ============================================================================
 log "Verifying chromedriver + headless Chrome (undetected-chromedriver mode, as used by the scanner)"
-if "$VENV_DIR/bin/python" - <<'PYEOF'
+# Written to a real file rather than piped via `python -` on stdin: seleniumbase's
+# uc=True mode launches Chrome through multiprocessing.Process(), which (depending
+# on the multiprocessing start method in use) needs to reload __main__ from a real
+# file path. Piping through stdin makes that path "<stdin>", which doesn't exist,
+# and crashes the launch immediately with a ConnectionResetError / FileNotFoundError
+# that looks nothing like a Chrome problem.
+SMOKE_TEST_PY="$(mktemp -t chromedriver-smoke-test.XXXXXX.py)"
+cat > "$SMOKE_TEST_PY" <<'PYEOF'
 from seleniumbase import SB
 
 with SB(
@@ -340,8 +354,9 @@ with SB(
 
 print("chromedriver check: OK")
 PYEOF
-then
+if "$VENV_DIR/bin/python" "$SMOKE_TEST_PY"; then
     echo "Chrome + chromedriver verified working."
+    rm -f "$SMOKE_TEST_PY"
 else
     fail "chromedriver verification failed - see output above (common causes: missing Chrome runtime libs, or the sandbox environment lacking permissions undetected-chromedriver needs)"
 fi
