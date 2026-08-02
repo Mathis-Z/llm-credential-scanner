@@ -55,7 +55,7 @@ sudo apt-get update -y
 log "Installing base system packages"
 sudo apt-get install -y \
     curl wget git ca-certificates gnupg lsb-release software-properties-common \
-    build-essential nmap
+    build-essential nmap zstd
 
 # ============================================================================
 # Google Chrome
@@ -92,7 +92,7 @@ if ! command -v docker &>/dev/null; then
 else
     echo "docker already installed: $(docker --version)"
 fi
-sudo systemctl enable --now docker
+sudo systemctl enable --now docker 2>/dev/null || sudo service docker start 2>/dev/null || echo "warning: couldn't start docker via systemctl/service (no init system running, e.g. inside a container) - start the docker daemon yourself before running scanner tests."
 
 # ============================================================================
 # Ollama
@@ -131,34 +131,41 @@ find_python314() {
 PYTHON_BIN=""
 if PYTHON_BIN=$(find_python314); then
     echo "Found Python 3.14: $PYTHON_BIN ($("$PYTHON_BIN" --version))"
-elif command -v pyenv &>/dev/null || [ -x "$HOME/.pyenv/bin/pyenv" ]; then
-    log "pyenv detected - using it to install Python 3.14 (preferred over a system-wide install)"
+else
+    if ! command -v pyenv &>/dev/null && [ ! -x "$HOME/.pyenv/bin/pyenv" ]; then
+        # Official install method per https://github.com/pyenv/pyenv#automatic-installer
+        log "pyenv not found - installing it via the official pyenv.run installer"
+
+        # pyenv builds Python from source, so it needs the standard build dependencies.
+        sudo apt-get install -y \
+            libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
+            llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+            libffi-dev liblzma-dev
+
+        curl -fsSL https://pyenv.run | bash || fail "pyenv installation failed"
+    fi
+
+    log "Using pyenv to install Python 3.14"
     export PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
     export PATH="$PYENV_ROOT/bin:$PATH"
+    command -v pyenv &>/dev/null || fail "pyenv installed to $PYENV_ROOT but '$PYENV_ROOT/bin/pyenv' isn't on PATH"
     eval "$(pyenv init -)"
 
-    # pyenv builds Python from source, so it needs the standard build dependencies.
-    sudo apt-get install -y \
-        libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
-        llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
-        libffi-dev liblzma-dev
-
+    pyenv update 2>/dev/null || true
     LATEST_314=$(pyenv install --list | grep -E '^\s*3\.14\.[0-9]+$' | tail -1 | xargs)
     if [ -z "$LATEST_314" ]; then
         fail "pyenv doesn't know about any 3.14.x release yet. Run 'pyenv update' and re-run this script."
     fi
     pyenv install -s "$LATEST_314"
     PYTHON_BIN="$PYENV_ROOT/versions/$LATEST_314/bin/python3.14"
-    echo "Installed via pyenv: $PYTHON_BIN ($("$PYTHON_BIN" --version))"
-else
-    log "No pyenv found - installing Python 3.14 system-wide via the deadsnakes PPA"
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt-get update -y
-    if ! sudo apt-get install -y python3.14 python3.14-venv python3.14-dev; then
-        fail "python3.14 isn't available via deadsnakes yet on this Ubuntu release. Install pyenv (https://github.com/pyenv/pyenv) and re-run this script, or install Python 3.14 manually."
-    fi
-    PYTHON_BIN="$(command -v python3.14)"
-    echo "Installed via apt/deadsnakes: $PYTHON_BIN ($("$PYTHON_BIN" --version))"
+    [ -x "$PYTHON_BIN" ] || fail "pyenv reported installing $LATEST_314 but $PYTHON_BIN doesn't exist"
+
+    INSTALLED_VERSION="$("$PYTHON_BIN" --version | awk '{print $2}')"
+    case "$INSTALLED_VERSION" in
+        3.14.*) ;;
+        *) fail "expected Python 3.14.x, but $PYTHON_BIN reports $INSTALLED_VERSION" ;;
+    esac
+    echo "Installed via pyenv: $PYTHON_BIN ($INSTALLED_VERSION)"
 fi
 
 # ============================================================================
