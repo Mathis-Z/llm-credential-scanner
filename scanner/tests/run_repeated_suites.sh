@@ -74,8 +74,8 @@ run_suite() {
 # remote runs. Fields are separated by "|": model_backend|suite_name|extra CLI args
 # (may be empty).
 COMBINATIONS=(
-    "remote|evaluation-network|--evaluation"
     "remote|test-network|"
+    "remote|evaluation-network|--evaluation"
     "local|evaluation-network|--evaluation"
     "local|test-network|"
 )
