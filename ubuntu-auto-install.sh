@@ -26,8 +26,26 @@ if [ ! -f "$SCANNER_DIR/requirements.txt" ]; then
 fi
 
 if [ "$(id -u)" -eq 0 ]; then
-    fail "run this as a normal user with sudo access, not as root"
+    DEPLOY_USER="${DEPLOY_USER:-deploy}"
+    log "Running as root - creating non-root user '$DEPLOY_USER' and switching to it"
+
+    if ! id -u "$DEPLOY_USER" &>/dev/null; then
+        adduser --disabled-password --gecos "" "$DEPLOY_USER"
+    fi
+
+    apt-get update -y &>/dev/null || true
+    apt-get install -y sudo &>/dev/null || true
+    usermod -aG sudo "$DEPLOY_USER"
+    echo "$DEPLOY_USER ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/90-$DEPLOY_USER"
+    chmod 440 "/etc/sudoers.d/90-$DEPLOY_USER"
+
+    chown -R "$DEPLOY_USER:$DEPLOY_USER" "$REPO_ROOT"
+
+    SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+    exec su - "$DEPLOY_USER" -c "$(printf '%q ' "$SCRIPT_PATH" "$@")"
 fi
+
+(apt-get update && apt-get install -y sudo) &>/dev/null || true
 
 command -v sudo &>/dev/null || fail "sudo is required"
 
