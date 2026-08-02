@@ -58,7 +58,7 @@ class BrowserPool:
         """Create a headless Chrome browser with anti-detection flags."""
         try:
             sb_ctx = SB(
-                uc=True,
+                #uc=True,
                 headless=True,
                 page_load_strategy="eager",
                 chromium_arg=[
