@@ -74,10 +74,10 @@ run_suite() {
 # remote runs. Fields are separated by "|": model_backend|suite_name|extra CLI args
 # (may be empty).
 COMBINATIONS=(
-    "local|test-network|"
-    "local|evaluation-network|--evaluation"
-    "remote|test-network|"
     "remote|evaluation-network|--evaluation"
+    "remote|test-network|"
+    "local|evaluation-network|--evaluation"
+    "local|test-network|"
 )
 
 mkdir -p "$RESULTS_DIR"

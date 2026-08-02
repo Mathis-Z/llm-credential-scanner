@@ -10,16 +10,6 @@ from pydantic import model_validator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _default_max_webdrivers() -> int:
-    """Cap concurrent browser instances at min(CPU cores, RAM in GB / 4) - each browser is fairly memory-hungry."""
-    cpu_cores = os.cpu_count() or 3
-    try:
-        ram_gb = (os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")) / (1024 ** 3)
-    except (AttributeError, ValueError, OSError):
-        ram_gb = cpu_cores * 4  # sysconf unavailable (e.g. non-POSIX); don't let RAM constrain the estimate
-    return max(1, min(cpu_cores, int(ram_gb // 4)))
-
-
 def configure_logging():
     """Configure logging for the scanner application. Filters to only show 'scanner.*' logs."""
     handlers = {
@@ -109,7 +99,7 @@ class Settings(BaseSettings):
     def resolve_dynamic_defaults(self) -> "Settings":
         """Apply defaults that depend on other field values."""
         if self.max_webdrivers is None:
-            self.max_webdrivers = _default_max_webdrivers()
+            self.max_webdrivers = 3
 
         if self.use_local_llm:
             if self.reasoning_llm_name is None:
