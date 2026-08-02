@@ -124,7 +124,20 @@ fi
 # "DevToolsActivePort file doesn't exist" - breaking automation entirely, in
 # both plain webdriver.Chrome and seleniumbase's uc=True mode. Not fixable
 # with flags; a real installed binary is required.
+#
+# One-time cleanup: an earlier version of this script installed a
+# `flatpak run com.google.Chrome` wrapper at /usr/local/bin/google-chrome.
+# /usr/local/bin precedes /usr/bin in PATH, so on any pod that was bootstrapped
+# with that version, this stale wrapper permanently shadows the real apt-
+# installed google-chrome below - both from `command -v` here (making this
+# script wrongly think Chrome's already installed) and from seleniumbase's own
+# PATH-based binary detection. Remove it unconditionally before proceeding.
 # ============================================================================
+if [ -f /usr/local/bin/google-chrome ] && grep -q "flatpak run com.google.Chrome" /usr/local/bin/google-chrome 2>/dev/null; then
+    log "Removing stale flatpak google-chrome wrapper from a previous script version"
+    sudo rm -f /usr/local/bin/google-chrome
+fi
+
 log "Installing Google Chrome"
 if ! command -v google-chrome &>/dev/null; then
     CHROME_DEB="$(mktemp -t google-chrome-stable_current_amd64.XXXXXX.deb)"
@@ -149,10 +162,26 @@ sudo apt-get install -y \
 
 # ============================================================================
 # Docker (needed by scanner/tests/*.py to deploy the test/evaluation networks)
+#
+# NOT via get.docker.com: its convenience script installs a fixed package list
+# that includes docker-model-plugin, which isn't published for every distro
+# codename (e.g. older/EOL ones some pod base images still report). Since
+# `apt-get install` is atomic across its whole package list, that one missing
+# package silently fails the ENTIRE Docker install - docker-ce never actually
+# gets installed, but the script exits without error. Installing the repo
+# ourselves and naming only the packages actually needed avoids that.
 # ============================================================================
 log "Installing Docker Engine + Compose plugin"
 if ! command -v docker &>/dev/null; then
-    curl -fsSL https://get.docker.com | sudo sh
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.asc > /dev/null
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    . /etc/os-release
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" \
+        | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-buildx-plugin \
+        || fail "docker-ce install failed - this distro codename may not be supported by Docker's apt repo"
     sudo usermod -aG docker "$USER"
     echo "Added $USER to the docker group - log out and back in (or run 'newgrp docker') before using docker without sudo."
 else
@@ -330,29 +359,60 @@ log "Verifying chromedriver + headless Chrome (undetected-chromedriver mode, as 
 # that looks nothing like a Chrome problem.
 SMOKE_TEST_PY="$(mktemp -t chromedriver-smoke-test.XXXXXX.py)"
 cat > "$SMOKE_TEST_PY" <<'PYEOF'
+import subprocess
+
+from selenium.webdriver.common import service as _service
 from seleniumbase import SB
 
-with SB(
-    uc=True,
-    headless=True,
-    page_load_strategy="eager",
-    chromium_arg=[
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-gpu",
-        "--no-zygote",
-        "--disable-dev-shm-usage",
-        "--ignore-certificate-errors",
-        "--allow-insecure-localhost",
-        "--allow-running-insecure-content",
-    ],
-) as sb:
-    sb.open("about:blank")
-    sb.driver.execute_script("document.title = 'chromedriver-check-ok';")
-    title = sb.driver.title
-    assert title == "chromedriver-check-ok", f"unexpected title: {title!r}"
+# Keep UC mode from killing its own chromedriver. SeleniumBase hardcodes
+# log_output=subprocess.PIPE for the chromedriver Service and never reads it,
+# then restarts the Service on the same port without always stopping the old
+# process. The first chromedriver keeps serving the port but is orphaned; once
+# its unreferenced Popen is garbage collected the pipe closes, its next log
+# write hits EPIPE, and it dies a second or two in -- surfacing as a
+# "connection refused" on a random port. A real sink means no pipe to break.
+# Mirrors scanner/shared/uc_service_patch.py, inlined so the smoke test does
+# not depend on the repo being importable yet.
+_original_service_init = _service.Service.__init__
 
-print("chromedriver check: OK")
+
+def _patched_service_init(self, *args, **kwargs):
+    if kwargs.get("log_output") is subprocess.PIPE:
+        kwargs["log_output"] = subprocess.DEVNULL
+    _original_service_init(self, *args, **kwargs)
+
+
+_service.Service.__init__ = _patched_service_init
+
+
+def main():
+    with SB(
+        uc=True,
+        headless=True,
+        page_load_strategy="eager",
+        chromium_arg=[
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-gpu",
+            "--no-zygote",
+            "--disable-dev-shm-usage",
+            "--disable-logging",
+            "--log-level=3",
+            "--ignore-certificate-errors",
+            "--allow-insecure-localhost",
+            "--allow-running-insecure-content",
+        ],
+    ) as sb:
+        sb.open("about:blank")
+        sb.driver.execute_script("document.title = 'chromedriver-check-ok';")
+        title = sb.driver.title
+        assert title == "chromedriver-check-ok", f"unexpected title: {title!r}"
+
+    print("chromedriver check: OK")
+
+
+if __name__ == "__main__":
+    main()
 PYEOF
 if "$VENV_DIR/bin/python" "$SMOKE_TEST_PY"; then
     echo "Chrome + chromedriver verified working."
