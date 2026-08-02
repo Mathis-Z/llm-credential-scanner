@@ -9,6 +9,10 @@
 # Chrome + chromedriver actually work end-to-end.
 #
 # Usage: ./install.sh   (run from the repo root as a normal sudo-capable user)
+#        ./install.sh --remote <OPENAI_API_KEY>
+#            Skips every component that's only needed for local LLM inference
+#            (Ollama install/service, GPU-detection package, model pulls) and
+#            auto-creates .env with the given OPENAI_API_KEY instead.
 #
 # Safe to re-run: every step checks whether it's already done before acting.
 
@@ -45,6 +49,22 @@ if [ "$(id -u)" -eq 0 ]; then
     exec su - "$DEPLOY_USER" -c "$(printf '%q ' "$SCRIPT_PATH" "$@")"
 fi
 
+REMOTE_MODE=0
+OPENAI_KEY=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --remote)
+            [ -n "${2:-}" ] || fail "--remote requires an OPENAI_API_KEY argument"
+            REMOTE_MODE=1
+            OPENAI_KEY="$2"
+            shift 2
+            ;;
+        *)
+            fail "unknown argument: $1"
+            ;;
+    esac
+done
+
 (apt-get update && apt-get install -y sudo) &>/dev/null || true
 
 command -v sudo &>/dev/null || fail "sudo is required"
@@ -55,7 +75,7 @@ sudo apt-get update -y
 log "Installing base system packages"
 sudo apt-get install -y \
     curl wget git ca-certificates gnupg lsb-release software-properties-common \
-    build-essential nmap zstd
+    build-essential nmap zstd pciutils
 
 # ============================================================================
 # Google Chrome
@@ -95,15 +115,19 @@ fi
 sudo systemctl enable --now docker 2>/dev/null || sudo service docker start 2>/dev/null || echo "warning: couldn't start docker via systemctl/service (no init system running, e.g. inside a container) - start the docker daemon yourself before running scanner tests."
 
 # ============================================================================
-# Ollama
+# Ollama (skipped in --remote mode - local LLM inference isn't used)
 # ============================================================================
-log "Installing Ollama"
-if ! command -v ollama &>/dev/null; then
-    curl -fsSL https://ollama.com/install.sh | sh
+if [ "$REMOTE_MODE" -eq 1 ]; then
+    log "Skipping Ollama install (--remote mode)"
 else
-    echo "ollama already installed: $(ollama --version)"
+    log "Installing Ollama"
+    if ! command -v ollama &>/dev/null; then
+        curl -fsSL https://ollama.com/install.sh | sh
+    else
+        echo "ollama already installed: $(ollama --version)"
+    fi
+    sudo systemctl enable --now ollama 2>/dev/null || true
 fi
-sudo systemctl enable --now ollama 2>/dev/null || true
 
 # ============================================================================
 # Python 3.14
@@ -181,16 +205,30 @@ log "Installing Python dependencies (this pulls torch/sentence-transformers, may
 # ============================================================================
 # .env
 # ============================================================================
-if [ ! -f "$REPO_ROOT/.env" ] && [ -f "$REPO_ROOT/example.env" ]; then
+if [ "$REMOTE_MODE" -eq 1 ]; then
+    log "Writing .env for remote LLM use"
+    [ -f "$REPO_ROOT/.env" ] || [ ! -f "$REPO_ROOT/example.env" ] || cp "$REPO_ROOT/example.env" "$REPO_ROOT/.env"
+    touch "$REPO_ROOT/.env"
+    if grep -q '^OPENAI_API_KEY=' "$REPO_ROOT/.env" 2>/dev/null; then
+        sed -i "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=$OPENAI_KEY|" "$REPO_ROOT/.env"
+    else
+        echo "OPENAI_API_KEY=$OPENAI_KEY" >> "$REPO_ROOT/.env"
+    fi
+    echo ".env written with the provided OPENAI_API_KEY."
+elif [ ! -f "$REPO_ROOT/.env" ] && [ -f "$REPO_ROOT/example.env" ]; then
     cp "$REPO_ROOT/example.env" "$REPO_ROOT/.env"
     echo ".env created from example.env - edit it to add a real OPENAI_API_KEY if you plan to use the remote LLM backend (not needed for USE_LOCAL_LLM=true)."
 fi
 
 # ============================================================================
 # Pull the Ollama models scanner/settings.py is configured to use
+# (skipped in --remote mode - local LLM inference isn't used)
 # ============================================================================
-log "Pulling Ollama models configured for local use"
-MODELS=$("$VENV_DIR/bin/python" -c "
+if [ "$REMOTE_MODE" -eq 1 ]; then
+    log "Skipping Ollama model pulls (--remote mode)"
+else
+    log "Pulling Ollama models configured for local use"
+    MODELS=$("$VENV_DIR/bin/python" -c "
 import sys
 sys.path.insert(0, '$REPO_ROOT')
 from scanner.settings import Settings
@@ -199,16 +237,17 @@ print(s.reasoning_llm_name)
 print(s.nonreasoning_llm_name)
 " | sort -u) || fail "could not resolve configured Ollama model names"
 
-PULL_FAILED=0
-while IFS= read -r model; do
-    [ -z "$model" ] && continue
-    echo "Pulling $model ..."
-    if ! ollama pull "$model"; then
-        echo "warning: failed to pull $model" >&2
-        PULL_FAILED=1
-    fi
-done <<< "$MODELS"
-[ "$PULL_FAILED" -eq 0 ] || echo "warning: one or more Ollama models failed to pull; local LLM runs may fail until this is resolved." >&2
+    PULL_FAILED=0
+    while IFS= read -r model; do
+        [ -z "$model" ] && continue
+        echo "Pulling $model ..."
+        if ! ollama pull "$model"; then
+            echo "warning: failed to pull $model" >&2
+            PULL_FAILED=1
+        fi
+    done <<< "$MODELS"
+    [ "$PULL_FAILED" -eq 0 ] || echo "warning: one or more Ollama models failed to pull; local LLM runs may fail until this is resolved." >&2
+fi
 
 # ============================================================================
 # Verify chromedriver / headless Chrome actually work end-to-end
@@ -244,4 +283,6 @@ fi
 log "Install complete."
 echo "Activate the venv with:  source $VENV_DIR/bin/activate"
 echo "If Docker was just installed, log out and back in (or run 'newgrp docker') for group membership to take effect."
-echo "Edit $REPO_ROOT/.env if you plan to use the remote LLM backend."
+if [ "$REMOTE_MODE" -eq 0 ]; then
+    echo "Edit $REPO_ROOT/.env if you plan to use the remote LLM backend."
+fi
