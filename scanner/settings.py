@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 def _default_max_webdrivers() -> int:
     """Cap concurrent browser instances at min(CPU cores, RAM in GB / 4) - each browser is fairly memory-hungry."""
-    cpu_cores = os.cpu_count() or 1
+    cpu_cores = os.cpu_count() or 3
     try:
         ram_gb = (os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")) / (1024 ** 3)
     except (AttributeError, ValueError, OSError):
