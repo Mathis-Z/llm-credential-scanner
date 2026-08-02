@@ -87,7 +87,27 @@ sudo apt-get update -y
 log "Installing base system packages"
 sudo apt-get install -y \
     curl wget git ca-certificates gnupg lsb-release software-properties-common \
-    build-essential nmap zstd pciutils
+    build-essential nmap zstd pciutils dbus
+
+# ============================================================================
+# D-Bus system daemon
+#
+# Minimal containers like this one don't run one, so /var/run/dbus/system_bus_socket
+# doesn't exist and every Chrome subsystem that probes it (bluetooth, upower,
+# screensaver, cloud policy, ...) floods stderr with connection errors on startup.
+# That matters beyond cosmetics: seleniumbase's uc=True mode pre-launches Chrome
+# via a detached helper process that closes Chrome's stdout/stderr pipes almost
+# immediately, so that startup error flood triggers a SIGPIPE that kills Chrome a
+# couple seconds in - exactly the "chromedriver connection refused" failure this
+# was chasing. Running a real dbus daemon avoids the error flood entirely.
+# ============================================================================
+log "Starting D-Bus system daemon"
+sudo mkdir -p /var/run/dbus
+if ! sudo test -S /var/run/dbus/system_bus_socket; then
+    sudo systemctl enable --now dbus 2>/dev/null \
+        || sudo service dbus start 2>/dev/null \
+        || sudo dbus-daemon --system --fork
+fi
 
 # ============================================================================
 # Google Chrome
