@@ -102,7 +102,7 @@ class StartupScript:
         Uses exponential backoff between retries.
         """
         try:
-            with SB(uc=True, headless=True, chromium_arg="--disable-dev-shm-usage") as sb:
+            with SB(uc=True, headless=True, chromium_arg=["--no-sandbox", "--disable-dev-shm-usage"]) as sb:
                 wait = 1
                 while timeout > 0:
                     sb.open(url)

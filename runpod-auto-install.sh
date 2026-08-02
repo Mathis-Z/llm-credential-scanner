@@ -102,6 +102,9 @@ log "Installing Google Chrome"
 if ! command -v google-chrome &>/dev/null; then
     CHROME_DEB="$(mktemp -t google-chrome-stable_current_amd64.XXXXXX.deb)"
     wget -q -O "$CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    # world-readable so apt's unprivileged _apt sandbox user can access it directly,
+    # instead of falling back to an unsandboxed root download with a warning.
+    chmod 644 "$CHROME_DEB"
     sudo apt-get install -y "$CHROME_DEB" || sudo apt-get install -y -f
     rm -f "$CHROME_DEB"
 else
@@ -285,6 +288,7 @@ with SB(
     headless=True,
     page_load_strategy="eager",
     chromium_arg=[
+        "--no-sandbox",
         "--disable-dev-shm-usage",
         "--ignore-certificate-errors",
         "--allow-insecure-localhost",
