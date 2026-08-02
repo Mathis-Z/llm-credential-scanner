@@ -117,11 +117,19 @@ fi
 # errors under Selenium/undetected-chromedriver automation. Real Google Chrome
 # avoids that entirely. Installed via a direct .deb download rather than
 # adding Google's apt repo, since that's simpler and doesn't touch apt sources.
+#
+# Pinned 5 major versions behind current stable (rather than "_current_") since
+# the newest release is more likely to hit fresh regressions/incompatibilities
+# with seleniumbase's uc mode. Override with CHROME_VERSION=x.y.z.w if needed -
+# see https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions
+# for available versions and confirm the .deb exists at the pool URL below
+# before pinning to it (not every version is mirrored there).
 # ============================================================================
 log "Installing Google Chrome"
+CHROME_VERSION="${CHROME_VERSION:-146.0.7680.177}"
 if ! command -v google-chrome &>/dev/null; then
     CHROME_DEB="$(mktemp -t google-chrome-stable_current_amd64.XXXXXX.deb)"
-    wget -q -O "$CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    wget -q -O "$CHROME_DEB" "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}-1_amd64.deb"
     # world-readable so apt's unprivileged _apt sandbox user can access it directly,
     # instead of falling back to an unsandboxed root download with a warning.
     chmod 644 "$CHROME_DEB"
