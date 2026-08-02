@@ -1,15 +1,23 @@
 #!/bin/bash
-# Fresh-VM bootstrap for the LLM credential scanner.
+# RunPod bootstrap for the LLM credential scanner.
 #
-# Assumes a fresh Ubuntu VM with this repo already cloned. Installs system
-# dependencies (Google Chrome, Docker, nmap, Ollama), provisions Python 3.14
-# (via pyenv if it's already installed, otherwise via the deadsnakes PPA),
-# creates the project venv, installs Python dependencies, pulls the Ollama
-# models configured in scanner/settings.py, and smoke-tests that headless
-# Chrome + chromedriver actually work end-to-end.
+# Deployment model this script assumes: the repo lives on a shared network
+# volume (typically mounted at /workspace) that multiple pods read the same
+# code from concurrently to run the test suite in parallel. This script never
+# copies or moves that repo - it always operates on it in place. Everything
+# that needs pod-local scratch space (the venv, Ollama's models, Docker's
+# image storage, pyenv's from-source Python build) is written to the pod's
+# own local disk (i.e. under $HOME, not under the repo/workspace), so
+# multiple pods running this concurrently never collide on the same files.
 #
-# Usage: ./install.sh   (run from the repo root as a normal sudo-capable user)
-#        ./install.sh --remote <OPENAI_API_KEY>
+# Installs system dependencies (Google Chrome, Docker, nmap, Ollama),
+# provisions Python 3.14 (via pyenv), creates a pod-local venv, installs
+# Python dependencies, pulls the Ollama models configured in
+# scanner/settings.py, and smoke-tests that headless Chrome + chromedriver
+# actually work end-to-end.
+#
+# Usage: ./runpod-auto-install.sh   (run from the repo root as a normal sudo-capable user)
+#        ./runpod-auto-install.sh --remote <OPENAI_API_KEY>
 #            Skips every component that's only needed for local LLM inference
 #            (Ollama install/service, GPU-detection package, model pulls) and
 #            auto-creates .env with the given OPENAI_API_KEY instead.
@@ -20,7 +28,6 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCANNER_DIR="$REPO_ROOT/scanner"
-VENV_DIR="$SCANNER_DIR/.venv"
 
 log() { echo -e "\n=== $* ===\n"; }
 fail() { echo "error: $*" >&2; exit 1; }
@@ -43,26 +50,16 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "$DEPLOY_USER ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/90-$DEPLOY_USER"
     chmod 440 "/etc/sudoers.d/90-$DEPLOY_USER"
 
-    DEPLOY_HOME="$(getent passwd "$DEPLOY_USER" | cut -d: -f6)"
-    [ -n "$DEPLOY_HOME" ] || fail "could not determine home directory for '$DEPLOY_USER'"
-    DEST_REPO="$DEPLOY_HOME/$(basename "$REPO_ROOT")"
-
-    if [ "$REPO_ROOT" != "$DEST_REPO" ]; then
-        if [ -e "$DEST_REPO" ]; then
-            log "Repo already present at $DEST_REPO - leaving it as-is"
-        else
-            log "Copying repo to $DEST_REPO"
-            cp -a "$REPO_ROOT" "$DEST_REPO"
-        fi
-    else
-        DEST_REPO="$REPO_ROOT"
-    fi
-
-    chown -R "$DEPLOY_USER:$DEPLOY_USER" "$DEST_REPO"
-
-    SCRIPT_PATH="$DEST_REPO/$(basename "${BASH_SOURCE[0]}")"
+    # The repo is shared across pods (e.g. on a network volume) - it's used in
+    # place, never copied or chowned, so concurrent pods never fight over it
+    # or over a uid that may differ from pod to pod.
+    SCRIPT_PATH="$REPO_ROOT/$(basename "${BASH_SOURCE[0]}")"
     exec su - "$DEPLOY_USER" -c "$(printf '%q ' "$SCRIPT_PATH" "$@")"
 fi
+
+# Pod-local venv, deliberately kept off the shared repo path so multiple pods
+# running this script concurrently against the same repo each get their own.
+VENV_DIR="$HOME/.venvs/llm-credential-scanner"
 
 REMOTE_MODE=0
 OPENAI_KEY=""
@@ -98,7 +95,8 @@ sudo apt-get install -y \
 # Deliberately NOT the snap-packaged 'chromium-browser' Ubuntu ships by default:
 # snap's AppArmor confinement is a known source of intermittent "tab crashed"
 # errors under Selenium/undetected-chromedriver automation. Real Google Chrome
-# via apt avoids that entirely.
+# avoids that entirely. Installed via a direct .deb download rather than
+# adding Google's apt repo, since that's simpler and doesn't touch apt sources.
 # ============================================================================
 log "Installing Google Chrome"
 if ! command -v google-chrome &>/dev/null; then
@@ -111,8 +109,12 @@ else
 fi
 
 # Headless Chrome runtime libraries that are often missing on minimal server images.
+# The ALSA package was renamed libasound2 -> libasound2t64 as part of Ubuntu 24.04's
+# time_t transition, so older releases (or non-Ubuntu bases) still use the old name.
+ALSA_PKG="libasound2t64"
+apt-cache show libasound2t64 &>/dev/null || ALSA_PKG="libasound2"
 sudo apt-get install -y \
-    libnss3 libatk-bridge2.0-0 libgtk-3-0 libxss1 libasound2t64 libgbm1 \
+    libnss3 libatk-bridge2.0-0 libgtk-3-0 libxss1 "$ALSA_PKG" libgbm1 \
     fonts-liberation libu2f-udev xdg-utils
 
 # ============================================================================
@@ -210,6 +212,7 @@ fi
 # venv + Python dependencies
 # ============================================================================
 log "Creating virtualenv at $VENV_DIR"
+mkdir -p "$(dirname "$VENV_DIR")"
 "$PYTHON_BIN" -m venv "$VENV_DIR" || fail "venv creation failed - is the venv module installed for this interpreter?"
 
 log "Installing Python dependencies (this pulls torch/sentence-transformers, may take a while)"
