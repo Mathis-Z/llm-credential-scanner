@@ -2,8 +2,8 @@
 # Repeatedly runs the test-network and evaluation-network suites, RUNS_PER_SUITE
 # times each, both against the remote LLM (default settings) and with
 # USE_LOCAL_LLM=True. The four backend/suite combinations are cycled round-robin:
-# each round runs every combination once, so results are spread evenly over time
-# instead of all remote runs happening before all local ones. Waits
+# each round runs every combination once, local models first, so results are spread
+# evenly over time instead of all remote runs happening before all local ones. Waits
 # WAIT_BETWEEN_RUNS seconds between every individual run to let Docker/browser
 # state settle.
 #
@@ -69,13 +69,15 @@ run_suite() {
 }
 
 # The four backend/suite combinations, cycled round-robin so a given round covers
-# every combination before the next round starts. Fields are separated by "|":
-# model_backend|suite_name|extra CLI args (may be empty).
+# every combination before the next round starts. Local runs come first in each
+# round so local-model evaluation starts immediately rather than waiting for all
+# remote runs. Fields are separated by "|": model_backend|suite_name|extra CLI args
+# (may be empty).
 COMBINATIONS=(
-    "remote|test-network|"
     "local|test-network|"
-    "remote|evaluation-network|--evaluation"
     "local|evaluation-network|--evaluation"
+    "remote|test-network|"
+    "remote|evaluation-network|--evaluation"
 )
 
 mkdir -p "$RESULTS_DIR"

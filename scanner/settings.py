@@ -77,6 +77,16 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_base_url: str = "https://openrouter.ai/api/v1"
 
+    # Ollama-specific tuning (local LLM only). num_ctx is sized for an 8GB-VRAM host
+    # running qwen3:4b at Q4_K_M: ~2.5GB weights + ~2.35GB KV cache at this context
+    # length leaves headroom for CUDA overhead. num_gpu=-1 forces all layers onto the
+    # GPU rather than relying on Ollama's own (occasionally over-conservative) auto
+    # placement. keep_alive is kept short so an idle model actually unloads between
+    # scanner subprocesses instead of lingering and competing with the next one.
+    ollama_keep_alive: str = "60s"
+    ollama_num_ctx: int = 16384
+    ollama_num_gpu: int = -1
+
     # Scanner
     subnets: list[str] = []
     ports: str | None = None
@@ -103,7 +113,7 @@ class Settings(BaseSettings):
 
         if self.use_local_llm:
             if self.reasoning_llm_name is None:
-                self.reasoning_llm_name = "qwen3:8b-q4_K_M"
+                self.reasoning_llm_name = "qwen3:4b-instruct-2507-q4_K_M"
             if self.nonreasoning_llm_name is None:
                 self.nonreasoning_llm_name = "qwen3:4b-instruct-2507-q4_K_M"
         else:

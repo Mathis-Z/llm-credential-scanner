@@ -221,7 +221,13 @@ def get_chat_model(reasoning: bool|None = None) -> WrappedChatOllama|WrappedChat
     model_name = settings.reasoning_llm_name if reasoning else settings.nonreasoning_llm_name
 
     if settings.use_local_llm:
-        return WrappedChatOllama(model=model_name, reasoning=reasoning)
+        return WrappedChatOllama(
+            model=model_name,
+            reasoning=reasoning,
+            keep_alive=settings.ollama_keep_alive,
+            num_ctx=settings.ollama_num_ctx,
+            num_gpu=settings.ollama_num_gpu,
+        )
     else:
         if reasoning:
             logger.warning("Reasoning parameter ignored for remote LLMs (not supported).")
