@@ -343,8 +343,8 @@ class CredTester(DBConnectionMixin, Thread):
 
         with BrowserPool().acquire(timeout=60) as sb:
             driver = sb.driver
-            driver.set_page_load_timeout(30)
-            driver.set_script_timeout(30)
+            #driver.set_page_load_timeout(30)
+            #driver.set_script_timeout(30)
 
             if not self.visit_login_panel(driver, endpoint.url()):
                 raise RuntimeError(f"Failed to load login panel: {endpoint.url()}")
