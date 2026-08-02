@@ -20,7 +20,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PYTHON="$REPO_ROOT/scanner/.venv/bin/python"
+PYTHON="$HOME/.venvs/llm-credential-scanner/bin/python"
 RESULTS_DIR="$SCRIPT_DIR/repeated_suite_results"
 SUMMARY_FILE="$RESULTS_DIR/SUMMARY.txt"
 
@@ -28,7 +28,7 @@ RUNS_PER_SUITE=10
 WAIT_BETWEEN_RUNS=60
 
 if [ ! -x "$PYTHON" ]; then
-    echo "error: venv python not found at $PYTHON (expected scanner/.venv to exist)" >&2
+    echo "error: venv python not found at $PYTHON" >&2
     exit 1
 fi
 
