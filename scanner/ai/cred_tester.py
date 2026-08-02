@@ -7,6 +7,7 @@ import re
 import time
 import urllib.parse
 import queue
+import traceback
 import threading
 from pathlib import Path
 from threading import Thread, Event
@@ -420,6 +421,7 @@ class CredTester(DBConnectionMixin, Thread):
         except Exception as exc:
             logger.error("Error testing credentials %s:%s on %s: %s", username, password, endpoint.url(), str(exc))
             endpoint.add_tested_credentials((username, password))
+            traceback.print_exc()
         finally:
             endpoint.save(only=[Endpoint._tested_credentials])
 
