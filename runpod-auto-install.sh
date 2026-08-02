@@ -145,7 +145,22 @@ else
     else
         echo "ollama already installed: $(ollama --version)"
     fi
-    sudo systemctl enable --now ollama 2>/dev/null || true
+
+    if ! curl -fsS -o /dev/null http://127.0.0.1:11434/ 2>/dev/null; then
+        if sudo systemctl enable --now ollama 2>/dev/null; then
+            :
+        else
+            log "No systemd - starting 'ollama serve' directly in the background"
+            nohup ollama serve >"$HOME/ollama-serve.log" 2>&1 &
+            disown
+        fi
+        for _ in $(seq 1 30); do
+            curl -fsS -o /dev/null http://127.0.0.1:11434/ 2>/dev/null && break
+            sleep 1
+        done
+        curl -fsS -o /dev/null http://127.0.0.1:11434/ 2>/dev/null \
+            || fail "ollama server didn't come up - check $HOME/ollama-serve.log"
+    fi
 fi
 
 # ============================================================================
@@ -289,6 +304,9 @@ with SB(
     page_load_strategy="eager",
     chromium_arg=[
         "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--no-zygote",
         "--disable-dev-shm-usage",
         "--ignore-certificate-errors",
         "--allow-insecure-localhost",

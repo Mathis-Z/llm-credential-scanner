@@ -63,6 +63,9 @@ class BrowserPool:
                 page_load_strategy="eager",
                 chromium_arg=[
                     "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-gpu",
+                    "--no-zygote",
                     "--disable-dev-shm-usage",
                     "--ignore-certificate-errors",
                     "--allow-insecure-localhost",
