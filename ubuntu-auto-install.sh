@@ -43,9 +43,24 @@ if [ "$(id -u)" -eq 0 ]; then
     echo "$DEPLOY_USER ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/90-$DEPLOY_USER"
     chmod 440 "/etc/sudoers.d/90-$DEPLOY_USER"
 
-    chown -R "$DEPLOY_USER:$DEPLOY_USER" "$REPO_ROOT"
+    DEPLOY_HOME="$(getent passwd "$DEPLOY_USER" | cut -d: -f6)"
+    [ -n "$DEPLOY_HOME" ] || fail "could not determine home directory for '$DEPLOY_USER'"
+    DEST_REPO="$DEPLOY_HOME/$(basename "$REPO_ROOT")"
 
-    SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+    if [ "$REPO_ROOT" != "$DEST_REPO" ]; then
+        if [ -e "$DEST_REPO" ]; then
+            log "Repo already present at $DEST_REPO - leaving it as-is"
+        else
+            log "Copying repo to $DEST_REPO"
+            cp -a "$REPO_ROOT" "$DEST_REPO"
+        fi
+    else
+        DEST_REPO="$REPO_ROOT"
+    fi
+
+    chown -R "$DEPLOY_USER:$DEPLOY_USER" "$DEST_REPO"
+
+    SCRIPT_PATH="$DEST_REPO/$(basename "${BASH_SOURCE[0]}")"
     exec su - "$DEPLOY_USER" -c "$(printf '%q ' "$SCRIPT_PATH" "$@")"
 fi
 
@@ -87,11 +102,10 @@ sudo apt-get install -y \
 # ============================================================================
 log "Installing Google Chrome"
 if ! command -v google-chrome &>/dev/null; then
-    curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
-        | sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
-    sudo apt-get update -y
-    sudo apt-get install -y google-chrome-stable
+    CHROME_DEB="$(mktemp -t google-chrome-stable_current_amd64.XXXXXX.deb)"
+    wget -q -O "$CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    sudo apt-get install -y "$CHROME_DEB" || sudo apt-get install -y -f
+    rm -f "$CHROME_DEB"
 else
     echo "google-chrome already installed: $(google-chrome --version)"
 fi
@@ -199,8 +213,15 @@ log "Creating virtualenv at $VENV_DIR"
 "$PYTHON_BIN" -m venv "$VENV_DIR" || fail "venv creation failed - is the venv module installed for this interpreter?"
 
 log "Installing Python dependencies (this pulls torch/sentence-transformers, may take a while)"
-"$VENV_DIR/bin/pip" install --upgrade pip
-"$VENV_DIR/bin/pip" install -r "$SCANNER_DIR/requirements.txt" || fail "pip install failed"
+# Some cloud GPU base images (e.g. RunPod's PyTorch templates) set PIP_CONSTRAINT
+# (or ship a global /etc/pip.conf constraint) pinning torch to whatever CUDA build
+# they preinstalled. That constraint leaks into this fresh venv too and conflicts
+# with the torch pin in requirements.txt, so it's explicitly discarded here.
+if [ -n "${PIP_CONSTRAINT:-}" ]; then
+    echo "Ignoring inherited PIP_CONSTRAINT=$PIP_CONSTRAINT for this install"
+fi
+env -u PIP_CONSTRAINT PIP_CONFIG_FILE=/dev/null "$VENV_DIR/bin/pip" install --upgrade pip
+env -u PIP_CONSTRAINT PIP_CONFIG_FILE=/dev/null "$VENV_DIR/bin/pip" install -r "$SCANNER_DIR/requirements.txt" || fail "pip install failed"
 
 # ============================================================================
 # .env
