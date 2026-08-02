@@ -404,8 +404,11 @@ def main():
         ],
     ) as sb:
         sb.open("about:blank")
-        sb.driver.execute_script("document.title = 'chromedriver-check-ok';")
-        title = sb.driver.title
+        # Use sb.* wrappers, not sb.driver.*: in UC mode the chromedriver
+        # service is stopped between commands, so raw driver calls hit a
+        # closed port. The wrappers reconnect first.
+        sb.execute_script("document.title = 'chromedriver-check-ok';")
+        title = sb.get_title()
         assert title == "chromedriver-check-ok", f"unexpected title: {title!r}"
 
     print("chromedriver check: OK")

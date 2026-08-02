@@ -6,6 +6,7 @@ import threading
 import time
 import simhash
 
+from seleniumbase.fixtures import page_actions
 from scanner.shared.browser_pool import BrowserPool
 
 logger = logging.getLogger("scanner.shared.fetching")
@@ -78,8 +79,13 @@ def fetch_urls_with_browser(
 
 def _load_page(sb, start_url: str, page_load_timeout: float) -> tuple[str, str]:
     """Load a URL in an already-acquired browser and return (final_url, html) once the DOM settles."""
+    # UC mode stops the chromedriver service between commands, so raw
+    # sb.driver.* calls hit a closed port. set_page_load_timeout has no sb.*
+    # wrapper, so reconnect the service first; then use sb.open() (which
+    # reconnects on its own) instead of sb.driver.get().
+    page_actions._reconnect_if_disconnected(sb.driver)
     sb.driver.set_page_load_timeout(page_load_timeout)
-    sb.driver.get(start_url)
+    sb.open(start_url)
     sb.sleep(3)
     _wait_for_dom_settle(sb)
     raw = sb.get_page_source()

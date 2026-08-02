@@ -122,8 +122,11 @@ class BrowserPool:
         try:
             sb.clear_local_storage()
             sb.clear_session_storage()
-            sb.driver.get("about:blank")
-            sb.driver.delete_all_cookies()
+            # Use sb.* wrappers, not sb.driver.*: in UC mode the chromedriver
+            # service is stopped between commands, so raw driver calls hit a
+            # closed port. The wrappers reconnect first.
+            sb.open("about:blank")
+            sb.delete_all_cookies()
         except Exception:
             if not sys.is_finalizing():
                 logger.warning("Failed to reset browser state", exc_info=True)
@@ -151,7 +154,9 @@ class BrowserPool:
         """Check if browser is responsive via simple JS execution."""
         sb, _ctx = entry
         try:
-            sb.driver.execute_script("return 1")
+            # sb.execute_script reconnects the UC-mode service first; a raw
+            # sb.driver.execute_script would hit a closed port.
+            sb.execute_script("return 1")
             return True
         except Exception as e:
             logger.debug("Browser health check failed: %s: %s", type(e).__name__, e)
