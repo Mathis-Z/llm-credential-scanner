@@ -3,13 +3,13 @@
 
 ## Backend: remote — GPT-4o mini (remote API)
 
-### test-network (17 apps)
-  Found     : majority-pass(>=6/10)=15/17  any-pass(>=1/10)=16/17
-  Verified  : majority-pass(>=6/10)=14/17  any-pass(>=1/10)=16/17
-  NoInvalid : majority-pass(>=6/10)=16/17  any-pass(>=1/10)=16/17
-  LoginPanel: majority-pass(>=6/10)=16/17  any-pass(>=1/10)=16/17
-  avg tokens/app: in=102211 out=744  avg time/app: 203.0s
-  avg est. cost/app (GPT 4o mini, $0.15/$0.60 per M in/out tok): $0.0158
+### test-network (16 apps)
+  Found     : majority-pass(>=6/10)=15/16  any-pass(>=1/10)=16/16
+  Verified  : majority-pass(>=6/10)=14/16  any-pass(>=1/10)=16/16
+  NoInvalid : majority-pass(>=6/10)=16/16  any-pass(>=1/10)=16/16
+  LoginPanel: majority-pass(>=6/10)=16/16  any-pass(>=1/10)=16/16
+  avg tokens/app: in=108599 out=790  avg time/app: 203.0s
+  avg est. cost/app (GPT 4o mini, $0.15/$0.60 per M in/out tok): $0.0168
 
   Per-app P/F/U (out of 10) — Found/Verified/NoInvalid/LoginPanel — avg in/out tokens:
     4gaBoards        1P/9F/0U      1P/9F/0U      10P/0F/0U     10P/0F/0U     in=23054 out=622
@@ -17,7 +17,6 @@
     BookStack        10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=363183 out=980
     CalibrWeb        8P/2F/0U      8P/2F/0U      10P/0F/0U     10P/0F/0U     in=80511 out=1586
     ClipCascade      10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=46856 out=721
-    Convertigo       0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     DockerSSOServer  10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=135976 out=708
     Filadex          10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=17252 out=437
     Grafana          10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=86693 out=388
@@ -30,19 +29,21 @@
     SonarQube        10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=57877 out=452
     Zabbix           10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=127068 out=687
 
+= found valid creds: 145 passes, 13 failures, 2 unknown (160 total)
+= verified valid creds: 137 passes, 21 failures, 2 unknown (160 total)
+= verified no invalid creds: 158 passes, 0 failures, 2 unknown (160 total)
+= found login panel: 158 passes, 0 failures, 2 unknown (160 total)
 
-### evaluation-network (27 apps)
-  Found     : majority-pass(>=6/10)=20/27  any-pass(>=1/10)=21/27
-  Verified  : majority-pass(>=6/10)=14/27  any-pass(>=1/10)=18/27
-  NoInvalid : majority-pass(>=6/10)=20/27  any-pass(>=1/10)=23/27
-  LoginPanel: majority-pass(>=6/10)=23/27  any-pass(>=1/10)=23/27
-  avg tokens/app: in=59891 out=613  avg time/app: 201.7s
-  avg est. cost/app (GPT 4o mini, $0.15/$0.60 per M in/out tok): $0.0094
+### evaluation-network (23 apps)
+  Found     : majority-pass(>=6/10)=20/23  any-pass(>=1/10)=21/23
+  Verified  : majority-pass(>=6/10)=14/23  any-pass(>=1/10)=18/23
+  NoInvalid : majority-pass(>=6/10)=20/23  any-pass(>=1/10)=23/23
+  LoginPanel: majority-pass(>=6/10)=23/23  any-pass(>=1/10)=23/23
+  avg tokens/app: in=70307 out=720  avg time/app: 201.7s
+  avg est. cost/app (GPT 4o mini, $0.15/$0.60 per M in/out tok): $0.0110
 
   Per-app P/F/U (out of 10) — Found/Verified/NoInvalid/LoginPanel — avg in/out tokens:
-    ActiveMQ                0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     Airsonic                10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=25788 out=724
-    ApacheGuacamole         0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     Cacti                   10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=20524 out=316
     Casdoor                 0P/10F/0U     0P/10F/0U     4P/6F/0U      10P/0F/0U     in=93693 out=1032
     EMQXDashboard           10P/0F/0U     9P/1F/0U      10P/0F/0U     10P/0F/0U     in=162423 out=916
@@ -53,11 +54,9 @@
     Keycloak                10P/0F/0U*    0P/10F/0U     10P/0F/0U     10P/0F/0U     in=23433 out=801
     KibanaOSS               10P/0F/0U     8P/2F/0U      10P/0F/0U     10P/0F/0U     in=54520 out=857
     MinIO                   10P/0F/0U     7P/3F/0U      10P/0F/0U     10P/0F/0U     in=208785 out=836
-    NexusRepositoryManager  0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     NginxProxyManager       10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=46706 out=716
     NuxeoServer             10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=30398 out=733
     OpenSearchDashboards    10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=19313 out=552
-    OpenVAS                 0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     RabbitMQManagement      10P/0F/0U     9P/1F/0U      10P/0F/0U     10P/0F/0U     in=64195 out=991
     Redmine                 10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=47538 out=645
     Rundeck                 10P/0F/0U*    1P/9F/0U      5P/5F/0U      10P/0F/0U     in=61894 out=691
@@ -68,15 +67,20 @@
     Yacht                   6P/4F/0U      6P/4F/0U      10P/0F/0U     10P/0F/0U     in=174966 out=835
     qBittorrent             10P/0F/0U     0P/10F/0U     10P/0F/0U     10P/0F/0U     in=16770 out=561
 
+= found valid creds: 198 passes, 32 failures, 0 unknown (230 total)
+= verified valid creds: 140 passes, 90 failures, 0 unknown (230 total)
+= verified no invalid creds: 213 passes, 17 failures, 0 unknown (230 total)
+= found login panel: 230 passes, 0 failures, 0 unknown (230 total)
+
 
 ## Backend: local — qwen3:4b-instruct-2507-q4_K_M (local, Ollama)
 
-### test-network (17 apps)
-  Found     : majority-pass(>=6/10)=14/17  any-pass(>=1/10)=16/17
-  Verified  : majority-pass(>=6/10)= 9/17  any-pass(>=1/10)=13/17
-  NoInvalid : majority-pass(>=6/10)=16/17  any-pass(>=1/10)=16/17
-  LoginPanel: majority-pass(>=6/10)=16/17  any-pass(>=1/10)=16/17
-  avg tokens/app: in=41671 out=2723  avg time/app: 248.4s
+### test-network (16 apps)
+  Found     : majority-pass(>=6/10)=14/16  any-pass(>=1/10)=16/16
+  Verified  : majority-pass(>=6/10)= 9/16  any-pass(>=1/10)=13/16
+  NoInvalid : majority-pass(>=6/10)=16/16  any-pass(>=1/10)=16/16
+  LoginPanel: majority-pass(>=6/10)=16/16  any-pass(>=1/10)=16/16
+  avg tokens/app: in=44275 out=2894  avg time/app: 248.4s
 
   Per-app P/F/U (out of 10) — Found/Verified/NoInvalid/LoginPanel — avg in/out tokens:
     4gaBoards        2P/8F/0U      2P/8F/0U      10P/0F/0U     10P/0F/0U     in=26660 out=777
@@ -84,7 +88,6 @@
     BookStack        10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=40625 out=598
     CalibrWeb        5P/5F/0U      2P/8F/0U      10P/0F/0U     10P/0F/0U     in=38988 out=2098
     ClipCascade      10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=21988 out=767
-    Convertigo       0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     DockerSSOServer  10P/0F/0U*    0P/10F/0U     9P/1F/0U      10P/0F/0U     in=54188 out=33789
     Filadex          10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=22088 out=607
     Grafana          10P/0F/0U*    5P/5F/0U      9P/1F/0U      10P/0F/0U     in=25242 out=512
@@ -97,18 +100,21 @@
     SonarQube        10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=30442 out=354
     Zabbix           10P/0F/0U     0P/10F/0U     10P/0F/0U     10P/0F/0U     in=22384 out=546
 
+= found valid creds: 140 passes, 18 failures, 2 unknown (160 total)
+= verified valid creds: 99 passes, 59 failures, 2 unknown (160 total)
+= verified no invalid creds: 156 passes, 2 failures, 2 unknown (160 total)
+= found login panel: 158 passes, 0 failures, 2 unknown (160 total)
 
-### evaluation-network (27 apps)
-  Found     : majority-pass(>=6/10)=19/27  any-pass(>=1/10)=21/27
-  Verified  : majority-pass(>=6/10)=14/27  any-pass(>=1/10)=16/27
-  NoInvalid : majority-pass(>=6/10)=22/27  any-pass(>=1/10)=23/27
-  LoginPanel: majority-pass(>=6/10)=23/27  any-pass(>=1/10)=23/27
-  avg tokens/app: in=32318 out=1186  avg time/app: 202.7s
+
+### evaluation-network (23 apps)
+  Found     : majority-pass(>=6/10)=19/23  any-pass(>=1/10)=21/23
+  Verified  : majority-pass(>=6/10)=14/23  any-pass(>=1/10)=16/23
+  NoInvalid : majority-pass(>=6/10)=22/23  any-pass(>=1/10)=23/23
+  LoginPanel: majority-pass(>=6/10)=23/23  any-pass(>=1/10)=23/23
+  avg tokens/app: in=37939 out=1393  avg time/app: 202.7s
 
   Per-app P/F/U (out of 10) — Found/Verified/NoInvalid/LoginPanel — avg in/out tokens:
-    ActiveMQ                0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     Airsonic                10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=11722 out=437
-    ApacheGuacamole         0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     Cacti                   10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=20701 out=359
     Casdoor                 0P/10F/0U     0P/10F/0U     3P/7F/0U      10P/0F/0U     in=117769 out=1162
     EMQXDashboard           10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=121976 out=700
@@ -119,11 +125,9 @@
     Keycloak                10P/0F/0U*    0P/10F/0U     10P/0F/0U     10P/0F/0U     in=26970 out=1049
     KibanaOSS               9P/1F/0U      9P/1F/0U      10P/0F/0U     10P/0F/0U     in=40885 out=1063
     MinIO                   10P/0F/0U     0P/10F/0U     10P/0F/0U     10P/0F/0U     in=35308 out=608
-    NexusRepositoryManager  0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     NginxProxyManager       10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=22133 out=639
     NuxeoServer             10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=17866 out=646
     OpenSearchDashboards    10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=20074 out=680
-    OpenVAS                 0P/0F/10U     0P/0F/10U     0P/0F/10U     0P/0F/10U     in=0 out=0
     RabbitMQManagement      10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=24905 out=862
     Redmine                 10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=21911 out=504
     Rundeck                 10P/0F/0U*    2P/8F/0U      10P/0F/0U     10P/0F/0U     in=16795 out=488
@@ -133,6 +137,11 @@
     Umami                   10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=28418 out=617
     Yacht                   3P/7F/0U      0P/10F/0U     10P/0F/0U     10P/0F/0U     in=27317 out=16988
     qBittorrent             8P/2F/0U      0P/10F/0U     10P/0F/0U     10P/0F/0U     in=14219 out=574
+
+= found valid creds: 191 passes, 39 failures, 0 unknown (230 total)
+= verified valid creds: 136 passes, 94 failures, 0 unknown (230 total)
+= verified no invalid creds: 222 passes, 8 failures, 0 unknown (230 total)
+= found login panel: 230 passes, 0 failures, 0 unknown (230 total)
 
 
 # Notes
@@ -146,7 +155,7 @@
 ## Actual scanner runtime (excludes Docker Compose startup/teardown)
 # Measured from 'Starting scanner' (DEBUG) to 'All modules completed.' (INFO) log timestamps per app-run.
 # Apps whose login panel never came up within the startup timeout never invoke the scanner and are excluded (n/a).
-remote  test-network         n_runs= 160 avg= 157.8s min=  18.0s max=  364.5s (apps with scanner runs: 16/17)
-remote  evaluation-network   n_runs= 240 avg= 143.9s min=  12.0s max=  489.2s (apps with scanner runs: 24/27)
-local   test-network         n_runs= 160 avg= 206.3s min=  16.0s max= 1062.5s (apps with scanner runs: 16/17)
-local   evaluation-network   n_runs= 240 avg= 149.1s min=  12.0s max= 1012.2s (apps with scanner runs: 24/27)
+remote  test-network         n_runs= 160 avg= 157.8s min=  18.0s max=  364.5s (apps with scanner runs: 16/16)
+remote  evaluation-network   n_runs= 230 avg= 149.6s min=  48.1s max=  489.2s (apps with scanner runs: 23/23)
+local   test-network         n_runs= 160 avg= 206.3s min=  16.0s max= 1062.5s (apps with scanner runs: 16/16)
+local   evaluation-network   n_runs= 230 avg= 155.1s min=  44.1s max= 1012.2s (apps with scanner runs: 23/23)
