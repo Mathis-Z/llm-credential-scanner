@@ -1,0 +1,10 @@
+model_backend	suite	run	exit_code	duration	dir
+remote	test-network	01	0	3542s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/remote/test-network/run-01
+remote	evaluation-network	01	0	5202s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/remote/evaluation-network/run-01
+local	evaluation-network	01	0	5809s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/local/evaluation-network/run-01
+local	test-network	01	0	4251s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/local/test-network/run-01
+remote	test-network	02	0	3184s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/remote/test-network/run-02
+remote	evaluation-network	02	0	5207s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/remote/evaluation-network/run-02
+local	evaluation-network	02	0	5405s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/local/evaluation-network/run-02
+local	test-network	02	0	3972s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/local/test-network/run-02
+remote	test-network	03	0	3740s	/home/deploy/llm-credential-scanner/scanner/tests/repeated_suite_results/remote/test-network/run-03
