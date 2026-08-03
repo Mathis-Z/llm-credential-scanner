@@ -34,13 +34,13 @@
 = verified no invalid creds: 158 passes, 0 failures, 2 unknown (160 total)
 = found login panel: 158 passes, 0 failures, 2 unknown (160 total)
 
-### evaluation-network (23 apps)
-  Found     : majority-pass(>=6/10)=20/23  any-pass(>=1/10)=21/23
-  Verified  : majority-pass(>=6/10)=14/23  any-pass(>=1/10)=18/23
-  NoInvalid : majority-pass(>=6/10)=20/23  any-pass(>=1/10)=23/23
-  LoginPanel: majority-pass(>=6/10)=23/23  any-pass(>=1/10)=23/23
-  avg tokens/app: in=70307 out=720  avg time/app: 201.7s
-  avg est. cost/app (GPT 4o mini, $0.15/$0.60 per M in/out tok): $0.0110
+### evaluation-network (22 apps)
+  Found     : majority-pass(>=6/10)=19/22  any-pass(>=1/10)=20/22
+  Verified  : majority-pass(>=6/10)=13/22  any-pass(>=1/10)=17/22
+  NoInvalid : majority-pass(>=6/10)=19/22  any-pass(>=1/10)=22/22
+  LoginPanel: majority-pass(>=6/10)=22/22  any-pass(>=1/10)=22/22
+  avg tokens/app: in=71342 out=723  avg time/app: 200.9s
+  avg est. cost/app (GPT 4o mini, $0.15/$0.60 per M in/out tok): $0.0111
 
   Per-app P/F/U (out of 10) — Found/Verified/NoInvalid/LoginPanel — avg in/out tokens:
     Airsonic                10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=25788 out=724
@@ -58,7 +58,6 @@
     NuxeoServer             10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=30398 out=733
     OpenSearchDashboards    10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=19313 out=552
     RabbitMQManagement      10P/0F/0U     9P/1F/0U      10P/0F/0U     10P/0F/0U     in=64195 out=991
-    Redmine                 10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=47538 out=645
     Rundeck                 10P/0F/0U*    1P/9F/0U      5P/5F/0U      10P/0F/0U     in=61894 out=691
     Seafile                 3P/7F/0U      3P/7F/0U      10P/0F/0U     10P/0F/0U     in=114443 out=889
     StirlingPDF             9P/1F/0U      2P/8F/0U      4P/6F/0U      10P/0F/0U     in=60185 out=479
@@ -67,10 +66,10 @@
     Yacht                   6P/4F/0U      6P/4F/0U      10P/0F/0U     10P/0F/0U     in=174966 out=835
     qBittorrent             10P/0F/0U     0P/10F/0U     10P/0F/0U     10P/0F/0U     in=16770 out=561
 
-= found valid creds: 198 passes, 32 failures, 0 unknown (230 total)
-= verified valid creds: 140 passes, 90 failures, 0 unknown (230 total)
-= verified no invalid creds: 213 passes, 17 failures, 0 unknown (230 total)
-= found login panel: 230 passes, 0 failures, 0 unknown (230 total)
+= found valid creds: 188 passes, 32 failures, 0 unknown (220 total)
+= verified valid creds: 130 passes, 90 failures, 0 unknown (220 total)
+= verified no invalid creds: 203 passes, 17 failures, 0 unknown (220 total)
+= found login panel: 220 passes, 0 failures, 0 unknown (220 total)
 
 
 ## Backend: local — qwen3:4b-instruct-2507-q4_K_M (local, Ollama)
@@ -106,12 +105,12 @@
 = found login panel: 158 passes, 0 failures, 2 unknown (160 total)
 
 
-### evaluation-network (23 apps)
-  Found     : majority-pass(>=6/10)=19/23  any-pass(>=1/10)=21/23
-  Verified  : majority-pass(>=6/10)=14/23  any-pass(>=1/10)=16/23
-  NoInvalid : majority-pass(>=6/10)=22/23  any-pass(>=1/10)=23/23
-  LoginPanel: majority-pass(>=6/10)=23/23  any-pass(>=1/10)=23/23
-  avg tokens/app: in=37939 out=1393  avg time/app: 202.7s
+### evaluation-network (22 apps)
+  Found     : majority-pass(>=6/10)=18/22  any-pass(>=1/10)=20/22
+  Verified  : majority-pass(>=6/10)=13/22  any-pass(>=1/10)=15/22
+  NoInvalid : majority-pass(>=6/10)=21/22  any-pass(>=1/10)=22/22
+  LoginPanel: majority-pass(>=6/10)=22/22  any-pass(>=1/10)=22/22
+  avg tokens/app: in=38667 out=1433  avg time/app: 203.7s
 
   Per-app P/F/U (out of 10) — Found/Verified/NoInvalid/LoginPanel — avg in/out tokens:
     Airsonic                10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=11722 out=437
@@ -129,7 +128,6 @@
     NuxeoServer             10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=17866 out=646
     OpenSearchDashboards    10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=20074 out=680
     RabbitMQManagement      10P/0F/0U     10P/0F/0U     10P/0F/0U     10P/0F/0U     in=24905 out=862
-    Redmine                 10P/0F/0U*    10P/0F/0U     10P/0F/0U     10P/0F/0U     in=21911 out=504
     Rundeck                 10P/0F/0U*    2P/8F/0U      10P/0F/0U     10P/0F/0U     in=16795 out=488
     Seafile                 1P/9F/0U      1P/9F/0U      10P/0F/0U     10P/0F/0U     in=58466 out=912
     StirlingPDF             10P/0F/0U     8P/2F/0U      10P/0F/0U     10P/0F/0U     in=84246 out=692
@@ -138,10 +136,10 @@
     Yacht                   3P/7F/0U      0P/10F/0U     10P/0F/0U     10P/0F/0U     in=27317 out=16988
     qBittorrent             8P/2F/0U      0P/10F/0U     10P/0F/0U     10P/0F/0U     in=14219 out=574
 
-= found valid creds: 191 passes, 39 failures, 0 unknown (230 total)
-= verified valid creds: 136 passes, 94 failures, 0 unknown (230 total)
-= verified no invalid creds: 222 passes, 8 failures, 0 unknown (230 total)
-= found login panel: 230 passes, 0 failures, 0 unknown (230 total)
+= found valid creds: 181 passes, 39 failures, 0 unknown (220 total)
+= verified valid creds: 126 passes, 94 failures, 0 unknown (220 total)
+= verified no invalid creds: 212 passes, 8 failures, 0 unknown (220 total)
+= found login panel: 220 passes, 0 failures, 0 unknown (220 total)
 
 
 # Notes
@@ -156,6 +154,6 @@
 # Measured from 'Starting scanner' (DEBUG) to 'All modules completed.' (INFO) log timestamps per app-run.
 # Apps whose login panel never came up within the startup timeout never invoke the scanner and are excluded (n/a).
 remote  test-network         n_runs= 160 avg= 157.8s min=  18.0s max=  364.5s (apps with scanner runs: 16/16)
-remote  evaluation-network   n_runs= 230 avg= 149.6s min=  48.1s max=  489.2s (apps with scanner runs: 23/23)
+remote  evaluation-network   n_runs= 220 avg= 152.1s min=  58.2s max=  489.2s (apps with scanner runs: 22/22)
 local   test-network         n_runs= 160 avg= 206.3s min=  16.0s max= 1062.5s (apps with scanner runs: 16/16)
-local   evaluation-network   n_runs= 230 avg= 155.1s min=  44.1s max= 1012.2s (apps with scanner runs: 23/23)
+local   evaluation-network   n_runs= 220 avg= 159.0s min=  56.1s max= 1012.2s (apps with scanner runs: 22/22)

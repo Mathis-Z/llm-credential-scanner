@@ -18,7 +18,6 @@
 - NuxeoServer | works
 - OpenSearchDashboards | works (older version)
 - RabbitMQManagement | works
-- Redmine | works
 - Rundeck | works
 - Seafile | works
 - Umami | works

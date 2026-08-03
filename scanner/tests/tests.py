@@ -420,7 +420,6 @@ def run(keep, include, exclude, evaluation, log_level, kill_containers):
         ("OpenSearchDashboards", 5601, "/app/login", "admin", "admin"),
         ("OpenVAS", 18226, "/", "admin", "adminpassword"),
         ("RabbitMQManagement", 18144, "/", "guest", "guest"),
-        ("Redmine", 18158, "/login", "admin", "admin"),
         ("Rundeck", 18143, "/user/login", "admin", "admin"),
         ("Seafile", 18169, "/accounts/login/", "me@example.com", "asecret"),
         ("StirlingPDF", 18217, "/login", "admin", "stirling"),
